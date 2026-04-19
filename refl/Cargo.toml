@@ -1,0 +1,16 @@
+[package]
+name = "refl"
+version = "0.0.1"
+authors = ["Artem V. Ageev <artem.v.ageev@gmail.com>"]
+license = "LGPL"
+repository = "https://github.com/theavege/efl-rs"
+homepage = "https://github.com/theavege/efl-rs"
+description = "Enlightenment Foundation Libraries bindings in Rust"
+keywords = ["EFL", "enlightenment"]
+categories = ["api-bindings", "gui"]
+readme = "README.md"
+edition = "2024"
+exclude = ["examples"]
+
+[dependencies]
+refl-sys = { path = "../refl-sys" }
