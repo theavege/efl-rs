@@ -5,7 +5,7 @@ use {
     std::{cell::RefCell, rc::Rc},
 };
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub enum Align {
     #[default]
     Fill,
@@ -378,7 +378,7 @@ impl SelectorExt for List {
 impl ElmObject for List {}
 impl ListExt for List {}
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct Naviframe {
     obj: *mut Evas_Object,
     lst: Rc<RefCell<Vec<WidgetItem>>>,
@@ -433,7 +433,7 @@ impl ContainerExt for Notify {
 }
 impl NotifyExt for Notify {}
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct Panel(*mut Evas_Object);
 
 impl EvasObject for Panel {

@@ -1,31 +1,37 @@
+#![forbid(unsafe_code)]
+
 mod components;
 
 use refl::prelude::*;
 
 pub enum Msg {
     Set(usize),
+    Slide(usize),
 }
 
 #[derive(Default)]
-pub struct View([refl::Frame; 4]);
+pub struct View([refl::Frame; 4], refl::Naviframe, refl::Panel);
 
 impl Component for View {
     type Event = Msg;
-    type State = usize;
+    type State = (usize, usize);
     fn update(&self, model: &Self::State) {
+        self.2.set_hidden(true);
+        self.1.set_top(model.1);
         for idx in 0..self.0.len() {
-            self.0[idx].set_collapse(idx != *model);
+            self.0[idx].set_collapse(idx != model.0);
         }
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
         match msg {
-            Msg::Set(value) => *model = value,
+            Msg::Set(value) => model.0 = value,
+            Msg::Slide(value) => model.1 = value,
         };
         true
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         let items = ["Simple", "NicCalc", "Calc"];
-        let nav = refl::Naviframe::new(prt).inside(|prt| {
+        self.1 = refl::Naviframe::new(prt).inside(|prt| {
             refl::Box::new(prt)
                 .inside(|prt| {
                     for idx in 0..4 {
@@ -61,19 +67,17 @@ impl Component for View {
             components::NicCalc::mount(prt);
             components::Calc::mount(prt);
         });
-        nav.promote();
+        self.1.promote();
         refl::Menu::main_menu(prt).with_items(&items, {
-            let nav = nav.clone();
-            move |wgt| nav.set_top(wgt.index() as usize)
+            let sender = sender.clone();
+            move |wgt| sender.send(Msg::Slide(wgt.index() as usize)).unwrap()
         });
-        refl::Panel::new(prt).inside(|prt| {
+        self.2 = refl::Panel::new(prt).inside(|prt| {
             refl::List::new(prt).with_items(&items, {
-                let nav = nav.clone();
-                let prt = prt.clone();
+                let sender = sender.clone();
                 move |wgt| {
                     if wgt.focus() {
-                        nav.set_top(wgt.index() as usize);
-                        prt.set_hidden(true);
+                        sender.send(Msg::Slide(wgt.index() as usize)).unwrap()
                     }
                 }
             });
