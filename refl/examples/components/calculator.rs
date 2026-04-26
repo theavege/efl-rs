@@ -101,58 +101,54 @@ impl Component for Calc {
         self.oper.set_value(&model.operation.clone());
         self.curr.set_value(&model.current.clone());
     }
-    fn view(&mut self, parent: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(parent)
-            .with_homogeneous(false)
-            .insert(|parent| {
-                self.outp = refl::Entry::new(parent)
+    fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
+        refl::Box::new(prt).with_homogeneous(false).inside(|prt| {
+            self.outp = refl::Entry::new(prt)
+                .with_editable(false)
+                .with_single_line(false)
+                .with_tooltip("Output");
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                self.oper = refl::Entry::new(prt)
                     .with_editable(false)
                     .with_single_line(false)
-                    .with_tooltip("Output");
-                refl::Box::new(parent)
-                    .with_horizontal(true)
-                    .insert(|parent| {
-                        self.oper = refl::Entry::new(parent)
-                            .with_editable(false)
-                            .with_single_line(false)
-                            .with_tooltip("Operation");
-                        refl::Box::new(parent).insert(|parent| {
-                            self.prev = refl::Entry::new(parent)
-                                .with_size(0, 45)
-                                .with_editable(false)
-                                .with_tooltip("Previos");
-                            self.curr = refl::Entry::new(parent)
-                                .with_size(0, 45)
-                                .with_editable(false)
-                                .with_tooltip("Current");
-                        });
-                    });
-                for row in [
-                    ["CE", "C", "%", "/"],
-                    ["7", "8", "9", "x"],
-                    ["4", "5", "6", "-"],
-                    ["1", "2", "3", "+"],
-                    ["0", ".", "<", "="],
-                ] {
-                    refl::Box::new(parent)
-                        .with_weight(true, false)
-                        .with_horizontal(true)
-                        .insert(|parent| {
-                            for cell in row {
-                                refl::Button::new(parent)
-                                    .with_size(90, 90)
-                                    .with_text(cell)
-                                    .with_tooltip(cell)
-                                    .with_cursor("hand1")
-                                    .on_clicked({
-                                        let sender = sender.clone();
-                                        move |wgt| {
-                                            sender.send(Msg::Push(wgt.text())).unwrap();
-                                        }
-                                    });
-                            }
-                        });
-                }
+                    .with_tooltip("Operation");
+                refl::Box::new(prt).inside(|prt| {
+                    self.prev = refl::Entry::new(prt)
+                        .with_size(0, 45)
+                        .with_editable(false)
+                        .with_tooltip("Previos");
+                    self.curr = refl::Entry::new(prt)
+                        .with_size(0, 45)
+                        .with_editable(false)
+                        .with_tooltip("Current");
+                });
             });
+            for row in [
+                ["CE", "C", "%", "/"],
+                ["7", "8", "9", "x"],
+                ["4", "5", "6", "-"],
+                ["1", "2", "3", "+"],
+                ["0", ".", "<", "="],
+            ] {
+                refl::Box::new(prt)
+                    .with_weight(true, false)
+                    .with_horizontal(true)
+                    .inside(|prt| {
+                        for cell in row {
+                            refl::Button::new(prt)
+                                .with_size(90, 90)
+                                .with_text(cell)
+                                .with_tooltip(cell)
+                                .with_cursor("hand1")
+                                .on_clicked({
+                                    let sender = sender.clone();
+                                    move |wgt| {
+                                        sender.send(Msg::Push(wgt.text())).unwrap();
+                                    }
+                                });
+                        }
+                    });
+            }
+        });
     }
 }

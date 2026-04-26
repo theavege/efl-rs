@@ -2,8 +2,7 @@ pub mod prelude;
 
 use {
     prelude::*,
-    refl_sys::*,
-    std::{boxed::Box as BBox, cell::RefCell, ffi::c_void, rc::Rc},
+    std::{cell::RefCell, rc::Rc},
 };
 
 #[derive(Clone, Default)]
@@ -111,24 +110,13 @@ impl ElmObject for Menu {}
 
 impl SelectorExt for Menu {
     fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
-        let cicon = std::ffi::CString::new(icon).unwrap();
-        let clabel = std::ffi::CString::new(label).unwrap();
-        let raw_ptr: *mut BBox<dyn FnMut(Self)> = BBox::into_raw(BBox::new(BBox::new(func)));
-        WidgetItem::from_raw(unsafe {
-            elm_menu_item_add(
-                self.as_raw(),
-                std::ptr::null_mut(),
-                cicon.as_ptr(),
-                clabel.as_ptr(),
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            )
-        })
+        WidgetItem::from_raw(self.append(icon, label, func))
     }
 }
 impl OnChanged for Menu {}
 impl OnClicked for Menu {}
 impl OnDismissed for Menu {}
+impl MenuExt for Menu {}
 
 #[derive(Default)]
 pub struct Timer(*mut Ecore_Timer);
@@ -228,7 +216,6 @@ impl EvasObject for Clock {
     }
 }
 impl ElmObject for Clock {}
-impl OnClicked for Clock {}
 impl ClockExt for Clock {}
 
 #[derive(Default)]
@@ -243,19 +230,8 @@ impl EvasObject for Ctxpopup {
     }
 }
 impl SelectorExt for Ctxpopup {
-    fn add<F: FnMut(Self) + 'static>(&self, icon_: &str, label_: &str, func: F) -> WidgetItem {
-        let clabel = std::ffi::CString::new(icon_).unwrap();
-        let icon_raw = Icon::new(self).with_standard(label_).as_raw();
-        let raw_ptr: *mut BBox<dyn FnMut(Self)> = BBox::into_raw(BBox::new(BBox::new(func)));
-        WidgetItem::from_raw(unsafe {
-            elm_ctxpopup_item_append(
-                self.as_raw(),
-                clabel.as_ptr(),
-                icon_raw,
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            )
-        })
+    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
+        WidgetItem::from_raw(self.append(icon, label, func))
     }
 }
 impl ElmObject for Ctxpopup {}
@@ -275,20 +251,8 @@ impl EvasObject for Entry {
 }
 impl ElmObject for Entry {}
 impl SelectorExt for Entry {
-    fn add<F: FnMut(Self) + 'static>(&self, icon_: &str, label_: &str, func: F) -> WidgetItem {
-        let clabel = std::ffi::CString::new(label_).unwrap();
-        let cicon = std::ffi::CString::new(icon_).unwrap();
-        let raw_ptr: *mut BBox<dyn FnMut(Self)> = BBox::into_raw(BBox::new(BBox::new(func)));
-        unsafe {
-            elm_entry_context_menu_item_add(
-                self.as_raw(),
-                clabel.as_ptr(),
-                cicon.as_ptr(),
-                2,
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            )
-        };
+    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
+        self.append(icon, label, func);
         WidgetItem::default()
     }
 }
@@ -346,20 +310,8 @@ impl EvasObject for HoverSel {
 }
 impl ElmObject for HoverSel {}
 impl SelectorExt for HoverSel {
-    fn add<F: FnMut(Self) + 'static>(&self, icon_: &str, label_: &str, func: F) -> WidgetItem {
-        let clabel = std::ffi::CString::new(label_).unwrap();
-        let cicon = std::ffi::CString::new(icon_).unwrap();
-        let raw_ptr: *mut BBox<dyn FnMut(Self)> = BBox::into_raw(BBox::new(BBox::new(func)));
-        WidgetItem::from_raw(unsafe {
-            elm_hoversel_item_add(
-                self.as_raw(),
-                clabel.as_ptr(),
-                cicon.as_ptr(),
-                2,
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            )
-        })
+    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
+        WidgetItem::from_raw(self.append(icon, label, func))
     }
 }
 impl OnSelected for HoverSel {}
@@ -419,20 +371,8 @@ impl EvasObject for List {
     }
 }
 impl SelectorExt for List {
-    fn add<F: FnMut(Self) + 'static>(&self, icon_: &str, label_: &str, func: F) -> WidgetItem {
-        let clabel = std::ffi::CString::new(icon_).unwrap();
-        let icon_raw = Icon::new(self).with_standard(label_).as_raw();
-        let raw_ptr: *mut BBox<dyn FnMut(Self)> = BBox::into_raw(BBox::new(BBox::new(func)));
-        WidgetItem::from_raw(unsafe {
-            elm_list_item_append(
-                self.as_raw(),
-                clabel.as_ptr(),
-                icon_raw,
-                std::ptr::null_mut(),
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            )
-        })
+    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
+        WidgetItem::from_raw(self.append(icon, label, func))
     }
 }
 impl ElmObject for List {}
@@ -465,10 +405,7 @@ impl EvasObject for Naviframe {
 }
 impl ContainerExt for Naviframe {
     fn add(&self, child: &impl ElmObject) {
-        let item = self.push(child);
-        unsafe {
-            elm_naviframe_item_title_visible_set(item.as_raw(), 0);
-        }
+        let item = WidgetItem::from_raw(self.push(child));
         self.lst.borrow_mut().push(item);
         child.show();
     }
@@ -496,7 +433,7 @@ impl ContainerExt for Notify {
 }
 impl NotifyExt for Notify {}
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Panel(*mut Evas_Object);
 
 impl EvasObject for Panel {
@@ -538,7 +475,7 @@ impl ContainerExt for Panes {
         child.show();
     }
 }
-impl OnDoubleClicked for Panes {}
+impl OnClickedDouble for Panes {}
 impl OnPressed for Panes {}
 impl PanesExt for Panes {}
 
@@ -631,7 +568,7 @@ impl EvasObject for Slider {
 }
 impl ElmObject for Slider {}
 impl OnChanged for Slider {}
-impl OnDelayChanged for Slider {}
+impl OnChangedDelay for Slider {}
 impl SliderExt for Slider {}
 
 #[derive(Default)]
@@ -662,18 +599,7 @@ impl EvasObject for ToolBar {
 }
 impl SelectorExt for ToolBar {
     fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
-        let clabel = std::ffi::CString::new(label).unwrap();
-        let cicon = std::ffi::CString::new(icon).unwrap();
-        let raw_ptr: *mut BBox<dyn FnMut(Self)> = BBox::into_raw(BBox::new(BBox::new(func)));
-        WidgetItem::from_raw(unsafe {
-            elm_toolbar_item_append(
-                self.0,
-                cicon.as_ptr(),
-                clabel.as_ptr(),
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            )
-        })
+        WidgetItem::from_raw(self.append(icon, label, func))
     }
 }
 impl ElmObject for ToolBar {}
@@ -693,7 +619,7 @@ impl EvasObject for Window {
 }
 impl ContainerExt for Window {
     fn add(&self, child: &impl ElmObject) {
-        unsafe { elm_win_resize_object_add(self.as_raw(), child.as_raw()) };
+        self.add_object(child);
         child.show();
     }
 }

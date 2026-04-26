@@ -22,11 +22,11 @@ impl Component for Booker {
         };
         true
     }
-    fn view(&mut self, parent: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(parent).insert(|vbox| {
-            refl::Panes::new(vbox).insert(|pns| {
-                refl::Label::new(pns).with_text("Flight");
-                refl::FlipSelector::new(pns).with_items(&["One-way", "Return"], {
+    fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
+        refl::Box::new(prt).inside(|prt| {
+            refl::Panes::new(prt).inside(|prt| {
+                refl::Label::new(prt).with_text("Flight");
+                refl::FlipSelector::new(prt).with_items(&["One-way", "Return"], {
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -35,11 +35,11 @@ impl Component for Booker {
                     }
                 });
             });
-            refl::Panes::new(vbox).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Departure data");
-                refl::Entry::new(hbox)
+            refl::Panes::new(prt).inside(|prt| {
+                refl::Label::new(prt).with_text("Departure data");
+                refl::Entry::new(prt)
                     .with_clicked(move |wgt| {
-                        refl::Notify::new(&wgt).insert(|ntf| {
+                        refl::Notify::new(&wgt).inside(|ntf| {
                             let _ = refl::Calendar::new(ntf);
                         });
                     })
@@ -52,11 +52,11 @@ impl Component for Booker {
                         }
                     });
             });
-            refl::Panes::new(vbox).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Return data");
-                refl::Entry::new(hbox)
+            refl::Panes::new(prt).inside(|prt| {
+                refl::Label::new(prt).with_text("Return data");
+                refl::Entry::new(prt)
                     .with_clicked(move |wgt| {
-                        refl::Notify::new(&wgt).insert(|ntf| {
+                        refl::Notify::new(&wgt).inside(|ntf| {
                             let _ = &refl::Calendar::new(ntf);
                         });
                     })
@@ -69,7 +69,7 @@ impl Component for Booker {
                         }
                     });
             });
-            refl::Button::new(vbox).set_text("4");
+            refl::Button::new(prt).set_text("4");
         });
     }
 }

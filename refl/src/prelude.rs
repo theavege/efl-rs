@@ -1,4 +1,3 @@
-pub use std::sync::mpsc::Sender;
 use {
     refl_sys::*,
     std::{
@@ -7,22 +6,23 @@ use {
     },
 };
 
-pub fn run(func: impl Fn()) {
+pub use {
+    refl_sys::{Ecore_Event_Handler, Ecore_Timer, Evas_Object, tm},
+    std::sync::mpsc::Sender,
+};
+
+pub fn run(func: impl Fn() -> super::Window) {
     let c_args = std::env::args()
         .map(|arg| CString::new(arg).unwrap())
         .map(|arg| arg.as_ptr())
         .collect::<Vec<*const c_char>>();
-
     unsafe {
         elm_init(c_args.len() as c_int, c_args.as_ptr() as *mut *mut c_char);
         elm_policy_set(
             Elm_Policy_ELM_POLICY_QUIT,
             Elm_Policy_Quit_ELM_POLICY_QUIT_LAST_WINDOW_CLOSED as i32,
         );
-    };
-    func();
-
-    unsafe {
+        func().show();
         elm_run();
         elm_shutdown();
     }
@@ -108,7 +108,7 @@ pub(crate) unsafe extern "C" fn ecore_event_handler_cb(
     }
 }
 
-pub trait EvasObject: Default {
+pub trait EvasObject: Sized {
     fn as_raw(&self) -> *mut Evas_Object;
     fn from_raw(obj: *mut Evas_Object) -> Self;
     fn conf(&self) {
@@ -310,7 +310,7 @@ pub trait ContainerExt: ElmObject {
     fn add(&self, child: &impl ElmObject) {
         child.show();
     }
-    fn insert(self, mut func: impl FnMut(&Self)) -> Self {
+    fn inside(self, mut func: impl FnMut(&Self)) -> Self {
         func(&self);
         self
     }
@@ -389,6 +389,29 @@ pub trait MenuExt: OnDismissed {
         elm.on_dismissed(|wgt| wgt.del());
         elm
     }
+    fn main_menu(win: &impl ContainerExt) -> Self {
+        Self::from_raw(unsafe { elm_win_main_menu_get(win.as_raw()) })
+    }
+    fn append<F: FnMut(Self) + 'static>(
+        &self,
+        icon: &str,
+        label: &str,
+        func: F,
+    ) -> *mut Evas_Object {
+        let cicon = std::ffi::CString::new(icon).unwrap();
+        let clabel = std::ffi::CString::new(label).unwrap();
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        unsafe {
+            elm_menu_item_add(
+                self.as_raw(),
+                std::ptr::null_mut(),
+                cicon.as_ptr(),
+                clabel.as_ptr(),
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            )
+        }
+    }
     fn close(&self) {
         unsafe { elm_menu_close(self.as_raw()) }
     }
@@ -397,6 +420,9 @@ pub trait MenuExt: OnDismissed {
     }
     fn index(&self) -> u32 {
         unsafe { elm_menu_item_index_get(self.selected_raw()) as u32 }
+    }
+    fn value(&self) -> u32 {
+        self.index()
     }
     fn icon(&self) -> String {
         unsafe {
@@ -565,6 +591,25 @@ pub trait CtxpopupExt: ElmObject {
         parent.add(&elm);
         elm
     }
+    fn append<F: FnMut(Self) + 'static>(
+        &self,
+        icon_: &str,
+        label_: &str,
+        func: F,
+    ) -> *mut Evas_Object {
+        let clabel = std::ffi::CString::new(icon_).unwrap();
+        let icon_raw = super::Icon::new(self).with_standard(label_).as_raw();
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        unsafe {
+            elm_ctxpopup_item_append(
+                self.as_raw(),
+                clabel.as_ptr(),
+                icon_raw,
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            )
+        }
+    }
     fn set_horizontal(&self, value: bool) {
         unsafe { elm_ctxpopup_horizontal_set(self.as_raw(), value as Eina_Bool) };
     }
@@ -601,6 +646,26 @@ pub trait HoverSelExt: ElmObject {
         elm.set_auto_update(true);
         parent.add(&elm);
         elm
+    }
+    fn append<F: FnMut(Self) + 'static>(
+        &self,
+        icon_: &str,
+        label_: &str,
+        func: F,
+    ) -> *mut Evas_Object {
+        let clabel = std::ffi::CString::new(label_).unwrap();
+        let cicon = std::ffi::CString::new(icon_).unwrap();
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        unsafe {
+            elm_hoversel_item_add(
+                self.as_raw(),
+                clabel.as_ptr(),
+                cicon.as_ptr(),
+                2,
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            )
+        }
     }
     fn set_auto_update(&self, value: bool) {
         unsafe { elm_hoversel_auto_update_set(self.as_raw(), value as Eina_Bool) };
@@ -711,6 +776,21 @@ pub trait EntryExt: ElmObject {
         elm.set_menu(true);
         parent.add(&elm);
         elm
+    }
+    fn append<F: FnMut(Self) + 'static>(&self, icon_: &str, label_: &str, func: F) {
+        let clabel = std::ffi::CString::new(label_).unwrap();
+        let cicon = std::ffi::CString::new(icon_).unwrap();
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        unsafe {
+            elm_entry_context_menu_item_add(
+                self.as_raw(),
+                clabel.as_ptr(),
+                cicon.as_ptr(),
+                2,
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            )
+        };
     }
     fn with_editable(self, value: bool) -> Self {
         self.set_editable(value);
@@ -848,6 +928,26 @@ pub trait ListExt: ElmObject {
         parent.add(&elm);
         elm
     }
+    fn append<F: FnMut(Self) + 'static>(
+        &self,
+        icon_: &str,
+        label_: &str,
+        func: F,
+    ) -> *mut Evas_Object {
+        let clabel = std::ffi::CString::new(icon_).unwrap();
+        let icon_raw = super::Icon::new(self).with_standard(label_).as_raw();
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        unsafe {
+            elm_list_item_append(
+                self.as_raw(),
+                clabel.as_ptr(),
+                icon_raw,
+                std::ptr::null_mut(),
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            )
+        }
+    }
     fn clear(&self) {
         unsafe { elm_list_clear(self.as_raw()) };
     }
@@ -915,24 +1015,6 @@ pub trait ListExt: ElmObject {
         }
         count
     }
-    fn on_activated<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("activated", func);
-    }
-    fn on_selected<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("selected", func);
-    }
-    fn on_unselected<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("unselected", func);
-    }
-    fn on_longpressed<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("longpressed", func);
-    }
-    fn on_clicked_double<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("clicked,double", func);
-    }
-    fn on_clicked_right<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("clicked,right", func);
-    }
 }
 
 pub trait NaviframeExt: ElmObject {
@@ -952,17 +1034,19 @@ pub trait NaviframeExt: ElmObject {
     fn set_content_preserve_on_pop(&self, value: bool) {
         unsafe { elm_naviframe_content_preserve_on_pop_set(self.as_raw(), value as Eina_Bool) };
     }
-    fn push(&self, child: &impl super::ElmObject) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe {
-            elm_naviframe_item_push(
+    fn push(&self, child: &impl super::ElmObject) -> *mut Evas_Object {
+        unsafe {
+            let item = elm_naviframe_item_push(
                 self.as_raw(),
                 std::ptr::null(),
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
                 child.as_raw(),
                 std::ptr::null(),
-            )
-        })
+            );
+            elm_naviframe_item_title_visible_set(item, 0);
+            item
+        }
     }
     fn promote(&self) {
         self.to_top(&self.bottom())
@@ -1357,6 +1441,25 @@ pub trait ToolBarExt: ElmObject {
         parent.add(&elm);
         elm
     }
+    fn append<F: FnMut(Self) + 'static>(
+        &self,
+        icon: &str,
+        label: &str,
+        func: F,
+    ) -> *mut Evas_Object {
+        let clabel = std::ffi::CString::new(label).unwrap();
+        let cicon = std::ffi::CString::new(icon).unwrap();
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        unsafe {
+            elm_toolbar_item_append(
+                self.as_raw(),
+                cicon.as_ptr(),
+                clabel.as_ptr(),
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            )
+        }
+    }
     fn with_homogeneous(self, value: bool) -> Self {
         self.set_homogeneous(value);
         self
@@ -1430,9 +1533,13 @@ pub trait WindowExt: OnDeleteRequest {
         elm.set_autodel(true);
         elm.set_center(true, true);
         elm.on_delete_request(|_| exit());
-        elm.show();
         elm
     }
+
+    fn add_object(&self, child: &impl ElmObject) {
+        unsafe { elm_win_resize_object_add(self.as_raw(), child.as_raw()) };
+    }
+
     fn with_center(self, value: bool) -> Self {
         self.set_center(value, value);
         self
@@ -1488,6 +1595,16 @@ pub trait OnChanged: ElmObject {
     }
 }
 
+pub trait OnActivated: ElmObject {
+    fn on_activated<F: FnMut(Self) + 'static>(&self, func: F) {
+        self.smart_callback_add("activated", func);
+    }
+    fn with_activated<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.on_activated(func);
+        self
+    }
+}
+
 pub trait OnClicked: ElmObject {
     fn on_clicked<F: FnMut(Self) + 'static>(&self, func: F) {
         self.smart_callback_add("clicked", func);
@@ -1498,12 +1615,12 @@ pub trait OnClicked: ElmObject {
     }
 }
 
-pub trait OnDoubleClicked: ElmObject {
-    fn on_double_clicked<F: FnMut(Self) + 'static>(&self, func: F) {
+pub trait OnClickedDouble: ElmObject {
+    fn on_clicked_double<F: FnMut(Self) + 'static>(&self, func: F) {
         self.smart_callback_add("clicked,double", func);
     }
-    fn with_double_clicked<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_double_clicked(func);
+    fn with_clicked_double<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.on_clicked_double(func);
         self
     }
 }
@@ -1514,6 +1631,16 @@ pub trait OnSelected: ElmObject {
     }
     fn with_selected<F: FnMut(Self) + 'static>(self, func: F) -> Self {
         self.on_selected(func);
+        self
+    }
+}
+
+pub trait OnUnselected: ElmObject {
+    fn on_unselected<F: FnMut(Self) + 'static>(&self, func: F) {
+        self.smart_callback_add("unselected", func);
+    }
+    fn with_toggled<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.on_unselected(func);
         self
     }
 }
@@ -1548,12 +1675,12 @@ pub trait OnTimeout: ElmObject {
     }
 }
 
-pub trait OnBlockClicked: ElmObject {
-    fn on_block_clicked<F: FnMut(Self) + 'static>(&self, func: F) {
+pub trait OnClickedBlock: ElmObject {
+    fn on_clicked_block<F: FnMut(Self) + 'static>(&self, func: F) {
         self.smart_callback_add("block,clicked", func);
     }
-    fn with_block_clicked<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_block_clicked(func);
+    fn with_clicked_block<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.on_clicked_block(func);
         self
     }
 }
@@ -1618,12 +1745,22 @@ pub trait OnDeleteRequest: ElmObject {
     }
 }
 
-pub trait OnDelayChanged: ElmObject {
-    fn on_delay_changed<F: FnMut(Self) + 'static>(&self, func: F) {
+pub trait OnChangedDelay: ElmObject {
+    fn on_changed_delay<F: FnMut(Self) + 'static>(&self, func: F) {
         self.smart_callback_add("delay,changed", func);
     }
-    fn with_delay_changed<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_delay_changed(func);
+    fn with_changed_delay<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.on_changed_delay(func);
+        self
+    }
+}
+
+pub trait OnChangedRight: ElmObject {
+    fn on_clicked_right<F: FnMut(Self) + 'static>(&self, func: F) {
+        self.smart_callback_add("clicked,right", func);
+    }
+    fn with_clicked_right<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.on_clicked_right(func);
         self
     }
 }
@@ -1634,6 +1771,16 @@ pub trait OnPressed: ElmObject {
     }
     fn with_pressed<F: FnMut(Self) + 'static>(self, func: F) -> Self {
         self.on_pressed(func);
+        self
+    }
+}
+
+pub trait OnPressedLong: ElmObject {
+    fn on_pressed_long<F: FnMut(Self) + 'static>(&self, func: F) {
+        self.smart_callback_add("longpressed", func);
+    }
+    fn with_pressed_long<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.on_pressed_long(func);
         self
     }
 }
@@ -1660,6 +1807,10 @@ pub trait Component: Default + 'static {
         });
     }
     fn run(title: &str) {
-        run(move || Self::mount(&super::Window::new("Main", title)));
+        run(move || {
+            let win = super::Window::new("Main", title);
+            Self::mount(&win);
+            win
+        });
     }
 }

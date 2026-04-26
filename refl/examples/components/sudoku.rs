@@ -130,19 +130,19 @@ impl Component for Sudoku {
             }
         }
     }
-    fn view(&mut self, parent: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(parent).insert(|vbox| {
+    fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
+        refl::Box::new(prt).inside(|prt| {
             for row in 0..9 {
-                refl::Box::new(vbox)
+                refl::Box::new(prt)
                     .with_horizontal(true)
                     .with_homogeneous(true)
-                    .insert(|hbox| {
+                    .inside(|prt| {
                         for col in 0..9 {
                             self.0[row][col] =
-                                refl::Button::new(hbox).with_cursor("hand2").with_clicked({
+                                refl::Button::new(prt).with_cursor("hand2").with_clicked({
                                     let sender = sender.clone();
                                     move |wgt| {
-                                        refl::Notify::new(&wgt).insert(|wgt| {
+                                        refl::Notify::new(&wgt).inside(|wgt| {
                                             let sender = sender.clone();
                                             let top = wgt.clone();
                                             refl::List::new(wgt).with_items(
@@ -163,14 +163,14 @@ impl Component for Sudoku {
             refl::Box::new(vbox)
                 .with_horizontal(true)
                 .with_homogeneous(true)
-                .insert(|hbox| {
-                    refl::Button::new(hbox).with_text("Answer").on_clicked({
+                .inside(|prt| {
+                    refl::Button::new(prt).with_text("Answer").on_clicked({
                         let sender = sender.clone();
                         move |_| {
                             sender.send(Msg::Solve).unwrap();
                         }
                     });
-                    refl::Button::new(hbox).with_text("Clear").on_clicked({
+                    refl::Button::new(prt).with_text("Clear").on_clicked({
                         let sender = sender.clone();
                         move |wgt| {
                             let sender = sender.clone();

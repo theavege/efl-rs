@@ -53,12 +53,12 @@ impl Component for Converter {
             self.far.set_value(&value.to_string());
         }
     }
-    fn view(&mut self, parent: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(parent).insert(|page| {
-            refl::Bubble::new(page)
+    fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
+        refl::Box::new(prt).inside(|prt| {
+            refl::Bubble::new(prt)
                 .with_part("info", "Celsius")
-                .insert(|bub| {
-                    self.cel = refl::Entry::new(bub)
+                .inside(|prt| {
+                    self.cel = refl::Entry::new(prt)
                         .with_value("0")
                         .with_editable(true)
                         .with_changed({
@@ -71,10 +71,10 @@ impl Component for Converter {
                             }
                         });
                 });
-            refl::Bubble::new(page)
+            refl::Bubble::new(prt)
                 .with_part("info", "Fahrenheit")
-                .insert(|bub| {
-                    self.far = refl::Entry::new(bub)
+                .inside(|prt| {
+                    self.far = refl::Entry::new(prt)
                         .with_size(45, 45)
                         .with_value("0")
                         .with_editable(true)

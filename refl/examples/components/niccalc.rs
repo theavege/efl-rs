@@ -102,11 +102,11 @@ impl Component for NicCalc {
         };
         true
     }
-    fn view(&mut self, parent: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(parent).with_homogeneous(false).insert(|vbox| {
-            refl::Box::new(vbox).with_horizontal(true).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Nicotine base strength (mg/ml):");
-                refl::Entry::new(hbox)
+    fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
+        refl::Box::new(prt).with_homogeneous(false).inside(|prt| {
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                refl::Label::new(prt).with_text("Nicotine base strength (mg/ml):");
+                refl::Entry::new(prt)
                     .with_tooltip("Nicotine base strength must be between 0.0 und 999.9mg/ml")
                     .with_changed({
                         let sender = sender.clone();
@@ -118,9 +118,9 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Box::new(vbox).with_horizontal(true).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Nicotine strength wanted (mg/ml):");
-                refl::Entry::new(hbox)
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                refl::Label::new(prt).with_text("Nicotine strength wanted (mg/ml):");
+                refl::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
                     .with_changed({
                         let sender = sender.clone();
@@ -132,9 +132,9 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Box::new(vbox).with_horizontal(true).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Amount wanted (ml):");
-                refl::Entry::new(hbox)
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                refl::Label::new(prt).with_text("Amount wanted (ml):");
+                refl::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
                     .with_changed({
                         let sender = sender.clone();
@@ -146,9 +146,9 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Box::new(vbox).with_horizontal(true).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Flavour amount (ml):");
-                refl::Entry::new(hbox)
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                refl::Label::new(prt).with_text("Flavour amount (ml):");
+                refl::Entry::new(prt)
                     .with_tooltip("The flavour amount must be between 0 and the base amount minus nicotine base amount!")
                     .with_changed({
                         let sender = sender.clone();
@@ -160,25 +160,25 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Separator::new(vbox).with_horizontal(true);
-            refl::Box::new(vbox).with_horizontal(true).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Nicotin base");
-                self.nicotine_base = refl::ProgressBar::new(hbox);
+            refl::Separator::new(prt).with_horizontal(true);
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                refl::Label::new(prt).with_text("Nicotin base");
+                self.nicotine_base = refl::ProgressBar::new(prt);
             });
-            refl::Box::new(vbox).with_horizontal(true).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Base");
-                self.base = refl::ProgressBar::new(hbox);
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                refl::Label::new(prt).with_text("Base");
+                self.base = refl::ProgressBar::new(prt);
             });
-            refl::Box::new(vbox).with_horizontal(true).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Flavour");
-                self.flavour = refl::ProgressBar::new(hbox);
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                refl::Label::new(prt).with_text("Flavour");
+                self.flavour = refl::ProgressBar::new(prt);
             });
-            refl::Box::new(vbox).with_horizontal(true).insert(|hbox| {
-                refl::Label::new(hbox).with_text("Total");
-                refl::ProgressBar::new(hbox).set_value(1.0);
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                refl::Label::new(prt).with_text("Total");
+                refl::ProgressBar::new(prt).set_value(1.0);
             });
-            refl::Separator::new(vbox).with_horizontal(true);
-            self.list = refl::List::new(vbox);
+            refl::Separator::new(prt).with_horizontal(true);
+            self.list = refl::List::new(prt);
         });
     }
 }
