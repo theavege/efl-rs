@@ -1,6 +1,6 @@
 use {
-    std::{env, path::Path},
     bindgen::callbacks::{MacroParsingBehavior, ParseCallbacks},
+    std::{env, path::Path},
 };
 
 #[derive(Debug, Default)]
@@ -15,7 +15,9 @@ impl ParseCallbacks for MacroCallback {
             "FP_ZERO",
             "FP_SUBNORMAL",
             "IPPORT_RESERVED",
-        ].contains(&name) {
+        ]
+        .contains(&name)
+        {
             true => MacroParsingBehavior::Ignore,
             false => MacroParsingBehavior::Default,
         }
@@ -27,8 +29,10 @@ fn main() {
     let library = "elementary";
     println!("cargo:rustc-link-lib=dylib={library}");
     match pkg_config::probe_library(library) {
-        Ok(lib) => for dir in lib.include_paths {
-            cflags.push(format!("-I{}", dir.display()));
+        Ok(lib) => {
+            for dir in lib.include_paths {
+                cflags.push(format!("-I{}", dir.display()));
+            }
         }
         Err(e) => {
             eprintln!("Failed to find {library}: {e}");
