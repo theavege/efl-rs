@@ -1,7 +1,7 @@
 set -euo pipefail
 source '/etc/os-release'
 case ${ID:?} in
-    debian | ubuntu) sudo apt-get install -y libfox-1.6-dev ;;
+    debian | ubuntu) sudo apt-get install -y libefl-all-dev ;;
     fedora | alma) sudo apt-get install -y efl-devel ;;
 esac &> /dev/null
 cargo clippy --quiet --example simple
