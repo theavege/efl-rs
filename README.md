@@ -1,12 +1,8 @@
 # efl-rs
 
-Work in progress Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlightenment.org/about-efl).
+Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlightenment.org/about-efl).
 
-## What is [EFL](https://www.enlightenment.org/about-efl)?
-
-## [Dependencies](.github/workflows/make.sh)
-
-## Other bindings for [EFL](https://www.enlightenment.org/about-efl)
+## Other bindings for EFL
 
 - [Python](https://github.com/DaveMDS/python-efl)
 - [Vala](https://github.com/freesmartphone/libeflvala)
@@ -17,6 +13,11 @@ Work in progress Rust bindings for the [Enlightenment Foundation Libraries](http
 - [GTK-rs](https://github.com/gtk-rs)
 - [RSTK](https://codeberg.org/peterlane/rstk)
 - [FoxTK-rs](https://github.com/theavege/foxtk-rs)
+
+## [Dependencies](https://www.enlightenment.org/docs/distros/start)
+
+- [Linux](.github/workflows/make.sh)
+- [Windows](.github/workflows/make.ps1)
 
 ## Work in process
 
