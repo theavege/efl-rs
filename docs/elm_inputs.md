@@ -1,3 +1,3 @@
-# [Entry](https://docs.enlightenment.org/python-efl/current/elementary/entry.html)
+![entry](https://www.enlightenment.org/_legacy_embed/img/widget/entry/preview-02.png)
 
-![Entry](https://www.enlightenment.org/_legacy_embed/img/widget/entry/preview-02.png)
+![check](https://www.enlightenment.org/_legacy_embed/img/widget/check/preview-00.png)

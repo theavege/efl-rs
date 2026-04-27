@@ -8,7 +8,7 @@ Work in progress Rust bindings for the [Enlightenment Foundation Libraries](http
 
 ## Other bindings for [EFL](https://www.enlightenment.org/about-efl)
 
-- [Python](https://docs.enlightenment.org/python-efl/current)
+- [Python](https://github.com/DaveMDS/python-efl)
 - [Vala](https://github.com/freesmartphone/libeflvala)
 
 ## Alternatives
