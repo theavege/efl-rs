@@ -1,5 +1,3 @@
 # [Entry](https://docs.enlightenment.org/python-efl/current/elementary/entry.html)
 
-![Entry](assets/scrot_entry.png)
-
-- OnChanged
+![Entry](https://www.enlightenment.org/_legacy_embed/img/widget/entry/preview-02.png)

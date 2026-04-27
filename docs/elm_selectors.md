@@ -1,7 +1,5 @@
-![MainMenu](assets/scrot_menu_main.png)
+![Menu](https://www.enlightenment.org/_legacy_embed/img/widget/menu/preview-00.png)
 
-![PopupMenu](assets/scrot_menu_popup.png)
-
-![SegmentControl](assets/scrot_segment_control.png)
+![SegmentControl](https://www.enlightenment.org/_legacy_embed/img/widget/segment_control/preview-00.png)
 
 # [ActionSlider](https://docs.enlightenment.org/python-efl/current/elementary/actionslider.html)
