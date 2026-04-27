@@ -1,0 +1,13 @@
+[workspace]
+
+resolver = "2"
+members = [
+    "refl-sys",
+    "refl",
+]
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+panic = "abort"

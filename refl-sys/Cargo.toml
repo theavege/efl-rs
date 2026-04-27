@@ -1,0 +1,15 @@
+[package]
+name = "refl-sys"
+version = "0.0.1"
+authors = ["Artem V. Ageev <artem.v.ageev@gmail.com>"]
+license = "LGPL"
+repository = "https://github.com/theavege/efl-rs"
+description = "Enlightenment Foundation Libraries bindings in Rust"
+keywords = ["EFL", "enlightenment"]
+categories = ["external-ffi-bindings"]
+readme = "README.md"
+edition = "2021"
+
+[build-dependencies]
+bindgen = "0.72"
+pkg-config = "0.3"
