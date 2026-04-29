@@ -1,7 +1,7 @@
 use {
     refl_sys::*,
     std::{
-        ffi::{CString, c_char, c_int, c_void},
+        ffi::{CStr, CString, c_void},
         sync::mpsc::channel,
     },
 };
@@ -15,9 +15,9 @@ pub fn run(func: impl Fn() -> super::Window) {
     let c_args = std::env::args()
         .map(|arg| CString::new(arg).unwrap())
         .map(|arg| arg.as_ptr())
-        .collect::<Vec<*const c_char>>();
+        .collect::<Vec<*const i8>>();
     unsafe {
-        elm_init(c_args.len() as c_int, c_args.as_ptr() as *mut *mut c_char);
+        elm_init(c_args.len() as i32, c_args.as_ptr() as *mut *mut i8);
         elm_policy_set(
             Elm_Policy_ELM_POLICY_QUIT,
             Elm_Policy_Quit_ELM_POLICY_QUIT_LAST_WINDOW_CLOSED as i32,
@@ -99,7 +99,7 @@ pub(crate) unsafe extern "C" fn ecore_task_cb(data: *mut c_void) -> Eina_Bool {
 
 pub(crate) unsafe extern "C" fn ecore_event_handler_cb(
     data: *mut c_void,
-    _type_: c_int,
+    _type_: i32,
     _event: *mut c_void,
 ) -> Eina_Bool {
     unsafe {
@@ -115,6 +115,11 @@ pub trait EvasObject: Sized {
         self.set_align(super::Align::Fill, super::Align::Fill);
         self.set_weight(true, true);
     }
+    fn with_conf(self) -> Self {
+        self.set_align(super::Align::Fill, super::Align::Fill);
+        self.set_weight(true, true);
+        self
+    }
     fn show(&self) {
         unsafe {
             evas_object_show(self.as_raw());
@@ -126,13 +131,7 @@ pub trait EvasObject: Sized {
     }
     fn set_color(&self, r: i32, g: i32, b: i32, a: i32) {
         unsafe {
-            evas_object_color_set(
-                self.as_raw(),
-                r as c_int,
-                g as c_int,
-                b as c_int,
-                a as c_int,
-            );
+            evas_object_color_set(self.as_raw(), r, g, b, a);
         };
     }
     fn set_weight(&self, x: bool, y: bool) {
@@ -162,12 +161,11 @@ pub trait EvasObject: Sized {
         self
     }
     fn smart_callback_add<T: ElmObject, F: FnMut(T) + 'static>(&self, name: &str, func: F) {
-        let name = std::ffi::CString::new(name).unwrap();
         let raw_ptr: *mut Box<dyn FnMut(T)> = Box::into_raw(Box::new(Box::new(func)));
         unsafe {
             evas_object_smart_callback_add(
                 self.as_raw(),
-                name.as_ptr(),
+                CString::new(name).unwrap().as_ptr(),
                 Some(smart_cb::<T>),
                 raw_ptr as *mut c_void,
             );
@@ -216,8 +214,8 @@ pub trait ElmObject: EvasObject {
         self.set_part("default", text);
     }
     fn set_part(&self, part: &str, text: &str) {
-        let c_part = std::ffi::CString::new(part).unwrap();
-        let c_text = std::ffi::CString::new(text).unwrap();
+        let c_part = CString::new(part).unwrap();
+        let c_text = CString::new(text).unwrap();
         let c_part_ptr = match part.is_empty() {
             true => std::ptr::null(),
             false => c_part.as_ptr(),
@@ -232,7 +230,7 @@ pub trait ElmObject: EvasObject {
         unsafe { efl_parent_get(self.as_raw()) }
     }
     fn set_style(&self, value: &str) -> bool {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         unsafe { elm_object_style_set(self.as_raw(), ctext.as_ptr()) != 0 }
     }
     fn with_tooltip(self, value: &str) -> Self {
@@ -248,11 +246,11 @@ pub trait ElmObject: EvasObject {
         self
     }
     fn set_tooltip(&self, value: &str) {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
     }
     fn set_cursor(&self, value: &str) -> bool {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         unsafe { elm_object_cursor_set(self.as_raw(), ctext.as_ptr()) != 0 }
     }
     fn disabled(&self) -> bool {
@@ -272,12 +270,12 @@ pub trait ElmObject: EvasObject {
         self
     }
     fn set_content(&self, obj: &impl ElmObject, value: &str) {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         unsafe { elm_object_part_content_set(self.as_raw(), ctext.as_ptr(), obj.as_raw()) }
         obj.show();
     }
     fn content(&self, value: &str) -> Option<super::WidgetItem> {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         let ptr = unsafe { elm_object_part_content_get(self.as_raw(), ctext.as_ptr()) };
         if ptr.is_null() {
             None
@@ -289,7 +287,7 @@ pub trait ElmObject: EvasObject {
         unsafe {
             let ptr = elm_object_part_text_get(self.as_raw(), std::ptr::null());
             if !ptr.is_null() {
-                std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
+                CStr::from_ptr(ptr).to_string_lossy().into_owned()
             } else {
                 String::new()
             }
@@ -301,7 +299,7 @@ pub trait ElmObject: EvasObject {
     fn style(&self) -> String {
         unsafe {
             let ptr = elm_object_style_get(self.as_raw());
-            std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
+            CStr::from_ptr(ptr).to_string_lossy().into_owned()
         }
     }
 }
@@ -318,10 +316,10 @@ pub trait ContainerExt: ElmObject {
 
 pub trait BoxExt: ContainerExt {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_box_add(parent.as_raw()) });
-        elm.set_homogeneous(true);
-        elm.set_horizontal(false);
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_box_add(parent.as_raw()) })
+            .with_homogeneous(true)
+            .with_horizontal(false)
+            .with_conf();
         parent.add(&elm);
         elm
     }
@@ -366,14 +364,18 @@ pub trait BoxExt: ContainerExt {
 
 pub trait BubbleExt: ElmObject {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_bubble_add(parent.as_raw()) });
-        elm.conf();
-        elm.set_pos(1);
+        let elm = Self::from_raw(unsafe { elm_bubble_add(parent.as_raw()) })
+            .with_conf()
+            .with_pos(1);
         parent.add(&elm);
         elm
     }
     fn set_pos(&self, value: i32) {
         unsafe { elm_bubble_pos_set(self.as_raw(), value) };
+    }
+    fn with_pos(self, value: i32) -> Self {
+        self.set_pos(value);
+        self
     }
     fn pos(&self) -> i32 {
         unsafe { elm_bubble_pos_get(self.as_raw()) }
@@ -382,11 +384,10 @@ pub trait BubbleExt: ElmObject {
 
 pub trait MenuExt: OnDismissed {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_menu_add(parent.as_raw()) });
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_menu_add(parent.as_raw()) })
+            .with_dismissed(|wgt| wgt.del())
+            .with_conf();
         parent.add(&elm);
-        elm.close();
-        elm.on_dismissed(|wgt| wgt.del());
         elm
     }
     fn main_menu(win: &impl ContainerExt) -> Self {
@@ -398,15 +399,13 @@ pub trait MenuExt: OnDismissed {
         label: &str,
         func: F,
     ) -> *mut Evas_Object {
-        let cicon = std::ffi::CString::new(icon).unwrap();
-        let clabel = std::ffi::CString::new(label).unwrap();
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
         unsafe {
             elm_menu_item_add(
                 self.as_raw(),
                 std::ptr::null_mut(),
-                cicon.as_ptr(),
-                clabel.as_ptr(),
+                CString::new(icon).unwrap().as_ptr(),
+                CString::new(label).unwrap().as_ptr(),
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
@@ -427,7 +426,7 @@ pub trait MenuExt: OnDismissed {
     fn icon(&self) -> String {
         unsafe {
             let ptr = elm_menu_item_icon_name_get(self.selected_raw());
-            std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
+            CStr::from_ptr(ptr).to_string_lossy().into_owned()
         }
     }
     fn selected(&self) -> super::WidgetItem {
@@ -451,8 +450,7 @@ pub trait MenuExt: OnDismissed {
 
 pub trait ButtonExt: ElmObject {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_button_add(parent.as_raw()) });
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_button_add(parent.as_raw()) }).with_conf();
         parent.add(&elm);
         elm
     }
@@ -461,8 +459,7 @@ pub trait ButtonExt: ElmObject {
 pub trait CheckExt: ElmObject {
     #[deprecated = "use efl::SegmentControl::new(&parent) instead"]
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_check_add(parent.as_raw()) });
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_check_add(parent.as_raw()) }).with_conf();
         parent.add(&elm);
         elm
     }
@@ -537,7 +534,7 @@ pub trait ActionSliderExt: ElmObject {
     fn label(&self) -> String {
         unsafe {
             let ptr = elm_actionslider_selected_label_get(self.as_raw());
-            std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
+            CStr::from_ptr(ptr).to_string_lossy().into_owned()
         }
     }
     fn with_position(self, value: super::ActionSliderPos) -> Self {
@@ -548,8 +545,7 @@ pub trait ActionSliderExt: ElmObject {
 
 pub trait CalendarExt: ElmObject {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_calendar_add(parent.as_raw()) });
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_calendar_add(parent.as_raw()) }).with_conf();
         parent.add(&elm);
         elm
     }
@@ -566,15 +562,14 @@ pub trait CalendarExt: ElmObject {
 
 pub trait ClockExt: ElmObject {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_clock_add(parent.as_raw()) });
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_clock_add(parent.as_raw()) }).with_conf();
         parent.add(&elm);
         elm
     }
     fn time(&self) -> (i32, i32, i32) {
-        let hrs: *mut ::std::os::raw::c_int = std::ptr::null_mut();
-        let min: *mut ::std::os::raw::c_int = std::ptr::null_mut();
-        let sec: *mut ::std::os::raw::c_int = std::ptr::null_mut();
+        let hrs: *mut i32 = std::ptr::null_mut();
+        let min: *mut i32 = std::ptr::null_mut();
+        let sec: *mut i32 = std::ptr::null_mut();
         unsafe { elm_clock_time_get(self.as_raw(), hrs, min, sec) };
         (hrs as i32, min as i32, sec as i32)
     }
@@ -586,8 +581,7 @@ pub trait ClockExt: ElmObject {
 pub trait CtxpopupExt: ElmObject {
     #[deprecated = "use efl::Notify::new(&parent) instead"]
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_ctxpopup_add(parent.as_raw()) });
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_ctxpopup_add(parent.as_raw()) }).with_conf();
         parent.add(&elm);
         elm
     }
@@ -597,14 +591,12 @@ pub trait CtxpopupExt: ElmObject {
         label_: &str,
         func: F,
     ) -> *mut Evas_Object {
-        let clabel = std::ffi::CString::new(icon_).unwrap();
-        let icon_raw = super::Icon::new(self).with_standard(label_).as_raw();
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
         unsafe {
             elm_ctxpopup_item_append(
                 self.as_raw(),
-                clabel.as_ptr(),
-                icon_raw,
+                CString::new(icon_).unwrap().as_ptr(),
+                super::Icon::new(self).with_standard(label_).as_raw(),
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
@@ -632,8 +624,7 @@ pub trait CtxpopupExt: ElmObject {
 
 pub trait LabelExt: ElmObject {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_label_add(parent.as_raw()) });
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_label_add(parent.as_raw()) }).with_conf();
         parent.add(&elm);
         elm
     }
@@ -641,8 +632,7 @@ pub trait LabelExt: ElmObject {
 
 pub trait HoverSelExt: ElmObject {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_hoversel_add(parent.as_raw()) });
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_hoversel_add(parent.as_raw()) }).with_conf();
         elm.set_auto_update(true);
         parent.add(&elm);
         elm
@@ -653,14 +643,12 @@ pub trait HoverSelExt: ElmObject {
         label_: &str,
         func: F,
     ) -> *mut Evas_Object {
-        let clabel = std::ffi::CString::new(label_).unwrap();
-        let cicon = std::ffi::CString::new(icon_).unwrap();
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
         unsafe {
             elm_hoversel_item_add(
                 self.as_raw(),
-                clabel.as_ptr(),
-                cicon.as_ptr(),
+                CString::new(label_).unwrap().as_ptr(),
+                CString::new(icon_).unwrap().as_ptr(),
                 2,
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
@@ -686,9 +674,9 @@ pub trait HoverSelExt: ElmObject {
 
 pub trait FlipSelectorExt: ElmObject {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_flipselector_add(parent.as_raw()) });
-        elm.conf();
-        elm.set_interval(3.0);
+        let elm = Self::from_raw(unsafe { elm_flipselector_add(parent.as_raw()) })
+            .with_conf()
+            .with_interval(3.0);
         parent.add(&elm);
         elm
     }
@@ -709,14 +697,13 @@ pub trait FlipSelectorExt: ElmObject {
         }
     }
     fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) {
-        let clabel = std::ffi::CString::new(label).unwrap();
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
         unsafe {
             elm_flipselector_item_append(
                 self.as_raw(),
-                clabel.as_ptr(),
+                CString::new(label).unwrap().as_ptr(),
                 Some(smart_cb::<Self>),
-                raw_ptr as *mut std::os::raw::c_void,
+                raw_ptr as *mut c_void,
             )
         };
     }
@@ -755,6 +742,10 @@ pub trait FlipSelectorExt: ElmObject {
     fn set_interval(&self, value: f64) {
         unsafe { elm_flipselector_first_interval_set(self.as_raw(), value) }
     }
+    fn with_interval(self, value: f64) -> Self {
+        self.set_interval(value);
+        self
+    }
     fn lenght(&self) -> u32 {
         let last = self.last_raw();
         let mut temp = self.first_raw();
@@ -778,14 +769,12 @@ pub trait EntryExt: ElmObject {
         elm
     }
     fn append<F: FnMut(Self) + 'static>(&self, icon_: &str, label_: &str, func: F) {
-        let clabel = std::ffi::CString::new(label_).unwrap();
-        let cicon = std::ffi::CString::new(icon_).unwrap();
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
         unsafe {
             elm_entry_context_menu_item_add(
                 self.as_raw(),
-                clabel.as_ptr(),
-                cicon.as_ptr(),
+                CString::new(label_).unwrap().as_ptr(),
+                CString::new(icon_).unwrap().as_ptr(),
                 2,
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
@@ -812,7 +801,7 @@ pub trait EntryExt: ElmObject {
         self.set_entry(value);
     }
     fn set_entry(&self, value: &str) {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         unsafe { elm_entry_entry_set(self.as_raw(), ctext.as_ptr()) };
     }
     fn set_scrollable(&self, value: bool) {
@@ -834,7 +823,7 @@ pub trait EntryExt: ElmObject {
         unsafe { elm_entry_context_menu_disabled_set(self.as_raw(), value as Eina_Bool) };
     }
     fn set_file(&self, file_: &str) {
-        let file = std::ffi::CString::new(file_).unwrap();
+        let file = CString::new(file_).unwrap();
         unsafe {
             elm_entry_file_set(
                 self.as_raw(),
@@ -855,7 +844,7 @@ pub trait EntryExt: ElmObject {
     fn entry(&self) -> String {
         unsafe {
             let ptr = elm_entry_entry_get(self.as_raw());
-            std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
+            CStr::from_ptr(ptr).to_string_lossy().into_owned()
         }
     }
 }
@@ -898,7 +887,7 @@ pub trait IconExt: ElmObject {
         self
     }
     fn set_standard(&self, value: &str) {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         unsafe { elm_icon_standard_set(self.as_raw(), ctext.as_ptr()) };
     }
 }
@@ -934,14 +923,12 @@ pub trait ListExt: ElmObject {
         label_: &str,
         func: F,
     ) -> *mut Evas_Object {
-        let clabel = std::ffi::CString::new(icon_).unwrap();
-        let icon_raw = super::Icon::new(self).with_standard(label_).as_raw();
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
         unsafe {
             elm_list_item_append(
                 self.as_raw(),
-                clabel.as_ptr(),
-                icon_raw,
+                CString::new(icon_).unwrap().as_ptr(),
+                super::Icon::new(self).with_standard(label_).as_raw(),
                 std::ptr::null_mut(),
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
@@ -1149,7 +1136,7 @@ pub trait PanesExt: ElmObject {
     }
 }
 
-pub trait PopupExt: ElmObject {
+pub trait PopupExt: ContainerExt {
     fn new(parent: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_popup_add(parent.window().as_raw()) });
         elm.conf();
@@ -1162,45 +1149,6 @@ pub trait PopupExt: ElmObject {
     fn set_title_icon(&self, value: &super::Icon) {
         self.set_content(value, "title,icon")
     }
-    //~ fn set_button1<F: FnMut(super::Button) + 'static>(&self, label: &str, mut func: F) {
-    //~ let pop = self.clone();
-    //~ self.set_content(
-    //~ &super::Button::new(self)
-    //~ .with_text(label)
-    //~ .with_icon(label)
-    //~ .with_clicked(move |wgt| {
-    //~ func(wgt);
-    //~ pop.del();
-    //~ }),
-    //~ "button1",
-    //~ );
-    //~ }
-    //~ fn set_button2<F: FnMut(super::Button) + 'static>(&self, label: &str, mut func: F) {
-    //~ let pop = self.clone();
-    //~ self.set_content(
-    //~ &super::Button::new(self)
-    //~ .with_text(label)
-    //~ .with_icon(label)
-    //~ .with_clicked(move |wgt| {
-    //~ func(wgt);
-    //~ pop.del();
-    //~ }),
-    //~ "button2",
-    //~ );
-    //~ }
-    //~ fn set_button3<F: FnMut(super::Button) + 'static>(&self, label: &str, mut func: F) {
-    //~ let pop = self.clone();
-    //~ self.set_content(
-    //~ &super::Button::new(self)
-    //~ .with_text(label)
-    //~ .with_icon(label)
-    //~ .with_clicked(move |wgt| {
-    //~ func(wgt);
-    //~ pop.del();
-    //~ }),
-    //~ "button3",
-    //~ );
-    //~ }
 }
 
 pub trait ProgressBarExt: ElmObject {
@@ -1217,7 +1165,7 @@ pub trait ProgressBarExt: ElmObject {
         unsafe { elm_progressbar_value_set(self.as_raw(), value) };
     }
     fn set_unit_format(&self, value: &str) {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         unsafe { elm_progressbar_unit_format_set(self.as_raw(), ctext.as_ptr()) };
     }
 }
@@ -1327,7 +1275,7 @@ pub trait SegmentControlExt: ElmObject {
     fn label(&self) -> String {
         unsafe {
             let ptr = elm_segment_control_item_label_get(self.as_raw(), self.index() as i32);
-            std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
+            CStr::from_ptr(ptr).to_string_lossy().into_owned()
         }
     }
     fn with_item(self, label: &str) -> Self {
@@ -1344,7 +1292,7 @@ pub trait SegmentControlExt: ElmObject {
         }
     }
     fn add(&self, icon: &str, label: &str) -> *mut Evas_Object {
-        let clabel = std::ffi::CString::new(label).unwrap();
+        let clabel = CString::new(label).unwrap();
         let icon = super::Icon::new(self).with_standard(icon);
         unsafe { elm_segment_control_item_add(self.as_raw(), icon.as_raw(), clabel.as_ptr()) }
     }
@@ -1391,7 +1339,7 @@ pub trait SliderExt: ElmObject {
         self
     }
     fn set_format(&self, value: &str) {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         unsafe { elm_slider_unit_format_set(self.as_raw(), ctext.as_ptr()) };
     }
 }
@@ -1428,7 +1376,7 @@ pub trait SpinnerExt: ElmObject {
         unsafe { elm_spinner_value_get(self.as_raw()) }
     }
     fn set_format(&self, value: &str) {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = CString::new(value).unwrap();
         unsafe { elm_spinner_label_format_set(self.as_raw(), ctext.as_ptr()) };
     }
 }
@@ -1447,8 +1395,8 @@ pub trait ToolBarExt: ElmObject {
         label: &str,
         func: F,
     ) -> *mut Evas_Object {
-        let clabel = std::ffi::CString::new(label).unwrap();
-        let cicon = std::ffi::CString::new(icon).unwrap();
+        let clabel = CString::new(label).unwrap();
+        let cicon = CString::new(icon).unwrap();
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
         unsafe {
             elm_toolbar_item_append(
@@ -1526,9 +1474,12 @@ pub trait ToolBarExt: ElmObject {
 
 pub trait WindowExt: OnDeleteRequest {
     fn new(id_: &str, title_: &str) -> Self {
-        let id = std::ffi::CString::new(id_).unwrap();
-        let title = std::ffi::CString::new(title_).unwrap();
-        let elm = Self::from_raw(unsafe { elm_win_util_standard_add(id.as_ptr(), title.as_ptr()) });
+        let elm = Self::from_raw(unsafe {
+            elm_win_util_standard_add(
+                CString::new(id_).unwrap().as_ptr(),
+                CString::new(title_).unwrap().as_ptr(),
+            )
+        });
         elm.resize(360, 640);
         elm.set_autodel(true);
         elm.set_center(true, true);

@@ -142,25 +142,26 @@ impl Component for Sudoku {
                                 refl::Button::new(prt).with_cursor("hand2").with_clicked({
                                     let sender = sender.clone();
                                     move |wgt| {
-                                        refl::Notify::new(&wgt).inside(|wgt| {
-                                            let sender = sender.clone();
-                                            let top = wgt.clone();
-                                            refl::List::new(wgt).with_items(
+                                        refl::Menu::new(&wgt)
+                                            .with_items(
                                                 &["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-                                                move |wgt| {
-                                                    sender
-                                                        .send(Msg::Push(row, col, wgt.index()))
-                                                        .unwrap();
-                                                    top.del();
+                                                {
+                                                    let sender = sender.clone();
+                                                    move |wgt| {
+                                                        sender
+                                                            .send(Msg::Push(row, col, wgt.index()))
+                                                            .unwrap();
+                                                        wgt.del();
+                                                    }
                                                 },
-                                            );
-                                        });
+                                            )
+                                            .open();
                                     }
                                 });
                         }
                     });
             }
-            refl::Box::new(vbox)
+            refl::Box::new(prt)
                 .with_horizontal(true)
                 .with_homogeneous(true)
                 .inside(|prt| {
@@ -172,11 +173,8 @@ impl Component for Sudoku {
                     });
                     refl::Button::new(prt).with_text("Clear").on_clicked({
                         let sender = sender.clone();
-                        move |wgt| {
-                            let sender = sender.clone();
-                            let wgt = refl::Popup::new(&wgt);
-                            //~ wgt.set_button1("Clear", move |_| sender.send(Msg::Clear).unwrap());
-                            //~ wgt.set_button2("close", |_| {});
+                        move |_| {
+                            sender.send(Msg::Clear).unwrap();
                         }
                     });
                 });

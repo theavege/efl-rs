@@ -4,14 +4,9 @@ mod converter;
 mod niccalc;
 mod rangers;
 mod selectors;
-//~ mod sudoku;
+mod sudoku;
 
 pub use {
-    booker::Booker,
-    calculator::Calc,
-    converter::Converter,
-    niccalc::NicCalc,
-    rangers::Ranger,
-    selectors::Selector,
-    //~ sudoku::Sudoku,
+    booker::Booker, calculator::Calc, converter::Converter, niccalc::NicCalc, rangers::Ranger,
+    selectors::Selector, sudoku::Sudoku,
 };
