@@ -82,27 +82,27 @@ impl EcoreEventExt for EventHandler {
 impl EventHandlerExt for EventHandler {}
 
 #[derive(Default)]
-pub struct WidgetItem(*mut Evas_Object);
+pub struct WidgetItem(Option<*mut Evas_Object>);
 
 impl EvasObject for WidgetItem {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for WidgetItem {}
 
 #[derive(Default)]
-pub struct Menu(*mut Evas_Object);
+pub struct Menu(Option<*mut Evas_Object>);
 
 impl EvasObject for Menu {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 
@@ -190,14 +190,14 @@ impl Tm {
 }
 
 #[derive(Default)]
-pub struct Calendar(*mut Evas_Object);
+pub struct Calendar(Option<*mut Evas_Object>);
 
 impl EvasObject for Calendar {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Calendar {}
@@ -205,28 +205,28 @@ impl OnChanged for Calendar {}
 impl CalendarExt for Calendar {}
 
 #[derive(Default)]
-pub struct Clock(*mut Evas_Object);
+pub struct Clock(Option<*mut Evas_Object>);
 
 impl EvasObject for Clock {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for Clock {}
 impl ClockExt for Clock {}
 
 #[derive(Default)]
-pub struct Ctxpopup(*mut Evas_Object);
+pub struct Ctxpopup(Option<*mut Evas_Object>);
 
 impl EvasObject for Ctxpopup {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl SelectorExt for Ctxpopup {
@@ -239,14 +239,14 @@ impl OnDismissed for Ctxpopup {}
 impl CtxpopupExt for Ctxpopup {}
 
 #[derive(Default)]
-pub struct Entry(*mut Evas_Object);
+pub struct Entry(Option<*mut Evas_Object>);
 
 impl EvasObject for Entry {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Entry {}
@@ -262,14 +262,14 @@ impl OnChanged for Entry {}
 impl EntryExt for Entry {}
 
 #[derive(Default)]
-pub struct FlipSelector(*mut Evas_Object);
+pub struct FlipSelector(Option<*mut Evas_Object>);
 
 impl EvasObject for FlipSelector {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for FlipSelector {}
@@ -277,14 +277,14 @@ impl OnChanged for FlipSelector {}
 impl FlipSelectorExt for FlipSelector {}
 
 #[derive(Default)]
-pub struct Frame(*mut Evas_Object);
+pub struct Frame(Option<*mut Evas_Object>);
 
 impl EvasObject for Frame {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Frame {}
@@ -298,14 +298,14 @@ impl OnClicked for Frame {}
 impl FrameExt for Frame {}
 
 #[derive(Default)]
-pub struct HoverSel(*mut Evas_Object);
+pub struct HoverSel(Option<*mut Evas_Object>);
 
 impl EvasObject for HoverSel {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for HoverSel {}
@@ -318,56 +318,56 @@ impl OnSelected for HoverSel {}
 impl HoverSelExt for HoverSel {}
 
 #[derive(Default)]
-pub struct Icon(*mut Evas_Object);
+pub struct Icon(Option<*mut Evas_Object>);
 
 impl EvasObject for Icon {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for Icon {}
 impl IconExt for Icon {}
 
 #[derive(Default)]
-pub struct Label(*mut Evas_Object);
+pub struct Label(Option<*mut Evas_Object>);
 
 impl EvasObject for Label {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Label {}
 impl LabelExt for Label {}
 
 #[derive(Default)]
-pub struct Separator(*mut Evas_Object);
+pub struct Separator(Option<*mut Evas_Object>);
 
 impl EvasObject for Separator {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Separator {}
 impl SeparatorExt for Separator {}
 
 #[derive(Default)]
-pub struct List(*mut Evas_Object);
+pub struct List(Option<*mut Evas_Object>);
 
 impl EvasObject for List {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl SelectorExt for List {
@@ -380,7 +380,7 @@ impl ListExt for List {}
 
 #[derive(Default)]
 pub struct Naviframe {
-    obj: *mut Evas_Object,
+    obj: Option<*mut Evas_Object>,
     lst: Rc<RefCell<Vec<WidgetItem>>>,
 }
 
@@ -394,11 +394,11 @@ impl Naviframe {
 
 impl EvasObject for Naviframe {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.obj
+        self.obj.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
         Self {
-            obj,
+            obj: Some(obj),
             lst: Rc::default(),
         }
     }
@@ -414,14 +414,14 @@ impl ElmObject for Naviframe {}
 impl NaviframeExt for Naviframe {}
 
 #[derive(Default)]
-pub struct Notify(*mut Evas_Object);
+pub struct Notify(Option<*mut Evas_Object>);
 
 impl EvasObject for Notify {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Notify {}
@@ -434,14 +434,14 @@ impl ContainerExt for Notify {
 impl NotifyExt for Notify {}
 
 #[derive(Default)]
-pub struct Panel(*mut Evas_Object);
+pub struct Panel(Option<*mut Evas_Object>);
 
 impl EvasObject for Panel {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Panel {}
@@ -455,14 +455,14 @@ impl OnToggled for Panel {}
 impl PanelExt for Panel {}
 
 #[derive(Default)]
-pub struct Panes(*mut Evas_Object);
+pub struct Panes(Option<*mut Evas_Object>);
 
 impl EvasObject for Panes {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for Panes {}
@@ -480,14 +480,14 @@ impl OnPressed for Panes {}
 impl PanesExt for Panes {}
 
 #[derive(Default)]
-pub struct Popup(*mut Evas_Object);
+pub struct Popup(Option<*mut Evas_Object>);
 
 impl EvasObject for Popup {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ContainerExt for Popup {}
@@ -495,14 +495,14 @@ impl ElmObject for Popup {}
 impl PopupExt for Popup {}
 
 #[derive(Default)]
-pub struct ProgressBar(*mut Evas_Object);
+pub struct ProgressBar(Option<*mut Evas_Object>);
 
 impl EvasObject for ProgressBar {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for ProgressBar {}
@@ -511,14 +511,14 @@ impl OnChanged for ProgressBar {}
 impl ProgressBarExt for ProgressBar {}
 
 #[derive(Default)]
-pub struct Radio(*mut Evas_Object);
+pub struct Radio(Option<*mut Evas_Object>);
 
 impl EvasObject for Radio {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for Radio {}
@@ -526,14 +526,14 @@ impl OnChanged for Radio {}
 impl RadioExt for Radio {}
 
 #[derive(Default)]
-pub struct Scroller(*mut Evas_Object);
+pub struct Scroller(Option<*mut Evas_Object>);
 
 impl EvasObject for Scroller {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Scroller {}
@@ -541,14 +541,14 @@ impl OnChanged for Scroller {}
 impl ScrollerExt for Scroller {}
 
 #[derive(Default)]
-pub struct SegmentControl(*mut Evas_Object);
+pub struct SegmentControl(Option<*mut Evas_Object>);
 
 impl EvasObject for SegmentControl {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for SegmentControl {}
@@ -556,14 +556,14 @@ impl OnChanged for SegmentControl {}
 impl SegmentControlExt for SegmentControl {}
 
 #[derive(Default)]
-pub struct Slider(*mut Evas_Object);
+pub struct Slider(Option<*mut Evas_Object>);
 
 impl EvasObject for Slider {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for Slider {}
@@ -572,14 +572,14 @@ impl OnChangedDelay for Slider {}
 impl SliderExt for Slider {}
 
 #[derive(Default)]
-pub struct Spinner(*mut Evas_Object);
+pub struct Spinner(Option<*mut Evas_Object>);
 
 impl EvasObject for Spinner {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for Spinner {}
@@ -587,14 +587,14 @@ impl OnChanged for Spinner {}
 impl SpinnerExt for Spinner {}
 
 #[derive(Default)]
-pub struct ToolBar(*mut Evas_Object);
+pub struct ToolBar(Option<*mut Evas_Object>);
 
 impl EvasObject for ToolBar {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl SelectorExt for ToolBar {
@@ -607,14 +607,14 @@ impl OnClicked for ToolBar {}
 impl ToolBarExt for ToolBar {}
 
 #[derive(Default)]
-pub struct Window(*mut Evas_Object);
+pub struct Window(Option<*mut Evas_Object>);
 
 impl EvasObject for Window {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ContainerExt for Window {
@@ -628,14 +628,14 @@ impl OnDeleteRequest for Window {}
 impl WindowExt for Window {}
 
 #[derive(Default)]
-pub struct ActionSlider(*mut Evas_Object);
+pub struct ActionSlider(Option<*mut Evas_Object>);
 
 impl EvasObject for ActionSlider {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for ActionSlider {}
@@ -644,14 +644,14 @@ impl OnSelected for ActionSlider {}
 impl OnPosChanged for ActionSlider {}
 
 #[derive(Default)]
-pub struct Box(*mut Evas_Object);
+pub struct Box(Option<*mut Evas_Object>);
 
 impl EvasObject for Box {
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl ElmObject for Box {}
@@ -665,14 +665,14 @@ impl ContainerExt for Box {
 impl BoxExt for Box {}
 
 #[derive(Default)]
-pub struct Bubble(*mut Evas_Object);
+pub struct Bubble(Option<*mut Evas_Object>);
 
 impl EvasObject for Bubble {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Bubble {}
@@ -685,14 +685,14 @@ impl ContainerExt for Bubble {
 impl BubbleExt for Bubble {}
 
 #[derive(Default)]
-pub struct Button(*mut Evas_Object);
+pub struct Button(Option<*mut Evas_Object>);
 
 impl EvasObject for Button {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Button {}
@@ -701,14 +701,14 @@ impl ContainerExt for Button {}
 impl OnClicked for Button {}
 
 #[derive(Default)]
-pub struct Check(*mut Evas_Object);
+pub struct Check(Option<*mut Evas_Object>);
 
 impl EvasObject for Check {
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(obj)
-    }
     fn as_raw(&self) -> *mut Evas_Object {
-        self.0
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
     }
 }
 impl ElmObject for Check {}
