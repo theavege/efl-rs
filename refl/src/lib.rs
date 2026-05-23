@@ -62,6 +62,12 @@ pub enum Shrink {
     Last,
 }
 
+pub enum FileSelectorMode {
+    List = 0,
+    Grid,
+    Last,
+}
+
 pub enum WinType {
     Basic = 0,
     Dialog,
@@ -701,6 +707,23 @@ impl ContainerExt for Button {}
 impl OnClicked for Button {}
 
 #[derive(Default)]
+pub struct Combobox(Option<*mut Evas_Object>);
+
+impl EvasObject for Combobox {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Combobox {}
+impl OnChanged for Combobox {}
+impl OnSelected for Combobox {}
+impl OnExpanded for Combobox {}
+impl ComboboxExt for Combobox {}
+
+#[derive(Default)]
 pub struct Check(Option<*mut Evas_Object>);
 
 impl EvasObject for Check {
@@ -714,3 +737,39 @@ impl EvasObject for Check {
 impl ElmObject for Check {}
 impl OnChanged for Check {}
 impl CheckExt for Check {}
+
+#[derive(Default)]
+pub struct FileSelector(Option<*mut Evas_Object>);
+
+impl EvasObject for FileSelector {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for FileSelector {}
+impl ContainerExt for FileSelector {}
+impl OnActivated for FileSelector {}
+impl OnSelected for FileSelector {}
+impl OnDone for FileSelector {}
+impl FileSelectorExt for FileSelector {}
+
+#[derive(Default)]
+pub struct Gengrid(Option<*mut Evas_Object>);
+
+impl EvasObject for Gengrid {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Gengrid {}
+impl OnSelected for Gengrid {}
+impl OnUnselected for Gengrid {}
+impl OnActivated for Gengrid {}
+impl OnClickedDouble for Gengrid {}
+impl GengridExt for Gengrid {}
