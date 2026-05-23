@@ -90,7 +90,7 @@ impl EventHandlerExt for EventHandler {}
 #[derive(Default)]
 pub struct WidgetItem(Option<*mut Evas_Object>);
 
-impl EvasObject for WidgetItem {
+impl EvasObjectItemExt for WidgetItem {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!")
     }
@@ -98,7 +98,6 @@ impl EvasObject for WidgetItem {
         Self(Some(obj))
     }
 }
-impl ElmObject for WidgetItem {}
 
 #[derive(Default)]
 pub struct Menu(Option<*mut Evas_Object>);
@@ -115,8 +114,23 @@ impl EvasObject for Menu {
 impl ElmObject for Menu {}
 
 impl SelectorExt for Menu {
-    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
-        WidgetItem::from_raw(self.append(icon, label, func))
+    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
+        self.append(label, label, func)
+    }
+    fn first(&self) -> WidgetItem {
+        self.first_item()
+    }
+    fn last(&self) -> WidgetItem {
+        self.last_item()
+    }
+    fn set_value(&self, value: u32) {
+        self.set_index(value)
+    }
+    fn value(&self) -> u32 {
+        self.index()
+    }
+    fn clear(&self) {
+        self.clear_items();
     }
 }
 impl OnChanged for Menu {}
@@ -235,11 +249,11 @@ impl EvasObject for Ctxpopup {
         Self(Some(obj))
     }
 }
-impl SelectorExt for Ctxpopup {
-    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
-        WidgetItem::from_raw(self.append(icon, label, func))
-    }
-}
+//~ impl SelectorExt for Ctxpopup {
+//~ fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
+//~ WidgetItem::from_raw(self.append(icon, label, func))
+//~ }
+//~ }
 impl ElmObject for Ctxpopup {}
 impl OnDismissed for Ctxpopup {}
 impl CtxpopupExt for Ctxpopup {}
@@ -256,12 +270,12 @@ impl EvasObject for Entry {
     }
 }
 impl ElmObject for Entry {}
-impl SelectorExt for Entry {
-    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
-        self.append(icon, label, func);
-        WidgetItem::default()
-    }
-}
+//~ impl SelectorExt for Entry {
+//~ fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
+//~ self.append(icon, label, func);
+//~ WidgetItem::default()
+//~ }
+//~ }
 impl ContainerExt for Entry {}
 impl OnClicked for Entry {}
 impl OnChanged for Entry {}
@@ -280,7 +294,27 @@ impl EvasObject for FlipSelector {
 }
 impl ElmObject for FlipSelector {}
 impl OnChanged for FlipSelector {}
-impl FlipSelectorExt for FlipSelector {}
+impl SelectorExt for FlipSelector {
+    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
+        self.append(label, func)
+    }
+    fn first(&self) -> WidgetItem {
+        self.first_item()
+    }
+    fn last(&self) -> WidgetItem {
+        self.last_item()
+    }
+    fn value(&self) -> u32 {
+        self.index()
+    }
+    fn set_value(&self, value: u32) {
+        self.set_index(value)
+    }
+    fn clear(&self) {
+        self.clear_items();
+    }
+}
+impl FlipSelExt for FlipSelector {}
 
 #[derive(Default)]
 pub struct Frame(Option<*mut Evas_Object>);
@@ -302,26 +336,6 @@ impl ContainerExt for Frame {
 }
 impl OnClicked for Frame {}
 impl FrameExt for Frame {}
-
-#[derive(Default)]
-pub struct HoverSel(Option<*mut Evas_Object>);
-
-impl EvasObject for HoverSel {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!")
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(Some(obj))
-    }
-}
-impl ElmObject for HoverSel {}
-impl SelectorExt for HoverSel {
-    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
-        WidgetItem::from_raw(self.append(icon, label, func))
-    }
-}
-impl OnSelected for HoverSel {}
-impl HoverSelExt for HoverSel {}
 
 #[derive(Default)]
 pub struct Icon(Option<*mut Evas_Object>);
@@ -377,8 +391,23 @@ impl EvasObject for List {
     }
 }
 impl SelectorExt for List {
-    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
-        WidgetItem::from_raw(self.append(icon, label, func))
+    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
+        self.append(label, label, func)
+    }
+    fn first(&self) -> WidgetItem {
+        self.first_item()
+    }
+    fn last(&self) -> WidgetItem {
+        self.last_item()
+    }
+    fn set_value(&self, value: u32) {
+        self.set_index(value)
+    }
+    fn value(&self) -> u32 {
+        self.index()
+    }
+    fn clear(&self) {
+        self.clear_items();
     }
 }
 impl ElmObject for List {}
@@ -603,11 +632,11 @@ impl EvasObject for ToolBar {
         Self(Some(obj))
     }
 }
-impl SelectorExt for ToolBar {
-    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
-        WidgetItem::from_raw(self.append(icon, label, func))
-    }
-}
+//~ impl SelectorExt for ToolBar {
+//~ fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
+//~ WidgetItem::from_raw(self.append(icon, label, func))
+//~ }
+//~ }
 impl ElmObject for ToolBar {}
 impl OnClicked for ToolBar {}
 impl ToolBarExt for ToolBar {}
@@ -754,7 +783,7 @@ impl ContainerExt for FileSelector {}
 impl OnActivated for FileSelector {}
 impl OnSelected for FileSelector {}
 impl OnDone for FileSelector {}
-impl FileSelectorExt for FileSelector {}
+impl FileSelExt for FileSelector {}
 
 #[derive(Default)]
 pub struct Gengrid(Option<*mut Evas_Object>);

@@ -70,9 +70,9 @@ impl Component for NicCalc {
         self.flavour.set_value((t.1 / 100.0 * f.1) / 100.0);
         self.nicotine_base.set_value((t.1 / 100.0 * nb.1) / 100.0);
         self.list.clear();
-        self.list.add("Ingredient: Amount(ml)", "", |_| {});
+        self.list.add("Ingredient: Amount(ml)", |_| {});
         for (x, y) in model.output() {
-            self.list.add(&format!("{x}: {y}"), "", |_| {});
+            self.list.add(&format!("{x}: {y}"), |_| {});
         }
         self.list.go();
         self.list.show();

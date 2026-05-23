@@ -108,6 +108,23 @@ pub(crate) unsafe extern "C" fn ecore_event_handler_cb(
     }
 }
 
+pub trait EvasObjectItemExt: Sized {
+    fn as_raw(&self) -> *mut Evas_Object;
+    fn from_raw(obj: *mut Evas_Object) -> Self;
+    fn text(&self) -> String {
+        unsafe {
+            let ptr = elm_object_item_part_text_get(self.as_raw(), std::ptr::null());
+            if !ptr.is_null() {
+                CStr::from_ptr(ptr).to_string_lossy().into_owned()
+            } else {
+                String::new()
+            }
+        }
+    }
+    fn del(&self) {
+        unsafe { elm_object_item_del(self.as_raw()) };
+    }
+}
 pub trait EvasObject: Sized {
     fn as_raw(&self) -> *mut Evas_Object;
     fn from_raw(obj: *mut Evas_Object) -> Self;
@@ -382,10 +399,10 @@ pub trait BubbleExt: ElmObject {
     }
 }
 
-pub trait MenuExt: OnDismissed {
+pub trait MenuExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_menu_add(prt.as_raw()) })
-            .with_dismissed(|wgt| wgt.del())
+            //~ .with_dismissed(|wgt| wgt.del())
             .with_conf();
         prt.add(&elm);
         elm
@@ -398,9 +415,9 @@ pub trait MenuExt: OnDismissed {
         icon: &str,
         label: &str,
         func: F,
-    ) -> *mut Evas_Object {
+    ) -> super::WidgetItem {
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
-        unsafe {
+        super::WidgetItem::from_raw(unsafe {
             elm_menu_item_add(
                 self.as_raw(),
                 std::ptr::null_mut(),
@@ -409,7 +426,7 @@ pub trait MenuExt: OnDismissed {
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        }
+        })
     }
     fn close(&self) {
         unsafe { elm_menu_close(self.as_raw()) }
@@ -420,9 +437,6 @@ pub trait MenuExt: OnDismissed {
     fn index(&self) -> u32 {
         unsafe { elm_menu_item_index_get(self.selected().as_raw()) as u32 }
     }
-    fn value(&self) -> u32 {
-        self.index()
-    }
     fn icon(&self) -> String {
         unsafe {
             let ptr = elm_menu_item_icon_name_get(self.selected().as_raw());
@@ -432,8 +446,11 @@ pub trait MenuExt: OnDismissed {
     fn selected(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
     }
-    fn first(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_menu_first_item_get(self.as_raw()) })
+    fn last_item(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_menu_last_item_get(self.as_raw()) })
+    }
+    fn first_item(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { refl_sys::elm_menu_first_item_get(self.as_raw()) })
     }
     fn with_index(self, value: u32) -> Self {
         self.set_index(value);
@@ -445,6 +462,14 @@ pub trait MenuExt: OnDismissed {
             temp = unsafe { elm_menu_item_next_get(temp) }
         }
         unsafe { elm_menu_item_selected_set(temp, true as Eina_Bool) };
+    }
+    fn clear_items(&self) {
+        let mut temp = self.first().as_raw();
+        while temp != self.last().as_raw() {
+            super::WidgetItem::from_raw(temp).del();
+            temp = unsafe { refl_sys::elm_menu_item_next_get(temp) };
+        }
+        self.last().del();
     }
 }
 
@@ -582,7 +607,7 @@ unsafe extern "C" fn combobox_item_del(data: *mut c_void, _obj: *mut Evas_Object
     }
 }
 
-pub trait FileSelectorExt: ElmObject {
+pub trait FileSelExt: ElmObject {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_fileselector_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
@@ -874,14 +899,19 @@ pub trait CheckExt: ElmObject {
 }
 
 pub trait SelectorExt: ElmObject {
-    fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> super::WidgetItem;
+    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> super::WidgetItem;
+    fn first(&self) -> super::WidgetItem;
+    fn last(&self) -> super::WidgetItem;
+    fn value(&self) -> u32;
+    fn clear(&self);
+    fn set_value(&self, value: u32);
     fn add_items<F: FnMut(Self) + 'static + Clone>(&self, items: &[&str], func: F) {
         for item in items {
-            self.add(item, item, func.clone());
+            self.add(item, func.clone());
         }
     }
     fn with_item<F: FnMut(Self) + 'static>(self, label: &str, func: F) -> Self {
-        self.add(label, label, func);
+        self.add(label, func);
         self
     }
     fn with_items<F: FnMut(Self) + 'static + Clone>(self, items: &[&str], func: F) -> Self {
@@ -974,7 +1004,7 @@ pub trait ClockExt: ElmObject {
     }
 }
 
-pub trait CtxpopupExt: SelectorExt {
+pub trait CtxpopupExt: ElmObject {
     #[deprecated = "use efl::Notify::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_ctxpopup_add(prt.as_raw()) }).with_conf();
@@ -1026,7 +1056,7 @@ pub trait LabelExt: ElmObject {
     }
 }
 
-pub trait HoverSelExt: SelectorExt {
+pub trait HoverSelExt: ElmObject {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_hoversel_add(prt.as_raw()) }).with_conf();
         elm.set_auto_update(true);
@@ -1068,7 +1098,7 @@ pub trait HoverSelExt: SelectorExt {
     }
 }
 
-pub trait FlipSelectorExt: ElmObject {
+pub trait FlipSelExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_flipselector_add(prt.as_raw()) })
             .with_conf()
@@ -1085,41 +1115,32 @@ pub trait FlipSelectorExt: ElmObject {
         }
         count
     }
-    //~ fn selected(&self) -> super::WidgetItem {
-    //~ super::WidgetItem::from_raw(unsafe { elm_flipselector_selected_item_get(self.as_raw()) })
-    //~ }
     fn selected(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_flipselector_selected_item_get(self.as_raw()) })
     }
-    fn with_items<F: FnMut(Self) + 'static + Clone>(self, items: &[&str], func: F) -> Self {
-        self.add_items(items, func);
-        self
+    fn first_item(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe {
+            refl_sys::elm_flipselector_first_item_get(self.as_raw())
+        })
     }
-    fn with_item<F: FnMut(Self) + 'static>(self, item: &str, func: F) -> Self {
-        self.add(item, func);
-        self
-    }
-    fn add_items<F: FnMut(Self) + 'static + Clone>(&self, items: &[&str], func: F) {
-        for item in items {
-            self.add(item, func.clone());
+    fn clear_items(&self) {
+        let mut temp = self.first().as_raw();
+        while temp != self.last().as_raw() {
+            super::WidgetItem::from_raw(temp).del();
+            temp = unsafe { refl_sys::elm_flipselector_item_next_get(temp) };
         }
+        self.last().del();
     }
-    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) {
+    fn append<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> super::WidgetItem {
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
-        unsafe {
+        super::WidgetItem::from_raw(unsafe {
             elm_flipselector_item_append(
                 self.as_raw(),
                 CString::new(label).unwrap().as_ptr(),
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        };
-    }
-    fn value(&self) -> u32 {
-        self.index()
-    }
-    fn set_value(&self, value: u32) {
-        self.set_index(value)
+        })
     }
     fn set_index(&self, value: u32) {
         let mut temp = self.first().as_raw();
@@ -1131,10 +1152,7 @@ pub trait FlipSelectorExt: ElmObject {
     fn index(&self) -> u32 {
         self.find(self.selected())
     }
-    fn first(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_flipselector_first_item_get(self.as_raw()) })
-    }
-    fn last(&self) -> super::WidgetItem {
+    fn last_item(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_flipselector_last_item_get(self.as_raw()) })
     }
     fn set_interval(&self, value: f64) {
@@ -1149,7 +1167,7 @@ pub trait FlipSelectorExt: ElmObject {
     }
 }
 
-pub trait EntryExt: SelectorExt {
+pub trait EntryExt: ElmObject {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_entry_add(prt.as_raw()) });
         elm.conf();
@@ -1313,9 +1331,9 @@ pub trait ListExt: SelectorExt {
         icon_: &str,
         label_: &str,
         func: F,
-    ) -> *mut Evas_Object {
+    ) -> super::WidgetItem {
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
-        unsafe {
+        super::WidgetItem::from_raw(unsafe {
             elm_list_item_append(
                 self.as_raw(),
                 CString::new(icon_).unwrap().as_ptr(),
@@ -1324,10 +1342,13 @@ pub trait ListExt: SelectorExt {
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        }
+        })
     }
-    fn clear(&self) {
-        unsafe { elm_list_clear(self.as_raw()) };
+    fn clear_items(&self) {
+        unsafe { refl_sys::elm_list_clear(self.as_raw()) };
+    }
+    fn first_item(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { refl_sys::elm_list_first_item_get(self.as_raw()) })
     }
     fn go(&self) {
         unsafe { elm_list_go(self.as_raw()) };
@@ -1348,16 +1369,10 @@ pub trait ListExt: SelectorExt {
     fn set_mode(&self, value: super::ListMode) {
         unsafe { elm_list_mode_set(self.as_raw(), value as Elm_List_Mode) };
     }
-    fn set_value(&self, value: u32) {
-        self.set_index(value)
-    }
     fn selected(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_list_selected_item_get(self.as_raw()) })
     }
-    fn first(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_list_first_item_get(self.as_raw()) })
-    }
-    fn last(&self) -> super::WidgetItem {
+    fn last_item(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_list_last_item_get(self.as_raw()) })
     }
     fn find(&self, item: super::WidgetItem) -> u32 {
