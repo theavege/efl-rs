@@ -418,33 +418,33 @@ pub trait MenuExt: OnDismissed {
         unsafe { elm_menu_open(self.as_raw()) }
     }
     fn index(&self) -> u32 {
-        unsafe { elm_menu_item_index_get(self.selected_raw()) as u32 }
+        unsafe { elm_menu_item_index_get(self.selected().as_raw()) as u32 }
     }
     fn value(&self) -> u32 {
         self.index()
     }
     fn icon(&self) -> String {
         unsafe {
-            let ptr = elm_menu_item_icon_name_get(self.selected_raw());
+            let ptr = elm_menu_item_icon_name_get(self.selected().as_raw());
             CStr::from_ptr(ptr).to_string_lossy().into_owned()
         }
     }
     fn selected(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_menu_item_object_get(self.selected_raw()) })
+        super::WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
     }
-    fn selected_raw(&self) -> *mut Evas_Object {
-        unsafe { elm_menu_selected_item_get(self.as_raw()) }
+    fn first(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_menu_first_item_get(self.as_raw()) })
     }
     fn with_index(self, value: u32) -> Self {
         self.set_index(value);
         self
     }
     fn set_index(&self, value: u32) {
-        let mut raw = unsafe { elm_menu_first_item_get(self.as_raw()) };
+        let mut temp = self.first().as_raw();
         for _idx in 0..value {
-            raw = unsafe { elm_menu_item_next_get(raw) }
+            temp = unsafe { elm_menu_item_next_get(temp) }
         }
-        unsafe { elm_menu_item_selected_set(raw, true as Eina_Bool) };
+        unsafe { elm_menu_item_selected_set(temp, true as Eina_Bool) };
     }
 }
 
@@ -974,7 +974,7 @@ pub trait ClockExt: ElmObject {
     }
 }
 
-pub trait CtxpopupExt: ElmObject {
+pub trait CtxpopupExt: SelectorExt {
     #[deprecated = "use efl::Notify::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_ctxpopup_add(prt.as_raw()) }).with_conf();
@@ -1026,7 +1026,7 @@ pub trait LabelExt: ElmObject {
     }
 }
 
-pub trait HoverSelExt: ElmObject {
+pub trait HoverSelExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_hoversel_add(prt.as_raw()) }).with_conf();
         elm.set_auto_update(true);
@@ -1076,6 +1076,18 @@ pub trait FlipSelectorExt: ElmObject {
         prt.add(&elm);
         elm
     }
+    fn find(&self, item: super::WidgetItem) -> u32 {
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while temp != item.as_raw() {
+            temp = unsafe { elm_flipselector_item_next_get(temp) };
+            count += 1;
+        }
+        count
+    }
+    //~ fn selected(&self) -> super::WidgetItem {
+    //~ super::WidgetItem::from_raw(unsafe { elm_flipselector_selected_item_get(self.as_raw()) })
+    //~ }
     fn selected(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_flipselector_selected_item_get(self.as_raw()) })
     }
@@ -1110,30 +1122,20 @@ pub trait FlipSelectorExt: ElmObject {
         self.set_index(value)
     }
     fn set_index(&self, value: u32) {
-        let mut temp = self.first_raw();
+        let mut temp = self.first().as_raw();
         for _ in 0..value {
             temp = unsafe { elm_flipselector_item_next_get(temp) };
         }
         unsafe { elm_flipselector_item_selected_set(temp, true as Eina_Bool) }
     }
     fn index(&self) -> u32 {
-        let selected = self.selected_raw();
-        let mut temp = self.first_raw();
-        let mut count = 0;
-        while temp != selected {
-            temp = unsafe { elm_flipselector_item_next_get(temp) };
-            count += 1;
-        }
-        count
+        self.find(self.selected())
     }
-    fn selected_raw(&self) -> *mut Evas_Object {
-        unsafe { elm_flipselector_selected_item_get(self.as_raw()) }
+    fn first(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_flipselector_first_item_get(self.as_raw()) })
     }
-    fn first_raw(&self) -> *mut Evas_Object {
-        unsafe { elm_flipselector_first_item_get(self.as_raw()) }
-    }
-    fn last_raw(&self) -> *mut Evas_Object {
-        unsafe { elm_flipselector_last_item_get(self.as_raw()) }
+    fn last(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_flipselector_last_item_get(self.as_raw()) })
     }
     fn set_interval(&self, value: f64) {
         unsafe { elm_flipselector_first_interval_set(self.as_raw(), value) }
@@ -1143,18 +1145,11 @@ pub trait FlipSelectorExt: ElmObject {
         self
     }
     fn lenght(&self) -> u32 {
-        let last = self.last_raw();
-        let mut temp = self.first_raw();
-        let mut count = 0;
-        while temp != last {
-            temp = unsafe { elm_flipselector_item_next_get(temp) };
-            count += 1;
-        }
-        count
+        self.find(self.last())
     }
 }
 
-pub trait EntryExt: ElmObject {
+pub trait EntryExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_entry_add(prt.as_raw()) });
         elm.conf();
@@ -1304,7 +1299,7 @@ pub trait SeparatorExt: ElmObject {
     }
 }
 
-pub trait ListExt: ElmObject {
+pub trait ListExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_list_add(prt.as_raw()) });
         elm.conf();
@@ -1356,9 +1351,6 @@ pub trait ListExt: ElmObject {
     fn set_value(&self, value: u32) {
         self.set_index(value)
     }
-    //~ fn selected_object(&self) -> super::WidgetItem {
-    //~ super::WidgetItem::from_raw(unsafe { elm_list_item_object_get(self.selected_raw()) })
-    //~ }
     fn selected(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_list_selected_item_get(self.as_raw()) })
     }
@@ -1639,18 +1631,13 @@ pub trait SegmentControlExt: ElmObject {
         elm
     }
     fn selected(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe {
-            elm_segment_control_item_object_get(self.selected_raw())
-        })
-    }
-    fn selected_raw(&self) -> *mut Evas_Object {
-        unsafe { elm_segment_control_item_selected_get(self.as_raw()) }
+        super::WidgetItem::from_raw(unsafe { elm_segment_control_item_selected_get(self.as_raw()) })
     }
     fn value(&self) -> u32 {
         self.index()
     }
     fn index(&self) -> u32 {
-        unsafe { elm_segment_control_item_index_get(self.selected_raw()) as u32 }
+        unsafe { elm_segment_control_item_index_get(self.selected().as_raw()) as u32 }
     }
     fn set_value(&self, value: u32) {
         self.set_index(value);
@@ -1817,7 +1804,7 @@ pub trait ToolBarExt: ElmObject {
         unsafe { elm_toolbar_shrink_mode_set(self.as_raw(), value as u32) };
     }
     fn selected(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_toolbar_item_object_get(self.selected_raw()) })
+        super::WidgetItem::from_raw(unsafe { elm_toolbar_selected_item_get(self.as_raw()) })
     }
     fn value(&self) -> u32 {
         self.index()
@@ -1826,40 +1813,32 @@ pub trait ToolBarExt: ElmObject {
         self.set_index(value)
     }
     fn set_index(&self, value: u32) {
-        let mut temp = self.first_raw();
+        let mut temp = self.first().as_raw();
         for _ in 0..value {
             temp = unsafe { elm_toolbar_item_next_get(temp) };
         }
         unsafe { elm_toolbar_item_selected_set(temp, true as Eina_Bool) }
     }
     fn index(&self) -> u32 {
-        let selected = self.selected_raw();
-        let mut temp = self.first_raw();
-        let mut count = 0;
-        while temp != selected {
-            temp = unsafe { elm_toolbar_item_next_get(temp) };
-            count += 1;
-        }
-        count
+        self.find(self.selected())
     }
     fn lenght(&self) -> u32 {
-        let last = self.last_raw();
-        let mut temp = self.first_raw();
+        self.find(self.last())
+    }
+    fn first(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_toolbar_first_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_toolbar_last_item_get(self.as_raw()) })
+    }
+    fn find(&self, item: super::WidgetItem) -> u32 {
         let mut count = 0;
-        while temp != last {
+        let mut temp = self.first().as_raw();
+        while temp != item.as_raw() {
             temp = unsafe { elm_toolbar_item_next_get(temp) };
             count += 1;
         }
         count
-    }
-    fn selected_raw(&self) -> *mut Evas_Object {
-        unsafe { elm_toolbar_selected_item_get(self.as_raw()) }
-    }
-    fn first_raw(&self) -> *mut Evas_Object {
-        unsafe { elm_toolbar_first_item_get(self.as_raw()) }
-    }
-    fn last_raw(&self) -> *mut Evas_Object {
-        unsafe { elm_toolbar_last_item_get(self.as_raw()) }
     }
 }
 

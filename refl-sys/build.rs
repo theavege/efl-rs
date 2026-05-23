@@ -24,6 +24,44 @@ impl ParseCallbacks for MacroCallback {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn compile() -> Vec<String> {
+    use std::process::Command;
+    let out = env::var("OUT_DIR").unwrap();
+    Command::new("git")
+        .args([
+            "submodule",
+            "update",
+            "--init",
+            "--depth",
+            "1",
+            "--recursive",
+            "--force",
+            "--remote",
+        ])
+        .status()
+        .unwrap();
+    Command::new("gcc")
+        .args([
+            "-std=c99",
+            "-o",
+            "ewpi",
+            "ewpi.c",
+            "ewpi_map.c",
+        ])
+        .status()
+        .unwrap();
+    Command::new("meson")
+        .args([
+            "setup",
+        ])
+        .status()
+        .unwrap();
+    println!("cargo:rustc-link-search=native={}/build", out);
+    println!("cargo:rustc-link-lib=static=efl");
+    Vec::new()
+}
+
 #[cfg(target_os = "linux")]
 fn compile() -> Vec<String> {
     let library = "elementary";
