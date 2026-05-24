@@ -49,35 +49,40 @@ fn compile() -> Vec<String> {
     let home_path = std::env::var("HOMEPATH").unwrap();
     Command::new("meson")
         .env("EWPI_PATH", &format!("{home_path}/ewpi_64"))
-        .env("PKG_CONFIG_PATH", &format!("{home_path}/ewpi_64/lib/pkgconfig"))
-        .env("CPPFLAGS", &format!("-I{home_path}/ewpi_64/include")
+        .env(
+            "PKG_CONFIG_PATH",
+            &format!("{home_path}/ewpi_64/lib/pkgconfig"),
+        )
+        .env("CPPFLAGS", &format!("-I{home_path}/ewpi_64/include"))
         .env("LDFLAGS", &format!("-L{home_path}/ewpi_64/lib"))
-        .args(["setup"
-                &format!("--prefix={home_path}/efl_64"),
-                "--libdir=lib",
-                "--buildtype=release",
-                "--strip",
-                "--default-library shared",
-                "-Dsystemd=false",
-                "-Dpulseaudio=false",
-                "-Dv4l2=false",
-                "-Dlibmount=false",
-                "-Deeze=false",
-                "-Dx11=false",
-                "-Dxinput2=false",
-                "-Devas-loaders-disabler='pdf','ps','rsvg','json'",
-                "-Dopengl=none",
-                "-Dpixman=true",
-                "-Dembedded-lz4=false",
-                "-Dfribidi=true",
-                "-Dinput=false",
-                "-Dbuild-examples=false",
-                "-Dbuild-tests=false",
-                "-Dbindings='cxx'",
-                "-Dlua-interpreter=luajit",
-                "-Delua=true",
-                &format!("{out}/build"),
-        ]).status().unwrap();
+        .args([
+            "setup" & format!("--prefix={home_path}/efl_64"),
+            "--libdir=lib",
+            "--buildtype=release",
+            "--strip",
+            "--default-library shared",
+            "-Dsystemd=false",
+            "-Dpulseaudio=false",
+            "-Dv4l2=false",
+            "-Dlibmount=false",
+            "-Deeze=false",
+            "-Dx11=false",
+            "-Dxinput2=false",
+            "-Devas-loaders-disabler='pdf','ps','rsvg','json'",
+            "-Dopengl=none",
+            "-Dpixman=true",
+            "-Dembedded-lz4=false",
+            "-Dfribidi=true",
+            "-Dinput=false",
+            "-Dbuild-examples=false",
+            "-Dbuild-tests=false",
+            "-Dbindings='cxx'",
+            "-Dlua-interpreter=luajit",
+            "-Delua=true",
+            &format!("{out}/build"),
+        ])
+        .status()
+        .unwrap();
     println!("cargo:rustc-link-search=native={out}/build");
     println!("cargo:rustc-link-lib=static=efl");
     Vec::new()
