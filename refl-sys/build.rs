@@ -94,7 +94,7 @@ fn compile() -> Vec<String> {
         .unwrap();
     println!("cargo:rustc-link-search=native={out}/build");
     println!("cargo:rustc-link-lib=static=efl");
-    Vec::from(["-I{home_path}/ewpi_64/include"])
+    Vec::from(["-I{home_path}/ewpi_64/include".to_string()])
 }
 
 #[cfg(target_os = "linux")]
