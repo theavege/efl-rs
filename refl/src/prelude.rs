@@ -379,26 +379,6 @@ pub trait BoxExt: ContainerExt {
     }
 }
 
-pub trait BubbleExt: ElmObject {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_bubble_add(prt.as_raw()) })
-            .with_conf()
-            .with_pos(1);
-        prt.add(&elm);
-        elm
-    }
-    fn set_pos(&self, value: i32) {
-        unsafe { elm_bubble_pos_set(self.as_raw(), value) };
-    }
-    fn with_pos(self, value: i32) -> Self {
-        self.set_pos(value);
-        self
-    }
-    fn pos(&self) -> i32 {
-        unsafe { elm_bubble_pos_get(self.as_raw()) }
-    }
-}
-
 pub trait MenuExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_menu_add(prt.as_raw()) })
@@ -443,9 +423,6 @@ pub trait MenuExt: SelectorExt {
             CStr::from_ptr(ptr).to_string_lossy().into_owned()
         }
     }
-    fn selected(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
-    }
     fn last_item(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_menu_last_item_get(self.as_raw()) })
     }
@@ -470,14 +447,6 @@ pub trait MenuExt: SelectorExt {
             temp = unsafe { refl_sys::elm_menu_item_next_get(temp) };
         }
         self.last().del();
-    }
-}
-
-pub trait ButtonExt: ElmObject {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_button_add(prt.as_raw()) }).with_conf();
-        prt.add(&elm);
-        elm
     }
 }
 
@@ -767,7 +736,7 @@ pub trait GengridExt: ElmObject {
     /// Append a labelled item to the grid.
     /// Items use `Elm_Gengrid_Item_Class` with a `text_get` callback;
     /// the label is heap-allocated and freed in the `del` callback.
-    fn append(&self, label: &str) -> *mut Elm_Object_Item {
+    fn append(&self, label: &str) -> super::WidgetItem {
         let itc: *mut Elm_Gengrid_Item_Class = unsafe {
             let itc = elm_gengrid_item_class_new();
             (*itc).item_style = CString::new("default").unwrap().into_raw();
@@ -778,7 +747,7 @@ pub trait GengridExt: ElmObject {
             itc
         };
         let data: *mut std::ffi::c_char = CString::new(label).unwrap().into_raw();
-        unsafe {
+        super::WidgetItem::from_raw(unsafe {
             elm_gengrid_item_append(
                 self.as_raw(),
                 itc,
@@ -786,7 +755,7 @@ pub trait GengridExt: ElmObject {
                 None,
                 std::ptr::null_mut(),
             )
-        }
+        })
     }
     fn with_item(self, label: &str) -> Self {
         self.append(label);
@@ -878,7 +847,7 @@ pub trait GengridExt: ElmObject {
 }
 
 pub trait CheckExt: ElmObject {
-    #[deprecated = "use efl::SegmentControl::new(&parent) instead"]
+    #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_check_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
@@ -898,10 +867,31 @@ pub trait CheckExt: ElmObject {
     }
 }
 
+pub trait RangerExt: ElmObject {
+    fn value(&self) -> f64;
+    fn set_format(&self, value: &str);
+    fn set_step(&self, step: f64);
+    fn set_range(&self, min: f64, max: f64);
+    fn set_value(&self, value: f64);
+    fn with_range(self, min: f64, max: f64) -> Self {
+        self.set_range(min, max);
+        self
+    }
+    fn with_step(self, value: f64) -> Self {
+        self.set_step(value);
+        self
+    }
+    fn with_format(self, value: &str) -> Self {
+        self.set_format(value);
+        self
+    }
+}
+
 pub trait SelectorExt: ElmObject {
     fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> super::WidgetItem;
     fn first(&self) -> super::WidgetItem;
     fn last(&self) -> super::WidgetItem;
+    fn selected(&self) -> super::WidgetItem;
     fn value(&self) -> u32;
     fn clear(&self);
     fn set_value(&self, value: u32);
@@ -921,7 +911,7 @@ pub trait SelectorExt: ElmObject {
 }
 
 pub trait ActionSliderExt: ElmObject {
-    #[deprecated = "use efl::SegmentControl::new(&parent) instead"]
+    #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
     fn new(prt: &impl ContainerExt, left: &str, center: &str, right: &str) -> Self {
         let elm = Self::from_raw(unsafe { elm_actionslider_add(prt.as_raw()) });
         elm.conf();
@@ -986,26 +976,8 @@ pub trait CalendarExt: ElmObject {
     }
 }
 
-pub trait ClockExt: ElmObject {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_clock_add(prt.as_raw()) }).with_conf();
-        prt.add(&elm);
-        elm
-    }
-    fn time(&self) -> (i32, i32, i32) {
-        let hrs: *mut i32 = std::ptr::null_mut();
-        let min: *mut i32 = std::ptr::null_mut();
-        let sec: *mut i32 = std::ptr::null_mut();
-        unsafe { elm_clock_time_get(self.as_raw(), hrs, min, sec) };
-        (hrs as i32, min as i32, sec as i32)
-    }
-    fn set_time(&self, hrs: i32, min: i32, sec: i32) {
-        unsafe { elm_clock_time_set(self.as_raw(), hrs, min, sec) };
-    }
-}
-
 pub trait CtxpopupExt: ElmObject {
-    #[deprecated = "use efl::Notify::new(&parent) instead"]
+    #[deprecated = "rse refl::Notify::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_ctxpopup_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
@@ -1016,9 +988,9 @@ pub trait CtxpopupExt: ElmObject {
         icon_: &str,
         label_: &str,
         func: F,
-    ) -> *mut Evas_Object {
+    ) -> super::WidgetItem {
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
-        unsafe {
+        super::WidgetItem::from_raw(unsafe {
             elm_ctxpopup_item_append(
                 self.as_raw(),
                 CString::new(icon_).unwrap().as_ptr(),
@@ -1026,7 +998,7 @@ pub trait CtxpopupExt: ElmObject {
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        }
+        })
     }
     fn set_horizontal(&self, value: bool) {
         unsafe { elm_ctxpopup_horizontal_set(self.as_raw(), value as Eina_Bool) };
@@ -1048,15 +1020,8 @@ pub trait CtxpopupExt: ElmObject {
     }
 }
 
-pub trait LabelExt: ElmObject {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_label_add(prt.as_raw()) }).with_conf();
-        prt.add(&elm);
-        elm
-    }
-}
-
 pub trait HoverSelExt: ElmObject {
+    #[deprecated = "use refl::FlipSelector::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_hoversel_add(prt.as_raw()) }).with_conf();
         elm.set_auto_update(true);
@@ -1068,9 +1033,9 @@ pub trait HoverSelExt: ElmObject {
         icon_: &str,
         label_: &str,
         func: F,
-    ) -> *mut Evas_Object {
+    ) -> super::WidgetItem {
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
-        unsafe {
+        super::WidgetItem::from_raw(unsafe {
             elm_hoversel_item_add(
                 self.as_raw(),
                 CString::new(label_).unwrap().as_ptr(),
@@ -1079,7 +1044,7 @@ pub trait HoverSelExt: ElmObject {
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        }
+        })
     }
     fn set_auto_update(&self, value: bool) {
         unsafe { elm_hoversel_auto_update_set(self.as_raw(), value as Eina_Bool) };
@@ -1114,9 +1079,6 @@ pub trait FlipSelExt: SelectorExt {
             count += 1;
         }
         count
-    }
-    fn selected(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_flipselector_selected_item_get(self.as_raw()) })
     }
     fn first_item(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe {
@@ -1168,28 +1130,6 @@ pub trait FlipSelExt: SelectorExt {
 }
 
 pub trait EntryExt: ElmObject {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_entry_add(prt.as_raw()) });
-        elm.conf();
-        elm.set_single_line(true);
-        elm.set_scrollable(true);
-        elm.set_menu(true);
-        prt.add(&elm);
-        elm
-    }
-    fn append<F: FnMut(Self) + 'static>(&self, icon_: &str, label_: &str, func: F) {
-        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
-        unsafe {
-            elm_entry_context_menu_item_add(
-                self.as_raw(),
-                CString::new(label_).unwrap().as_ptr(),
-                CString::new(icon_).unwrap().as_ptr(),
-                2,
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            )
-        };
-    }
     fn with_editable(self, value: bool) -> Self {
         self.set_editable(value);
         self
@@ -1258,33 +1198,6 @@ pub trait EntryExt: ElmObject {
     }
 }
 
-pub trait FrameExt: ElmObject {
-    fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_frame_add(parent.as_raw()) });
-        elm.conf();
-        elm.set_autocollapse(true);
-        parent.add(&elm);
-        elm
-    }
-    fn with_collapse(self, value: bool) -> Self {
-        self.set_collapse(value);
-        self
-    }
-    fn with_autocollapse(self, value: bool) -> Self {
-        self.set_autocollapse(value);
-        self
-    }
-    fn set_autocollapse(&self, value: bool) {
-        unsafe { elm_frame_autocollapse_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn set_collapse(&self, value: bool) {
-        unsafe { elm_frame_collapse_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn collapse(&self) -> bool {
-        unsafe { elm_frame_collapse_get(self.as_raw()) != 0 }
-    }
-}
-
 pub trait IconExt: ElmObject {
     fn new(parent: &impl super::ElmObject) -> Self {
         let elm = Self::from_raw(unsafe { elm_icon_add(parent.as_raw()) });
@@ -1318,14 +1231,6 @@ pub trait SeparatorExt: ElmObject {
 }
 
 pub trait ListExt: SelectorExt {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_list_add(prt.as_raw()) });
-        elm.conf();
-        elm.set_mode(super::ListMode::Expand);
-        elm.go();
-        prt.add(&elm);
-        elm
-    }
     fn append<F: FnMut(Self) + 'static>(
         &self,
         icon_: &str,
@@ -1343,12 +1248,6 @@ pub trait ListExt: SelectorExt {
                 raw_ptr as *mut c_void,
             )
         })
-    }
-    fn clear_items(&self) {
-        unsafe { refl_sys::elm_list_clear(self.as_raw()) };
-    }
-    fn first_item(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { refl_sys::elm_list_first_item_get(self.as_raw()) })
     }
     fn go(&self) {
         unsafe { elm_list_go(self.as_raw()) };
@@ -1368,12 +1267,6 @@ pub trait ListExt: SelectorExt {
     }
     fn set_mode(&self, value: super::ListMode) {
         unsafe { elm_list_mode_set(self.as_raw(), value as Elm_List_Mode) };
-    }
-    fn selected(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_list_selected_item_get(self.as_raw()) })
-    }
-    fn last_item(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_list_last_item_get(self.as_raw()) })
     }
     fn find(&self, item: super::WidgetItem) -> u32 {
         let mut count = 0;
@@ -1419,8 +1312,8 @@ pub trait NaviframeExt: ElmObject {
     fn set_content_preserve_on_pop(&self, value: bool) {
         unsafe { elm_naviframe_content_preserve_on_pop_set(self.as_raw(), value as Eina_Bool) };
     }
-    fn push(&self, child: &impl super::ElmObject) -> *mut Evas_Object {
-        unsafe {
+    fn push(&self, child: &impl super::ElmObject) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe {
             let item = elm_naviframe_item_push(
                 self.as_raw(),
                 std::ptr::null(),
@@ -1431,7 +1324,7 @@ pub trait NaviframeExt: ElmObject {
             );
             elm_naviframe_item_title_visible_set(item, 0);
             item
-        }
+        })
     }
     fn promote(&self) {
         self.to_top(&self.bottom())
@@ -1444,18 +1337,6 @@ pub trait NaviframeExt: ElmObject {
     }
     fn top(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_naviframe_top_item_get(self.as_raw()) })
-    }
-}
-
-pub trait NotifyExt: ElmObject {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_notify_add(prt.window().as_raw()) });
-        elm.conf();
-        prt.add(&elm);
-        elm
-    }
-    fn set_timeout(&self, value: f64) {
-        unsafe { elm_notify_timeout_set(self.as_raw(), value) };
     }
 }
 
@@ -1684,97 +1565,19 @@ pub trait SegmentControlExt: ElmObject {
             self.add(item, item);
         }
     }
-    fn add(&self, icon: &str, label: &str) -> *mut Evas_Object {
-        let clabel = CString::new(label).unwrap();
-        let icon = super::Icon::new(self).with_standard(icon);
-        unsafe { elm_segment_control_item_add(self.as_raw(), icon.as_raw(), clabel.as_ptr()) }
-    }
-}
-
-pub trait SliderExt: ElmObject {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_slider_add(prt.as_raw()) });
-        elm.conf();
-        prt.add(&elm);
-        elm
-    }
-    fn set_horizontal(&self, value: bool) {
-        unsafe { elm_slider_horizontal_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn set_inverted(&self, value: bool) {
-        unsafe { elm_slider_inverted_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn set_range_enabled(&self, value: bool) {
-        unsafe { elm_slider_range_enabled_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn with_range(self, min: f64, max: f64) -> Self {
-        self.set_range(min, max);
-        self
-    }
-    fn set_range(&self, min: f64, max: f64) {
-        unsafe { elm_slider_min_max_set(self.as_raw(), min, max) };
-    }
-    fn set_value(&self, value: f64) {
-        unsafe { elm_slider_value_set(self.as_raw(), value) };
-    }
-    fn set_step(&self, value: f64) {
-        unsafe { elm_slider_step_set(self.as_raw(), value) };
-    }
-    fn with_step(self, value: f64) -> Self {
-        self.set_step(value);
-        self
-    }
-    fn value(&self) -> f64 {
-        unsafe { elm_slider_value_get(self.as_raw()) }
-    }
-    fn with_format(self, value: &str) -> Self {
-        self.set_format(value);
-        self
-    }
-    fn set_format(&self, value: &str) {
-        let ctext = CString::new(value).unwrap();
-        unsafe { elm_slider_unit_format_set(self.as_raw(), ctext.as_ptr()) };
-    }
-}
-
-pub trait SpinnerExt: ElmObject {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_spinner_add(prt.as_raw()) });
-        elm.conf();
-        prt.add(&elm);
-        elm
-    }
-    fn with_step(self, value: f64) -> Self {
-        self.set_step(value);
-        self
-    }
-    fn with_format(self, value: &str) -> Self {
-        self.set_format(value);
-        self
-    }
-    fn with_range(self, min: f64, max: f64) -> Self {
-        self.set_range(min, max);
-        self
-    }
-    fn set_range(&self, min: f64, max: f64) {
-        unsafe { elm_spinner_min_max_set(self.as_raw(), min, max) };
-    }
-    fn set_step(&self, value: f64) {
-        unsafe { elm_spinner_step_set(self.as_raw(), value) };
-    }
-    fn set_value(&self, value: f64) {
-        unsafe { elm_spinner_value_set(self.as_raw(), value) };
-    }
-    fn value(&self) -> f64 {
-        unsafe { elm_spinner_value_get(self.as_raw()) }
-    }
-    fn set_format(&self, value: &str) {
-        let ctext = CString::new(value).unwrap();
-        unsafe { elm_spinner_label_format_set(self.as_raw(), ctext.as_ptr()) };
+    fn add(&self, icon: &str, label: &str) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe {
+            elm_segment_control_item_add(
+                self.as_raw(),
+                super::Icon::new(self).with_standard(icon).as_raw(),
+                CString::new(label).unwrap().as_ptr(),
+            )
+        })
     }
 }
 
 pub trait ToolBarExt: ElmObject {
+    #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_toolbar_add(prt.as_raw()) });
         elm.conf();
@@ -1787,19 +1590,17 @@ pub trait ToolBarExt: ElmObject {
         icon: &str,
         label: &str,
         func: F,
-    ) -> *mut Evas_Object {
-        let clabel = CString::new(label).unwrap();
-        let cicon = CString::new(icon).unwrap();
+    ) -> super::WidgetItem {
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
-        unsafe {
+        super::WidgetItem::from_raw(unsafe {
             elm_toolbar_item_append(
                 self.as_raw(),
-                cicon.as_ptr(),
-                clabel.as_ptr(),
+                CString::new(icon).unwrap().as_ptr(),
+                CString::new(label).unwrap().as_ptr(),
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        }
+        })
     }
     fn with_homogeneous(self, value: bool) -> Self {
         self.set_homogeneous(value);

@@ -42,21 +42,10 @@ fn compile() -> Vec<String> {
         .status()
         .unwrap();
     Command::new("gcc")
-        .args([
-            "-std=c99",
-            "-o",
-            "ewpi",
-            "ewpi.c",
-            "ewpi_map.c",
-        ])
+        .args(["-std=c99", "-o", "ewpi", "ewpi.c", "ewpi_map.c"])
         .status()
         .unwrap();
-    Command::new("meson")
-        .args([
-            "setup",
-        ])
-        .status()
-        .unwrap();
+    Command::new("meson").args(["setup"]).status().unwrap();
     println!("cargo:rustc-link-search=native={}/build", out);
     println!("cargo:rustc-link-lib=static=efl");
     Vec::new()

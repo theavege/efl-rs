@@ -63,14 +63,6 @@ impl Component for Selector {
                         }
                     }
                 });
-            //~ self.combo = refl::Combobox::new(prt)
-            //~ .with_items(&items)
-            //~ .with_changed({
-            //~ let sender = sender.clone();
-            //~ move |wgt| {
-            //~ sender.send(Msg::Set(wgt.value())).unwrap();
-            //~ }
-            //~ });
             refl::Box::new(prt).with_horizontal(true).inside(|prt| {
                 self.list = refl::List::new(prt).with_items(&items, {
                     let sender = sender.clone();
