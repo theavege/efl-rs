@@ -56,7 +56,8 @@ fn compile() -> Vec<String> {
         .env("CPPFLAGS", &format!("-I{home_path}/ewpi_64/include"))
         .env("LDFLAGS", &format!("-L{home_path}/ewpi_64/lib"))
         .args([
-            "setup" & format!("--prefix={home_path}/efl_64"),
+            "setup",
+            &format!("--prefix={home_path}/efl_64"),
             "--libdir=lib",
             "--buildtype=release",
             "--strip",
