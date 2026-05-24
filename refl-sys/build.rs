@@ -28,10 +28,6 @@ impl ParseCallbacks for MacroCallback {
 fn compile() -> Vec<String> {
     use std::process::Command;
     let out = env::var("OUT_DIR").unwrap();
-    Command::new("command")
-        .args(["-v", "git", "gcc", "meson", "ninja"])
-        .status()
-        .unwrap();
     Command::new("git")
         .args([
             "submodule",
