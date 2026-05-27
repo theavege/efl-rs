@@ -41,7 +41,7 @@ fn compile() -> Vec<String> {
         ])
         .output()
         .expect("\x1b[31mFailed to execute git!\x1b[0m");
-    if ! run.status.success() {
+    if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new("gcc")
