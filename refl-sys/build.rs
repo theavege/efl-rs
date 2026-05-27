@@ -42,22 +42,22 @@ fn compile() -> Vec<String> {
         .status()
         .unwrap();
     Command::new("gcc")
-        .current_dir("use/ewpi")
+        .current_dir("use\\ewpi")
         .args(["-std=c99", "-o", "ewpi", "ewpi.c", "ewpi_map.c"])
         .status()
         .unwrap();
     let home_path = std::env::var("HOMEPATH").unwrap();
     Command::new("meson")
-        .env("EWPI_PATH", &format!("{home_path}/ewpi_64"))
+        .env("EWPI_PATH", &format!("{home_path}\\ewpi_64"))
         .env(
             "PKG_CONFIG_PATH",
-            &format!("{home_path}/ewpi_64/lib/pkgconfig"),
+            &format!("{home_path}\\ewpi_64\\lib\\pkgconfig"),
         )
-        .env("CPPFLAGS", &format!("-I{home_path}/ewpi_64/include"))
-        .env("LDFLAGS", &format!("-L{home_path}/ewpi_64/lib"))
+        .env("CPPFLAGS", &format!("-I{home_path}\\ewpi_64\\include"))
+        .env("LDFLAGS", &format!("-L{home_path}\\ewpi_64\\lib"))
         .args([
             "setup",
-            &format!("--prefix={home_path}/efl_64"),
+            &format!("--prefix={home_path}\\efl_64"),
             "--libdir=lib",
             "--buildtype=release",
             "--strip",
@@ -80,17 +80,17 @@ fn compile() -> Vec<String> {
             "-Dbindings='cxx'",
             "-Dlua-interpreter=luajit",
             "-Delua=true",
-            &format!("{out}/build"),
+            &format!("{out}\\build"),
         ])
         .status()
         .unwrap();
     Command::new("ninja")
-        .args(["-C", &format!("{out}/build")])
+        .args(["-C", &format!("{out}\\build")])
         .status()
         .unwrap();
-    println!("cargo:rustc-link-search=native={out}/build");
+    println!("cargo:rustc-link-search=native={out}\\build");
     println!("cargo:rustc-link-lib=static=efl");
-    Vec::from(["-I{home_path}/ewpi_64/include".to_string()])
+    Vec::from(["-I{home_path}\\ewpi_64\\include".to_string()])
 }
 
 #[cfg(target_os = "linux")]
