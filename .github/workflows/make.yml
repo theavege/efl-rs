@@ -36,9 +36,6 @@ jobs:
         run: |
           bash '.github/workflows/make.sh'
 
-      #~ - name: Setup Python
-        #~ if: runner.os == 'Windows'
-        #~ uses: actions/setup-python@v2
       - name: Build on Windows
         if: runner.os == 'Windows'
         shell: powershell

@@ -39,13 +39,13 @@ fn compile() -> Vec<String> {
             "--depth",
             "1",
         ])
-        .status()
-        .unwrap();
+        .output()
+        .expect("\x1b[31mFailed to execute git!\x1b[0m");
     Command::new("gcc")
         .current_dir("use\\ewpi")
         .args(["-std=c99", "-o", "ewpi", "ewpi.c", "ewpi_map.c"])
-        .status()
-        .unwrap();
+        .output()
+        .expect("\x1b[31mFailed to execute gcc!\x1b[0m");
     let home_path = std::env::var("HOMEPATH").unwrap();
     Command::new("meson")
         .env("EWPI_PATH", &format!("{home_path}\\ewpi_64"))
@@ -82,12 +82,12 @@ fn compile() -> Vec<String> {
             "-Delua=true",
             &format!("{out}\\build"),
         ])
-        .status()
-        .unwrap();
+        .output()
+        .expect("\x1b[31mFailed to execute meson!\x1b[0m");
     Command::new("ninja")
         .args(["-C", &format!("{out}\\build")])
-        .status()
-        .unwrap();
+        .output()
+        .expect("\x1b[31mFailed to execute ninja!\x1b[0m");
     println!("cargo:rustc-link-search=native={out}\\build");
     println!("cargo:rustc-link-lib=static=efl");
     Vec::from(["-I{home_path}\\ewpi_64\\include".to_string()])
