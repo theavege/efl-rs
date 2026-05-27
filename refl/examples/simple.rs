@@ -30,7 +30,7 @@ impl Component for View {
         true
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        let items = ["Simple", "NicCalc", "Calc"];
+        let items = ["Simple", "NicCalc", "Calc", "Sudoku"];
         self.1 = refl::Naviframe::new(prt).inside(|prt| {
             refl::Box::new(prt)
                 .inside(|prt| {
@@ -63,9 +63,9 @@ impl Component for View {
                     refl::Label::new(prt);
                 })
                 .with_homogeneous(false);
-            //~ components::Sudoku::mount(prt);
             components::NicCalc::mount(prt);
             components::Calc::mount(prt);
+            components::Sudoku::mount(prt);
         });
         self.1.promote();
         refl::Menu::main_menu(prt).with_items(&items, {

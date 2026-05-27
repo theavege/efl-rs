@@ -24,14 +24,112 @@ impl ParseCallbacks for MacroCallback {
     }
 }
 
-fn main() {
-    let mut cflags = Vec::new();
+#[cfg(target_os = "windows")]
+fn compile() -> Vec<String> {
+    use std::process::Command;
+    let out = env::var("OUT_DIR").unwrap();
+    let mut run = Command::new("git")
+        .args([
+            "submodule",
+            "update",
+            "--init",
+            "--recursive",
+            "--force",
+            "--remote",
+            "--depth",
+            "1",
+        ])
+        .output()
+        .expect("\x1b[31mFailed to execute git!\x1b[0m");
+    if !run.status.success() {
+        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
+    };
+    run = Command::new("gcc")
+        .current_dir("use\\ewpi")
+        .args([
+            "-O2",
+            "-std=c99",
+            "-o",
+            "ewpi",
+            "ewpi.c",
+            "ewpi_map.c",
+            "ewpi_spawn.c",
+        ])
+        .output()
+        .expect("\x1b[31mFailed to execute gcc!\x1b[0m");
+    if !run.status.success() {
+        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
+    };
+    run = Command::new(".use\\ewpi\\ewpi")
+        .arg("-–jobs=8")
+        .output()
+        .expect("\x1b[31mFailed to execute ewpi!\x1b[0m");
+    if !run.status.success() {
+        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
+    };
+    let home_path = std::env::var("HOMEPATH").unwrap();
+    run = Command::new("meson")
+        .env("EWPI_PATH", format!("{home_path}\\ewpi_64"))
+        .env(
+            "PKG_CONFIG_PATH",
+            format!("{home_path}\\ewpi_64\\lib\\pkgconfig"),
+        )
+        .env("CPPFLAGS", format!("-I{home_path}\\ewpi_64\\include"))
+        .env("LDFLAGS", format!("-L{home_path}\\ewpi_64\\lib"))
+        .args([
+            "setup",
+            &format!("--prefix={home_path}\\efl_64"),
+            "--libdir=lib",
+            "--buildtype=release",
+            "--strip",
+            "--default-library shared",
+            "-Dsystemd=false",
+            "-Dpulseaudio=false",
+            "-Dv4l2=false",
+            "-Dlibmount=false",
+            "-Deeze=false",
+            "-Dx11=false",
+            "-Dxinput2=false",
+            "-Devas-loaders-disabler='pdf','ps','rsvg','json'",
+            "-Dopengl=none",
+            "-Dpixman=true",
+            "-Dembedded-lz4=false",
+            "-Dfribidi=true",
+            "-Dinput=false",
+            "-Dbuild-examples=false",
+            "-Dbuild-tests=false",
+            "-Dbindings='cxx'",
+            "-Dlua-interpreter=luajit",
+            "-Delua=true",
+            &format!("{out}\\build"),
+        ])
+        .output()
+        .expect("\x1b[31mFailed to execute meson!\x1b[0m");
+    if !run.status.success() {
+        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
+    };
+    run = Command::new("ninja")
+        .args(["-C", &format!("{out}\\build")])
+        .output()
+        .expect("\x1b[31mFailed to execute ninja!\x1b[0m");
+    match run.status.success() {
+        true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+        false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+    };
+    println!("cargo:rustc-link-search=native={out}\\build");
+    println!("cargo:rustc-link-lib=static=efl");
+    Vec::from(["-I{home_path}\\ewpi_64\\include".to_string()])
+}
+
+#[cfg(target_os = "linux")]
+fn compile() -> Vec<String> {
     let library = "elementary";
     println!("cargo:rustc-link-lib=dylib={library}");
+    let mut includes = Vec::new();
     match pkg_config::probe_library(library) {
         Ok(lib) => {
             for dir in lib.include_paths {
-                cflags.push(format!("-I{}", dir.display()));
+                includes.push(format!("-I{}", dir.display()));
             }
         }
         Err(e) => {
@@ -39,9 +137,13 @@ fn main() {
             std::process::exit(1);
         }
     }
+    includes
+}
+
+fn main() {
     bindgen::Builder::default()
-        .header("wrapper.h")
-        .clang_args(&cflags)
+        .header("src/wrapper.h")
+        .clang_args(compile())
         .parse_callbacks(Box::new(MacroCallback::default()))
         .generate()
         .expect("Unable to generate bindings")
