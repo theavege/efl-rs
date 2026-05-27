@@ -47,7 +47,7 @@ fn compile() -> Vec<String> {
     };
     run = Command::new("gcc")
         .current_dir("use\\ewpi")
-        .args(["-std=c99", "-o", "ewpi", "ewpi.c", "ewpi_map.c"])
+        .args(["-02", "-std=c99", "-o", "ewpi", "ewpi.c", "ewpi_map.c", "ewpi_spawn.c"])
         .output()
         .expect("\x1b[31mFailed to execute gcc!\x1b[0m");
     match run.status.success() {
