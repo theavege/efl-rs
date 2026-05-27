@@ -41,9 +41,8 @@ fn compile() -> Vec<String> {
         ])
         .output()
         .expect("\x1b[31mFailed to execute git!\x1b[0m");
-    match run.status.success() {
-        true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
-        false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+    if ! run.status.success() {
+        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new("gcc")
         .current_dir("use\\ewpi")
@@ -58,9 +57,8 @@ fn compile() -> Vec<String> {
         ])
         .output()
         .expect("\x1b[31mFailed to execute gcc!\x1b[0m");
-    match run.status.success() {
-        true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
-        false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+    if !run.status.success() {
+        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     let home_path = std::env::var("HOMEPATH").unwrap();
     run = Command::new("meson")
@@ -100,13 +98,12 @@ fn compile() -> Vec<String> {
         ])
         .output()
         .expect("\x1b[31mFailed to execute meson!\x1b[0m");
-    match run.status.success() {
-        true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
-        false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+    if !run.status.success() {
+        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new("ninja")
         .args(["-C", &format!("{out}\\build")])
-        .output()
+        .status()
         .expect("\x1b[31mFailed to execute ninja!\x1b[0m");
     match run.status.success() {
         true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
