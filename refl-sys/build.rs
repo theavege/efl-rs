@@ -60,6 +60,13 @@ fn compile() -> Vec<String> {
     if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
+    run = Command::new("./ewpi")
+        .arg("-–jobs=8")
+        .output()
+        .expect("\x1b[31mFailed to execute gcc!\x1b[0m");
+    if !run.status.success() {
+        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
+    };
     let home_path = std::env::var("HOMEPATH").unwrap();
     run = Command::new("meson")
         .env("EWPI_PATH", &format!("{home_path}\\ewpi_64"))
