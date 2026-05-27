@@ -28,7 +28,7 @@ impl ParseCallbacks for MacroCallback {
 fn compile() -> Vec<String> {
     use std::process::Command;
     let out = env::var("OUT_DIR").unwrap();
-    Command::new("git")
+    let mut run = Command::new("git")
         .args([
             "submodule",
             "update",
@@ -41,13 +41,21 @@ fn compile() -> Vec<String> {
         ])
         .output()
         .expect("\x1b[31mFailed to execute git!\x1b[0m");
-    Command::new("gcc")
+    match run.status.success() {
+        true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+        false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+    };
+    run = Command::new("gcc")
         .current_dir("use\\ewpi")
         .args(["-std=c99", "-o", "ewpi", "ewpi.c", "ewpi_map.c"])
         .output()
         .expect("\x1b[31mFailed to execute gcc!\x1b[0m");
+    match run.status.success() {
+        true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+        false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+    };
     let home_path = std::env::var("HOMEPATH").unwrap();
-    Command::new("meson")
+    run = Command::new("meson")
         .env("EWPI_PATH", &format!("{home_path}\\ewpi_64"))
         .env(
             "PKG_CONFIG_PATH",
@@ -84,10 +92,18 @@ fn compile() -> Vec<String> {
         ])
         .output()
         .expect("\x1b[31mFailed to execute meson!\x1b[0m");
-    Command::new("ninja")
+    match run.status.success() {
+        true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+        false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+    };
+    run = Command::new("ninja")
         .args(["-C", &format!("{out}\\build")])
         .output()
         .expect("\x1b[31mFailed to execute ninja!\x1b[0m");
+    match run.status.success() {
+        true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+        false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
+    };
     println!("cargo:rustc-link-search=native={out}\\build");
     println!("cargo:rustc-link-lib=static=efl");
     Vec::from(["-I{home_path}\\ewpi_64\\include".to_string()])
