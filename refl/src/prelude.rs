@@ -1,3 +1,4 @@
+pub use std::sync::mpsc::Sender;
 use {
     refl_sys::*,
     std::{
@@ -6,10 +7,25 @@ use {
     },
 };
 
-pub use {
-    refl_sys::{Ecore_Event_Handler, Ecore_Timer, Evas_Object, tm},
-    std::sync::mpsc::Sender,
-};
+#[derive(Default)]
+pub enum Align {
+    #[default]
+    Fill,
+    Left,
+    Center,
+    Right,
+}
+
+impl Align {
+    fn to_f64(&self) -> f64 {
+        match self {
+            Align::Fill => -1.0,
+            Align::Left => 0.0,
+            Align::Center => 0.5,
+            Align::Right => 1.0,
+        }
+    }
+}
 
 pub fn run(func: impl Fn() -> super::Window) {
     let c_args = std::env::args()
@@ -129,22 +145,17 @@ pub trait EvasObject: Sized {
     fn as_raw(&self) -> *mut Evas_Object;
     fn from_raw(obj: *mut Evas_Object) -> Self;
     fn conf(&self) {
-        self.set_align(super::Align::Fill, super::Align::Fill);
+        self.set_align(Align::Fill, Align::Fill);
         self.set_weight(true, true);
     }
     fn with_conf(self) -> Self {
-        self.set_align(super::Align::Fill, super::Align::Fill);
-        self.set_weight(true, true);
+        self.conf();
         self
     }
     fn show(&self) {
         unsafe {
             evas_object_show(self.as_raw());
         };
-    }
-    fn with_color(self, r: i32, g: i32, b: i32, a: i32) -> Self {
-        self.set_color(r, g, b, a);
-        self
     }
     fn set_color(&self, r: i32, g: i32, b: i32, a: i32) {
         unsafe {
@@ -155,6 +166,10 @@ pub trait EvasObject: Sized {
         unsafe {
             evas_object_size_hint_weight_set(self.as_raw(), x as u8 as f64, y as u8 as f64);
         };
+    }
+    fn with_color(self, r: i32, g: i32, b: i32, a: i32) -> Self {
+        self.set_color(r, g, b, a);
+        self
     }
     fn with_weight(self, x: bool, y: bool) -> Self {
         self.set_weight(x, y);
@@ -168,12 +183,12 @@ pub trait EvasObject: Sized {
     fn parent(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { efl_parent_get(self.as_raw()) })
     }
-    fn set_align(&self, x: super::Align, y: super::Align) {
+    fn set_align(&self, x: Align, y: Align) {
         unsafe {
             evas_object_size_hint_align_set(self.as_raw(), x.to_f64(), y.to_f64());
         };
     }
-    fn with_align(self, x: super::Align, y: super::Align) -> Self {
+    fn with_align(self, x: Align, y: Align) -> Self {
         self.set_align(x, y);
         self
     }
@@ -189,9 +204,9 @@ pub trait EvasObject: Sized {
         }
     }
     fn with_size(self, w: i32, h: i32) -> Self {
-        self.resize(w, h);
         self.set_min_size(w, h);
         self.set_weight(w == 0, h == 0);
+        self.resize(w, h);
         self
     }
     fn resize(&self, w: i32, h: i32) {
@@ -334,7 +349,7 @@ pub trait ContainerExt: ElmObject {
 pub trait BoxExt: ContainerExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_box_add(prt.as_raw()) })
-            .with_homogeneous(true)
+            .with_homogeneous(false)
             .with_horizontal(false)
             .with_conf();
         prt.add(&elm);

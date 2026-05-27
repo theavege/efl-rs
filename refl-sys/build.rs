@@ -33,11 +33,11 @@ fn compile() -> Vec<String> {
             "submodule",
             "update",
             "--init",
-            "--depth",
-            "1",
             "--recursive",
             "--force",
             "--remote",
+            "--depth",
+            "1",
         ])
         .status()
         .unwrap();

@@ -6,26 +6,6 @@ use {
     std::{cell::RefCell, rc::Rc},
 };
 
-#[derive(Default)]
-pub enum Align {
-    #[default]
-    Fill,
-    Left,
-    Center,
-    Right,
-}
-
-impl Align {
-    fn to_f64(&self) -> f64 {
-        match self {
-            Align::Fill => -1.0,
-            Align::Left => 0.0,
-            Align::Center => 0.5,
-            Align::Right => 1.0,
-        }
-    }
-}
-
 pub enum ActionSliderPos {
     None = 0,
     Left,

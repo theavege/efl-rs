@@ -103,9 +103,9 @@ impl Component for NicCalc {
         true
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(prt).with_homogeneous(false).inside(|prt| {
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                refl::Label::new(prt).with_text("Nicotine base strength (mg/ml):");
+        const WIDTH: i32 = 400;
+        refl::Box::new(prt).inside(|prt| {
+            refl::Bubble::new(prt).with_part("info", "Nicotine base strength (mg/ml):").inside(|prt| {
                 refl::Entry::new(prt)
                     .with_tooltip("Nicotine base strength must be between 0.0 und 999.9mg/ml")
                     .with_changed({
@@ -118,8 +118,7 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                refl::Label::new(prt).with_text("Nicotine strength wanted (mg/ml):");
+            refl::Bubble::new(prt).with_part("info", "Nicotine strength wanted (mg/ml):").inside(|prt| {
                 refl::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
                     .with_changed({
@@ -132,8 +131,7 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                refl::Label::new(prt).with_text("Amount wanted (ml):");
+            refl::Bubble::new(prt).with_part("info", "Amount wanted (ml):").inside(|prt| {
                 refl::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
                     .with_changed({
@@ -146,8 +144,7 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                refl::Label::new(prt).with_text("Flavour amount (ml):");
+            refl::Bubble::new(prt).with_part("info", "Flavour amount (ml):").inside(|prt| {
                 refl::Entry::new(prt)
                     .with_tooltip("The flavour amount must be between 0 and the base amount minus nicotine base amount!")
                     .with_changed({
@@ -161,23 +158,19 @@ impl Component for NicCalc {
                     });
             });
             refl::Separator::new(prt).with_horizontal(true);
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                refl::Label::new(prt).with_text("Nicotin base");
+            refl::Bubble::new(prt).with_part("info", "Nicotin base").inside(|prt| {
                 self.nicotine_base = refl::ProgressBar::new(prt);
             });
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                refl::Label::new(prt).with_text("Base");
+            refl::Bubble::new(prt).with_part("info", "Base").inside(|prt| {
                 self.base = refl::ProgressBar::new(prt);
             });
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                refl::Label::new(prt).with_text("Flavour");
+            refl::Bubble::new(prt).with_part("info", "Flavour").inside(|prt| {
                 self.flavour = refl::ProgressBar::new(prt);
             });
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                refl::Label::new(prt).with_text("Total");
+            refl::Bubble::new(prt).with_part("info", "Total").inside(|prt| {
                 refl::ProgressBar::new(prt).set_value(1.0);
             });
-            refl::Separator::new(prt).with_horizontal(true);
+            refl::Separator::new(prt).with_size(WIDTH, 0).set_horizontal(true);
             self.list = refl::List::new(prt);
         });
     }
