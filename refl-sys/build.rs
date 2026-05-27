@@ -48,7 +48,7 @@ fn compile() -> Vec<String> {
     run = Command::new("gcc")
         .current_dir("use\\ewpi")
         .args([
-            "-02",
+            "-O2",
             "-std=c99",
             "-o",
             "ewpi",
