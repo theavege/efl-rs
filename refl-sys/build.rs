@@ -61,6 +61,7 @@ fn compile() -> Vec<String> {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new(".\\ewpi")
+        .current_dir("use\\ewpi")
         .arg("-–jobs=8")
         .output()
         .expect("\x1b[31mFailed to execute gcc!\x1b[0m");
@@ -69,13 +70,13 @@ fn compile() -> Vec<String> {
     };
     let home_path = std::env::var("HOMEPATH").unwrap();
     run = Command::new("meson")
-        .env("EWPI_PATH", &format!("{home_path}\\ewpi_64"))
+        .env("EWPI_PATH", format!("{home_path}\\ewpi_64"))
         .env(
             "PKG_CONFIG_PATH",
-            &format!("{home_path}\\ewpi_64\\lib\\pkgconfig"),
+            format!("{home_path}\\ewpi_64\\lib\\pkgconfig"),
         )
-        .env("CPPFLAGS", &format!("-I{home_path}\\ewpi_64\\include"))
-        .env("LDFLAGS", &format!("-L{home_path}\\ewpi_64\\lib"))
+        .env("CPPFLAGS", format!("-I{home_path}\\ewpi_64\\include"))
+        .env("LDFLAGS", format!("-L{home_path}\\ewpi_64\\lib"))
         .args([
             "setup",
             &format!("--prefix={home_path}\\efl_64"),
