@@ -1263,7 +1263,14 @@ pub trait LayoutExt: ContainerExt {
         let cklass = CString::new(klass).unwrap();
         let cgroup = CString::new(group).unwrap();
         let cstyle = CString::new(style).unwrap();
-        unsafe { elm_layout_theme_set(self.as_raw(), cklass.as_ptr(), cgroup.as_ptr(), cstyle.as_ptr()) };
+        unsafe {
+            elm_layout_theme_set(
+                self.as_raw(),
+                cklass.as_ptr(),
+                cgroup.as_ptr(),
+                cstyle.as_ptr(),
+            )
+        };
     }
     fn sizing_eval(&self) {
         unsafe { elm_layout_sizing_eval(self.as_raw()) };
@@ -1280,7 +1287,14 @@ pub trait TableExt: ContainerExt {
     fn pack(&self, subobj: &impl ElmObject, col: i32, row: i32, colspan: i32, rowspan: i32) {
         unsafe { elm_table_pack(self.as_raw(), subobj.as_raw(), col, row, colspan, rowspan) };
     }
-    fn with_pack(self, subobj: &impl ElmObject, col: i32, row: i32, colspan: i32, rowspan: i32) -> Self {
+    fn with_pack(
+        self,
+        subobj: &impl ElmObject,
+        col: i32,
+        row: i32,
+        colspan: i32,
+        rowspan: i32,
+    ) -> Self {
         self.pack(subobj, col, row, colspan, rowspan);
         self
     }
