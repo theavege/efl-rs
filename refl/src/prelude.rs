@@ -1772,7 +1772,13 @@ pub trait ScrollerExt: ElmObject {
         )
     }
     fn set_bounce(&self, horizontal: bool, vertical: bool) {
-        unsafe { elm_scroller_bounce_set(self.as_raw(), horizontal as Eina_Bool, vertical as Eina_Bool) };
+        unsafe {
+            elm_scroller_bounce_set(
+                self.as_raw(),
+                horizontal as Eina_Bool,
+                vertical as Eina_Bool,
+            )
+        };
     }
     fn bounce(&self) -> (bool, bool) {
         let (mut h, mut v) = (0 as Eina_Bool, 0 as Eina_Bool);
@@ -1780,7 +1786,13 @@ pub trait ScrollerExt: ElmObject {
         (h != 0, v != 0)
     }
     fn set_bar_mode(&self, horizontal: bool, vertical: bool) {
-        unsafe { elm_scroller_bar_mode_set(self.as_raw(), horizontal as Eina_Bool, vertical as Eina_Bool) };
+        unsafe {
+            elm_scroller_bar_mode_set(
+                self.as_raw(),
+                horizontal as Eina_Bool,
+                vertical as Eina_Bool,
+            )
+        };
     }
     fn bar_mode(&self) -> (bool, bool) {
         let (mut h, mut v) = (0 as Eina_Bool, 0 as Eina_Bool);
@@ -1788,7 +1800,13 @@ pub trait ScrollerExt: ElmObject {
         (h != 0, v != 0)
     }
     fn set_page_snapping(&self, horizontal: bool, vertical: bool) {
-        unsafe { elm_scroller_page_snap_set(self.as_raw(), horizontal as Eina_Bool, vertical as Eina_Bool) };
+        unsafe {
+            elm_scroller_page_snap_set(
+                self.as_raw(),
+                horizontal as Eina_Bool,
+                vertical as Eina_Bool,
+            )
+        };
     }
     fn page_snapping(&self) -> (bool, bool) {
         let (mut h, mut v) = (0 as Eina_Bool, 0 as Eina_Bool);
