@@ -40,17 +40,16 @@ fn compile() -> Vec<String> {
             "1",
         ])
         .output()
-        .expect("\x1b[31mFailed to execute git!\x1b[0m");
+        .expect("\x1b[31mFailed to execute 'git submodule update'!\x1b[0m");
     if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new("gcc")
-        .current_dir("use\\ewpi")
+        .current_dir("use/ewpi")
         .args([
             "-O2",
             "-std=c99",
-            "-o",
-            "ewpi",
+            "-o=ewpi",
             "ewpi.c",
             "ewpi_map.c",
             "ewpi_spawn.c",
@@ -60,7 +59,8 @@ fn compile() -> Vec<String> {
     if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
-    run = Command::new(".use\\ewpi\\ewpi")
+    run = Command::new("ewpi.exe")
+        .current_dir("use/ewpi")
         .arg("-–jobs=8")
         .output()
         .expect("\x1b[31mFailed to execute ewpi!\x1b[0m");
