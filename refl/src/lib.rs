@@ -940,3 +940,21 @@ impl OnUnselected for Gengrid {}
 impl OnActivated for Gengrid {}
 impl OnClickedDouble for Gengrid {}
 impl GengridExt for Gengrid {}
+
+#[derive(Default)]
+pub struct Genlist(Option<*mut Evas_Object>);
+
+impl EvasObject for Genlist {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Genlist {}
+impl OnSelected for Genlist {}
+impl OnUnselected for Genlist {}
+impl OnActivated for Genlist {}
+impl OnClickedDouble for Genlist {}
+impl GenlistExt for Genlist {}
