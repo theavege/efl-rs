@@ -1785,20 +1785,6 @@ pub trait ScrollerExt: ElmObject {
         unsafe { elm_scroller_bounce_get(self.as_raw(), &mut h, &mut v) };
         (h != 0, v != 0)
     }
-    fn set_bar_mode(&self, horizontal: bool, vertical: bool) {
-        unsafe {
-            elm_scroller_bar_mode_set(
-                self.as_raw(),
-                horizontal as Eina_Bool,
-                vertical as Eina_Bool,
-            )
-        };
-    }
-    fn bar_mode(&self) -> (bool, bool) {
-        let (mut h, mut v) = (0 as Eina_Bool, 0 as Eina_Bool);
-        unsafe { elm_scroller_bar_mode_get(self.as_raw(), &mut h, &mut v) };
-        (h != 0, v != 0)
-    }
     fn set_page_snapping(&self, horizontal: bool, vertical: bool) {
         unsafe {
             elm_scroller_page_snap_set(
@@ -1817,9 +1803,6 @@ pub trait ScrollerExt: ElmObject {
         let (mut x, mut y, mut w, mut h) = (0i32, 0i32, 0i32, 0i32);
         unsafe { elm_scroller_region_get(self.as_raw(), &mut x, &mut y, &mut w, &mut h) };
         (x, y, w, h)
-    }
-    fn set_scroll_region(&self, x: i32, y: i32) {
-        unsafe { elm_scroller_region_set(self.as_raw(), x, y, 0, 0) };
     }
     fn last_page(&self) -> (i32, i32) {
         let (mut h, mut v) = (0i32, 0i32);
