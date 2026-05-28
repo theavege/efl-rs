@@ -81,8 +81,8 @@ impl EvasObjectItemExt for WidgetItem {
 }
 
 impl AsMut<Evas_Object> for WidgetItem {
-    fn as_mut(&mut self) ->  &mut Evas_Object {
-        unsafe {&mut *self.0.unwrap() }
+    fn as_mut(&mut self) -> &mut Evas_Object {
+        unsafe { &mut *self.0.unwrap() }
     }
 }
 
