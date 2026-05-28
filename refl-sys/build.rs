@@ -59,8 +59,7 @@ fn compile() -> Vec<String> {
     if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
-    run = Command::new("ewpi.exe")
-        .current_dir("use/ewpi")
+    run = Command::new("use/ewpi/ewpi.exe")
         .arg("-–jobs=8")
         .output()
         .expect("\x1b[31mFailed to execute ewpi!\x1b[0m");
