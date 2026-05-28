@@ -1370,6 +1370,44 @@ pub trait SeparatorExt: ElmObject {
     }
 }
 
+pub trait LayoutExt: ContainerExt {
+    fn with_file(self, file: &str, group: &str) -> Self {
+        self.set_file(file, group);
+        self
+    }
+    fn with_theme(self, klass: &str, group: &str, style: &str) -> Self {
+        self.set_theme(klass, group, style);
+        self
+    }
+    fn set_file(&self, file: &str, group: &str) {
+        let cfile = CString::new(file).unwrap();
+        let cgroup = CString::new(group).unwrap();
+        unsafe { elm_layout_file_set(self.as_raw(), cfile.as_ptr(), cgroup.as_ptr()) };
+    }
+    fn set_theme(&self, klass: &str, group: &str, style: &str) {
+        let cklass = CString::new(klass).unwrap();
+        let cgroup = CString::new(group).unwrap();
+        let cstyle = CString::new(style).unwrap();
+        unsafe {
+            elm_layout_theme_set(
+                self.as_raw(),
+                cklass.as_ptr(),
+                cgroup.as_ptr(),
+                cstyle.as_ptr(),
+            )
+        };
+    }
+    fn sizing_eval(&self) {
+        unsafe { elm_layout_sizing_eval(self.as_raw()) };
+    }
+    fn freeze(&self) -> i32 {
+        unsafe { elm_layout_freeze(self.as_raw()) }
+    }
+    fn thaw(&self) -> i32 {
+        unsafe { elm_layout_thaw(self.as_raw()) }
+    }
+}
+
 pub trait ListExt: SelectorExt {
     fn append<F: FnMut(Self) + 'static>(
         &self,

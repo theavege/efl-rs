@@ -406,6 +406,34 @@ impl EvasObject for Label {
 impl ElmObject for Label {}
 
 #[derive(Default)]
+pub struct Layout(Option<*mut Evas_Object>);
+
+impl Layout {
+    pub fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_layout_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+}
+
+impl EvasObject for Layout {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Layout {}
+impl ContainerExt for Layout {
+    fn add(&self, child: &impl ElmObject) {
+        self.set_content(child, "default");
+        child.show();
+    }
+}
+impl LayoutExt for Layout {}
+
+#[derive(Default)]
 pub struct Separator(Option<*mut Evas_Object>);
 
 impl EvasObject for Separator {
