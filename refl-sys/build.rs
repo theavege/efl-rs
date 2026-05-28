@@ -70,10 +70,7 @@ fn compile() -> Vec<String> {
     let home_path = std::env::var("HOMEPATH").unwrap();
     run = Command::new("meson")
         .env("EWPI_PATH", format!("{out}/ewpi_64"))
-        .env(
-            "PKG_CONFIG_PATH",
-            format!("{out}/ewpi_64/lib/pkgconfig"),
-        )
+        .env("PKG_CONFIG_PATH", format!("{out}/ewpi_64/lib/pkgconfig"))
         .env("CPPFLAGS", format!("-I{out}/ewpi_64/include"))
         .env("LDFLAGS", format!("-L{out}/ewpi_64/lib"))
         .args([
