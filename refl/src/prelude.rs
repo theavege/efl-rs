@@ -861,6 +861,131 @@ pub trait GengridExt: ElmObject {
     }
 }
 
+pub trait GenlistExt: ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_genlist_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    /// Append a labelled item to the list.
+    /// Items use `Elm_Genlist_Item_Class` with a `text_get` callback;
+    /// the label is heap-allocated and freed in the `del` callback.
+    fn append(&self, label: &str) -> super::WidgetItem {
+        let itc: *mut Elm_Genlist_Item_Class = unsafe {
+            let itc = elm_genlist_item_class_new();
+            (*itc).item_style = CString::new("default").unwrap().into_raw();
+            (*itc).func.text_get = Some(genlist_text_get);
+            (*itc).func.content_get = None;
+            (*itc).func.state_get = None;
+            (*itc).func.del = Some(genlist_item_del);
+            itc
+        };
+        let data: *mut std::ffi::c_char = CString::new(label).unwrap().into_raw();
+        super::WidgetItem::from_raw(unsafe {
+            elm_genlist_item_append(
+                self.as_raw(),
+                itc,
+                data as *mut c_void,
+                std::ptr::null_mut(),
+                Elm_Genlist_Item_Type_ELM_GENLIST_ITEM_NONE,
+                None,
+                std::ptr::null_mut(),
+            )
+        })
+    }
+    fn with_item(self, label: &str) -> Self {
+        self.append(label);
+        self
+    }
+    fn with_items(self, items: &[&str]) -> Self {
+        for item in items {
+            self.append(item);
+        }
+        self
+    }
+    fn selected(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_genlist_selected_item_get(self.as_raw()) })
+    }
+    fn first(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_genlist_first_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_genlist_last_item_get(self.as_raw()) })
+    }
+    fn find(&self, item: super::WidgetItem) -> u32 {
+        let mut count = 0u32;
+        let mut temp = self.first().as_raw();
+        while !temp.is_null() && temp != item.as_raw() {
+            temp = unsafe { elm_genlist_item_next_get(temp) };
+            count += 1;
+        }
+        count
+    }
+    fn index(&self) -> u32 {
+        self.find(self.selected())
+    }
+    fn value(&self) -> u32 {
+        self.index()
+    }
+    fn set_index(&self, value: u32) {
+        let mut temp = self.first().as_raw();
+        for _ in 0..value {
+            if temp.is_null() {
+                return;
+            }
+            temp = unsafe { elm_genlist_item_next_get(temp) };
+        }
+        if !temp.is_null() {
+            unsafe { elm_genlist_item_selected_set(temp, true as Eina_Bool) };
+        }
+    }
+    fn set_value(&self, value: u32) {
+        self.set_index(value);
+    }
+    /// Allow selecting multiple items at once.
+    fn set_multi_select(&self, value: bool) {
+        unsafe { elm_genlist_multi_select_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn with_multi_select(self, value: bool) -> Self {
+        self.set_multi_select(value);
+        self
+    }
+    fn multi_select(&self) -> bool {
+        unsafe { elm_genlist_multi_select_get(self.as_raw()) != 0 }
+    }
+    fn clear(&self) {
+        unsafe { elm_genlist_clear(self.as_raw()) };
+    }
+}
+
+/// Genlist `text_get` callback: returns a heap-duplicate of the label stored
+/// as item data.
+unsafe extern "C" fn genlist_text_get(
+    data: *mut c_void,
+    _obj: *mut Evas_Object,
+    _part: *const std::ffi::c_char,
+) -> *mut std::ffi::c_char {
+    if data.is_null() {
+        return std::ptr::null_mut();
+    }
+    // EFL frees the returned pointer with free(), so we must heap-duplicate it.
+    unsafe {
+        let src = data as *const std::ffi::c_char;
+        let bytes = std::ffi::CStr::from_ptr(src).to_bytes_with_nul();
+        let layout = std::alloc::Layout::array::<u8>(bytes.len()).unwrap();
+        let buf = std::alloc::alloc(layout);
+        std::ptr::copy_nonoverlapping(bytes.as_ptr(), buf, bytes.len());
+        buf as *mut std::ffi::c_char
+    }
+}
+
+/// Genlist `del` callback: frees the heap-allocated label.
+unsafe extern "C" fn genlist_item_del(data: *mut c_void, _obj: *mut Evas_Object) {
+    if !data.is_null() {
+        unsafe { drop(CString::from_raw(data as *mut std::ffi::c_char)) };
+    }
+}
+
 pub trait CheckExt: ElmObject {
     #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
