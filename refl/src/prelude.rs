@@ -1408,6 +1408,53 @@ pub trait LayoutExt: ContainerExt {
     }
 }
 
+pub trait TableExt: ContainerExt {
+    fn pack(&self, subobj: &impl ElmObject, col: i32, row: i32, colspan: i32, rowspan: i32) {
+        unsafe { elm_table_pack(self.as_raw(), subobj.as_raw(), col, row, colspan, rowspan) };
+    }
+    fn with_pack(
+        self,
+        subobj: &impl ElmObject,
+        col: i32,
+        row: i32,
+        colspan: i32,
+        rowspan: i32,
+    ) -> Self {
+        self.pack(subobj, col, row, colspan, rowspan);
+        self
+    }
+    fn unpack(&self, subobj: &impl ElmObject) {
+        unsafe { elm_table_unpack(self.as_raw(), subobj.as_raw()) };
+    }
+    fn set_homogeneous(&self, value: bool) {
+        unsafe { elm_table_homogeneous_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn with_homogeneous(self, value: bool) -> Self {
+        self.set_homogeneous(value);
+        self
+    }
+    fn homogeneous(&self) -> bool {
+        unsafe { elm_table_homogeneous_get(self.as_raw()) != 0 }
+    }
+    fn set_padding(&self, horizontal: i32, vertical: i32) {
+        unsafe { elm_table_padding_set(self.as_raw(), horizontal, vertical) };
+    }
+    fn with_padding(self, horizontal: i32, vertical: i32) -> Self {
+        self.set_padding(horizontal, vertical);
+        self
+    }
+    fn set_cell_align(&self, horizontal: f64, vertical: f64) {
+        unsafe { elm_table_align_set(self.as_raw(), horizontal, vertical) };
+    }
+    fn with_cell_align(self, horizontal: f64, vertical: f64) -> Self {
+        self.set_cell_align(horizontal, vertical);
+        self
+    }
+    fn clear(&self, clear_items: bool) {
+        unsafe { elm_table_clear(self.as_raw(), clear_items as Eina_Bool) };
+    }
+}
+
 pub trait ListExt: SelectorExt {
     fn append<F: FnMut(Self) + 'static>(
         &self,
