@@ -1263,7 +1263,14 @@ pub trait LayoutExt: ContainerExt {
         let cklass = CString::new(klass).unwrap();
         let cgroup = CString::new(group).unwrap();
         let cstyle = CString::new(style).unwrap();
-        unsafe { elm_layout_theme_set(self.as_raw(), cklass.as_ptr(), cgroup.as_ptr(), cstyle.as_ptr()) };
+        unsafe {
+            elm_layout_theme_set(
+                self.as_raw(),
+                cklass.as_ptr(),
+                cgroup.as_ptr(),
+                cstyle.as_ptr(),
+            )
+        };
     }
     fn sizing_eval(&self) {
         unsafe { elm_layout_sizing_eval(self.as_raw()) };
