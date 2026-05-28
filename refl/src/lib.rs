@@ -839,6 +839,34 @@ impl ContainerExt for Box {
 impl BoxExt for Box {}
 
 #[derive(Default)]
+pub struct Table(Option<*mut Evas_Object>);
+
+impl Table {
+    pub fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_table_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+}
+
+impl EvasObject for Table {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Table {}
+impl ContainerExt for Table {
+    fn add(&self, child: &impl ElmObject) {
+        self.pack(child, 0, 0, 1, 1);
+        child.show();
+    }
+}
+impl TableExt for Table {}
+
+#[derive(Default)]
 pub struct Bubble(Option<*mut Evas_Object>);
 impl Bubble {
     pub fn new(prt: &impl ContainerExt) -> Self {
