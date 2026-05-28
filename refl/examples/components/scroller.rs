@@ -31,8 +31,7 @@ impl Component for ScrollerDemo {
             // Create a scroller with auto policy
             let scroller = refl::Scroller::new(prt)
                 .with_policy(refl::ScrollerPolicy::Auto, refl::ScrollerPolicy::Auto)
-                .with_bounce(true, true)
-                .with_bar_mode(true, true);
+                .with_bounce(true, true);
 
             // Create a box inside the scroller with multiple labels
             refl::Box::new(&scroller)
