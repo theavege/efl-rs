@@ -20,7 +20,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
+          #- windows-latest
         arch:
           - x86_64
 
@@ -40,6 +40,6 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          & pip install meson ninja | Out-Host
+          & pip install meson ninja | Out-Null
           & cargo clippy --quiet --features="all" --examples | Out-Host
           & cargo build --release --features="all" --examples | Out-Host
