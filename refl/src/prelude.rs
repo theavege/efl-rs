@@ -1734,8 +1734,74 @@ pub trait ScrollerExt: ElmObject {
         prt.add(&elm);
         elm
     }
-    fn set_state(&self, policy_h: super::ScrollerPolicy, policy_v: super::ScrollerPolicy) {
+    fn with_policy(self, policy_h: super::ScrollerPolicy, policy_v: super::ScrollerPolicy) -> Self {
+        self.set_policy(policy_h, policy_v);
+        self
+    }
+    fn with_bounce(self, horizontal: bool, vertical: bool) -> Self {
+        self.set_bounce(horizontal, vertical);
+        self
+    }
+    fn with_bar_mode(self, horizontal: bool, vertical: bool) -> Self {
+        self.set_bar_mode(horizontal, vertical);
+        self
+    }
+    fn with_page_snapping(self, horizontal: bool, vertical: bool) -> Self {
+        self.set_page_snapping(horizontal, vertical);
+        self
+    }
+    fn set_policy(&self, policy_h: super::ScrollerPolicy, policy_v: super::ScrollerPolicy) {
         unsafe { elm_scroller_policy_set(self.as_raw(), policy_h as u32, policy_v as u32) };
+    }
+    fn policy(&self) -> (super::ScrollerPolicy, super::ScrollerPolicy) {
+        let (mut policy_h, mut policy_v) = (0u32, 0u32);
+        unsafe { elm_scroller_policy_get(self.as_raw(), &mut policy_h, &mut policy_v) };
+        (
+            match policy_h {
+                1 => super::ScrollerPolicy::On,
+                2 => super::ScrollerPolicy::Off,
+                3 => super::ScrollerPolicy::Last,
+                _ => super::ScrollerPolicy::Auto,
+            },
+            match policy_v {
+                1 => super::ScrollerPolicy::On,
+                2 => super::ScrollerPolicy::Off,
+                3 => super::ScrollerPolicy::Last,
+                _ => super::ScrollerPolicy::Auto,
+            },
+        )
+    }
+    fn set_bounce(&self, horizontal: bool, vertical: bool) {
+        unsafe { elm_scroller_bounce_set(self.as_raw(), horizontal as Eina_Bool, vertical as Eina_Bool) };
+    }
+    fn bounce(&self) -> (bool, bool) {
+        let (mut h, mut v) = (0 as Eina_Bool, 0 as Eina_Bool);
+        unsafe { elm_scroller_bounce_get(self.as_raw(), &mut h, &mut v) };
+        (h != 0, v != 0)
+    }
+    fn set_bar_mode(&self, horizontal: bool, vertical: bool) {
+        unsafe { elm_scroller_bar_mode_set(self.as_raw(), horizontal as Eina_Bool, vertical as Eina_Bool) };
+    }
+    fn bar_mode(&self) -> (bool, bool) {
+        let (mut h, mut v) = (0 as Eina_Bool, 0 as Eina_Bool);
+        unsafe { elm_scroller_bar_mode_get(self.as_raw(), &mut h, &mut v) };
+        (h != 0, v != 0)
+    }
+    fn set_page_snapping(&self, horizontal: bool, vertical: bool) {
+        unsafe { elm_scroller_page_snap_set(self.as_raw(), horizontal as Eina_Bool, vertical as Eina_Bool) };
+    }
+    fn page_snapping(&self) -> (bool, bool) {
+        let (mut h, mut v) = (0 as Eina_Bool, 0 as Eina_Bool);
+        unsafe { elm_scroller_page_snap_get(self.as_raw(), &mut h, &mut v) };
+        (h != 0, v != 0)
+    }
+    fn scroll_region(&self) -> (i32, i32, i32, i32) {
+        let (mut x, mut y, mut w, mut h) = (0i32, 0i32, 0i32, 0i32);
+        unsafe { elm_scroller_region_get(self.as_raw(), &mut x, &mut y, &mut w, &mut h) };
+        (x, y, w, h)
+    }
+    fn set_scroll_region(&self, x: i32, y: i32) {
+        unsafe { elm_scroller_region_set(self.as_raw(), x, y, 0, 0) };
     }
     fn last_page(&self) -> (i32, i32) {
         let (mut h, mut v) = (0i32, 0i32);

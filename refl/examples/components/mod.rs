@@ -5,10 +5,11 @@ mod gengrid;
 mod genlist;
 mod niccalc;
 mod rangers;
+mod scroller;
 mod selectors;
 mod sudoku;
 
 pub use {
     booker::Booker, calculator::Calc, converter::Converter, niccalc::NicCalc, rangers::Ranger,
-    selectors::Selector, sudoku::Sudoku,
+    scroller::ScrollerDemo, selectors::Selector, sudoku::Sudoku,
 };
