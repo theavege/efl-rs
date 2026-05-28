@@ -49,7 +49,7 @@ fn compile() -> Vec<String> {
         .args([
             "-O2",
             "-std=c99",
-            "-o=ewpi",
+            &format!("-o={out}/ewpi"),
             "ewpi.c",
             "ewpi_map.c",
             "ewpi_spawn.c",
@@ -59,7 +59,8 @@ fn compile() -> Vec<String> {
     if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
-    run = Command::new("use/ewpi/ewpi.exe")
+    run = Command::new(&format!("{out}/ewpi.exe"))
+        .current_dir(&format!("{out}"))
         .arg("-–jobs=8")
         .output()
         .expect("\x1b[31mFailed to execute ewpi!\x1b[0m");
@@ -68,16 +69,16 @@ fn compile() -> Vec<String> {
     };
     let home_path = std::env::var("HOMEPATH").unwrap();
     run = Command::new("meson")
-        .env("EWPI_PATH", format!("{home_path}\\ewpi_64"))
+        .env("EWPI_PATH", format!("{out}/ewpi_64"))
         .env(
             "PKG_CONFIG_PATH",
-            format!("{home_path}\\ewpi_64\\lib\\pkgconfig"),
+            format!("{out}/ewpi_64/lib/pkgconfig"),
         )
-        .env("CPPFLAGS", format!("-I{home_path}\\ewpi_64\\include"))
-        .env("LDFLAGS", format!("-L{home_path}\\ewpi_64\\lib"))
+        .env("CPPFLAGS", format!("-I{out}/ewpi_64/include"))
+        .env("LDFLAGS", format!("-L{out}/ewpi_64/lib"))
         .args([
             "setup",
-            &format!("--prefix={home_path}\\efl_64"),
+            &format!("--prefix={out}/efl_64"),
             "--libdir=lib",
             "--buildtype=release",
             "--strip",
@@ -100,7 +101,7 @@ fn compile() -> Vec<String> {
             "-Dbindings='cxx'",
             "-Dlua-interpreter=luajit",
             "-Delua=true",
-            &format!("{out}\\build"),
+            &format!("{out}/build"),
         ])
         .output()
         .expect("\x1b[31mFailed to execute meson!\x1b[0m");
@@ -108,7 +109,7 @@ fn compile() -> Vec<String> {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new("ninja")
-        .args(["-C", &format!("{out}\\build")])
+        .args(["-C", &format!("{out}/build")])
         .output()
         .expect("\x1b[31mFailed to execute ninja!\x1b[0m");
     match run.status.success() {

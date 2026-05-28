@@ -1742,10 +1742,6 @@ pub trait ScrollerExt: ElmObject {
         self.set_bounce(horizontal, vertical);
         self
     }
-    fn with_bar_mode(self, horizontal: bool, vertical: bool) -> Self {
-        self.set_bar_mode(horizontal, vertical);
-        self
-    }
     fn with_page_snapping(self, horizontal: bool, vertical: bool) -> Self {
         self.set_page_snapping(horizontal, vertical);
         self
