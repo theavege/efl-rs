@@ -224,9 +224,9 @@ impl Clock {
         elm
     }
     pub fn time(&self) -> (i32, i32, i32) {
-        let hrs: mut i32 = 0;
-        let min: mut i32 = 0;
-        let sec: mut i32 = 0;
+        let mut hrs: i32 = 0;
+        let mut min: i32 = 0;
+        let mut sec: i32 = 0;
         unsafe { elm_clock_time_get(self.as_raw(), &mut hrs, &mut min, &mut sec) };
         (hrs, min, sec)
     }
