@@ -1416,6 +1416,42 @@ pub trait LayoutExt: ContainerExt {
     }
 }
 
+pub trait GridExt: ContainerExt {
+    fn set_virtual_size(&self, w: i32, h: i32) {
+        unsafe { elm_grid_size_set(self.as_raw(), w, h) };
+    }
+    fn with_virtual_size(self, w: i32, h: i32) -> Self {
+        self.set_virtual_size(w, h);
+        self
+    }
+    fn virtual_size(&self) -> (i32, i32) {
+        let (mut w, mut h) = (0i32, 0i32);
+        unsafe { elm_grid_size_get(self.as_raw(), &mut w, &mut h) };
+        (w, h)
+    }
+    fn pack(&self, subobj: &impl ElmObject, x: i32, y: i32, w: i32, h: i32) {
+        unsafe { elm_grid_pack(self.as_raw(), subobj.as_raw(), x, y, w, h) };
+    }
+    fn with_pack(self, subobj: &impl ElmObject, x: i32, y: i32, w: i32, h: i32) -> Self {
+        self.pack(subobj, x, y, w, h);
+        self
+    }
+    fn unpack(&self, subobj: &impl ElmObject) {
+        unsafe { elm_grid_unpack(self.as_raw(), subobj.as_raw()) };
+    }
+    fn clear(&self, clear_items: bool) {
+        unsafe { elm_grid_clear(self.as_raw(), clear_items as Eina_Bool) };
+    }
+    fn set_pack(&self, subobj: &impl ElmObject, x: i32, y: i32, w: i32, h: i32) {
+        unsafe { elm_grid_pack_set(subobj.as_raw(), x, y, w, h) };
+    }
+    fn pack_get(&self, subobj: &impl ElmObject) -> (i32, i32, i32, i32) {
+        let (mut x, mut y, mut w, mut h) = (0i32, 0i32, 0i32, 0i32);
+        unsafe { elm_grid_pack_get(subobj.as_raw(), &mut x, &mut y, &mut w, &mut h) };
+        (x, y, w, h)
+    }
+}
+
 pub trait TableExt: ContainerExt {
     fn pack(&self, subobj: &impl ElmObject, col: i32, row: i32, colspan: i32, rowspan: i32) {
         unsafe { elm_table_pack(self.as_raw(), subobj.as_raw(), col, row, colspan, rowspan) };

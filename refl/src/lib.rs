@@ -845,6 +845,34 @@ impl ContainerExt for Box {
 impl BoxExt for Box {}
 
 #[derive(Default)]
+pub struct Grid(Option<*mut Evas_Object>);
+
+impl Grid {
+    pub fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_grid_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+}
+
+impl EvasObject for Grid {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Grid {}
+impl ContainerExt for Grid {
+    fn add(&self, child: &impl ElmObject) {
+        self.pack(child, 0, 0, 1, 1);
+        child.show();
+    }
+}
+impl GridExt for Grid {}
+
+#[derive(Default)]
 pub struct Table(Option<*mut Evas_Object>);
 
 impl Table {
