@@ -60,7 +60,6 @@ fn compile() -> Vec<String> {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new(&format!("{out_dir}/ewpi.exe"))
-        .current_dir(&format!("{out_dir}"))
         .arg("-–jobs=8")
         .output()
         .expect("\x1b[31mFailed to execute 'ewpi -–jobs=8'!\x1b[0m");
