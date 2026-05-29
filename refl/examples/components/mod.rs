@@ -8,6 +8,6 @@ mod selectors;
 mod sudoku;
 
 pub use {
-    booker::Booker, calculator::Calc, colorselector::ColorselectorDemo, converter::Converter, niccalc::NicCalc, rangers::Ranger,
-    selectors::Selector, sudoku::Sudoku,
+    booker::Booker, calculator::Calc, colorselector::ColorselectorDemo, converter::Converter,
+    niccalc::NicCalc, rangers::Ranger, selectors::Selector, sudoku::Sudoku,
 };

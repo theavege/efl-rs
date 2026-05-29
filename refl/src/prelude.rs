@@ -354,8 +354,6 @@ pub trait ConformantExt: ContainerExt {
     }
 }
 
-
-
 pub trait ColorselectorExt: Sized + ElmObject {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) }).with_conf();
@@ -373,7 +371,8 @@ pub trait ColorselectorExt: Sized + ElmObject {
     fn set_color(&self, r: i32, g: i32, b: i32, a: i32) {
         unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
     }
-}pub trait BoxExt: ContainerExt {
+}
+pub trait BoxExt: ContainerExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_box_add(prt.as_raw()) })
             .with_homogeneous(false)

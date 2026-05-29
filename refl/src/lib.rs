@@ -1009,7 +1009,6 @@ impl ContainerExt for Conformant {
 }
 impl ConformantExt for Conformant {}
 
-
 #[derive(Default)]
 pub struct Colorselector(Option<*mut Evas_Object>);
 
