@@ -28,6 +28,7 @@ impl ParseCallbacks for MacroCallback {
 fn compile() -> Vec<String> {
     use std::process::Command;
     let out = env::var("OUT_DIR").unwrap();
+    let home = env::var("HOMEPATH").unwrap();
     let mut run = Command::new("git")
         .args([
             "submodule",
@@ -49,7 +50,7 @@ fn compile() -> Vec<String> {
         .args([
             "-O2",
             "-std=c99",
-            &format!("-o={out}\\ewpi.exe"),
+            &format!("-o={home}/ewpi.exe"),
             "ewpi.c",
             "ewpi_map.c",
             "ewpi_spawn.c",
@@ -59,7 +60,7 @@ fn compile() -> Vec<String> {
     if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
-    run = Command::new(&format!("{out}\\ewpi.exe"))
+    run = Command::new(&format!("{home}/ewpi.exe"))
         .current_dir(&format!("{out}"))
         .arg("-–jobs=8")
         .output()
