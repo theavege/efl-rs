@@ -1,8 +1,6 @@
 mod booker;
 mod calculator;
 mod converter;
-mod gengrid;
-mod genlist;
 mod niccalc;
 mod rangers;
 mod selectors;
