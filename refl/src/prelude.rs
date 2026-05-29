@@ -346,6 +346,14 @@ pub trait ContainerExt: ElmObject {
     }
 }
 
+pub trait ConformantExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_conformant_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+}
+
 pub trait BoxExt: ContainerExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_box_add(prt.as_raw()) })
