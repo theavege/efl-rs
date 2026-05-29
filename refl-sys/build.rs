@@ -50,7 +50,7 @@ fn compile() -> Vec<String> {
         .args([
             "-O2",
             "-std=c99",
-            &format!("-o={home}/ewpi.exe"),
+            &format!("-o={home}\\ewpi.exe"),
             "ewpi.c",
             "ewpi_map.c",
             "ewpi_spawn.c",
