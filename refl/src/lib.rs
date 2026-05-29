@@ -224,11 +224,11 @@ impl Clock {
         elm
     }
     pub fn time(&self) -> (i32, i32, i32) {
-        let hrs: *mut i32 = std::ptr::null_mut();
-        let min: *mut i32 = std::ptr::null_mut();
-        let sec: *mut i32 = std::ptr::null_mut();
-        unsafe { elm_clock_time_get(self.as_raw(), hrs, min, sec) };
-        (hrs as i32, min as i32, sec as i32)
+        let hrs: mut i32 = 0;
+        let min: mut i32 = 0;
+        let sec: mut i32 = 0;
+        unsafe { elm_clock_time_get(self.as_raw(), &mut hrs, &mut min, &mut sec) };
+        (hrs, min, sec)
     }
     pub fn set_time(&self, hrs: i32, min: i32, sec: i32) {
         unsafe { elm_clock_time_set(self.as_raw(), hrs, min, sec) };

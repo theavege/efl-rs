@@ -28,6 +28,7 @@ impl ParseCallbacks for MacroCallback {
 fn compile() -> Vec<String> {
     use std::process::Command;
     let out_dir = env::var("OUT_DIR").unwrap();
+    let home_path = env::var("HOMEPATH").unwrap();
     let mut run = Command::new("git")
         .args([
             "submodule",
@@ -59,24 +60,24 @@ fn compile() -> Vec<String> {
     if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
-    run = Command::new(&format!("{out_dir}/ewpi.exe"))
-        .arg("-–jobs=8")
+    run = Command::new(format!("{out_dir}/ewpi.exe"))
+        .arg("--jobs=8")
         .output()
         .expect("\x1b[31mFailed to execute 'ewpi -–jobs=8'!\x1b[0m");
     if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new("meson")
-        .env("EWPI_PATH", format!("{out_dir}\\ewpi_64"))
+        .env("EWPI_PATH", format!("{home_path}/ewpi_64"))
         .env(
             "PKG_CONFIG_PATH",
-            format!("{out_dir}/ewpi_64/lib/pkgconfig"),
+            format!("{home_path}/ewpi_64/lib/pkgconfig"),
         )
-        .env("CPPFLAGS", format!("-I{out_dir}/ewpi_64/include"))
-        .env("LDFLAGS", format!("-L{out_dir}/ewpi_64/lib"))
+        .env("CPPFLAGS", format!("-I{home_path}/ewpi_64/include"))
+        .env("LDFLAGS", format!("-L{home_path}/ewpi_64/lib"))
         .args([
             "setup",
-            &format!("--prefix={out_dir}/efl_64"),
+            &format!("--prefix={home_path}/efl_64"),
             "--libdir=lib",
             "--buildtype=release",
             "--strip",
@@ -114,9 +115,9 @@ fn compile() -> Vec<String> {
         true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
         false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
     };
-    println!("cargo:rustc-link-search=native={out_dir}\\build");
+    println!("cargo:rustc-link-search=native={out_dir}/build");
     println!("cargo:rustc-link-lib=static=efl");
-    Vec::from([format!("-I{out_dir}/ewpi_64/include")])
+    Vec::from([format!("-I{home_path}/ewpi_64/include")])
 }
 
 #[cfg(target_os = "linux")]
