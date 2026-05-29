@@ -372,6 +372,14 @@ pub trait ColorselectorExt: Sized + ElmObject {
         unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
     }
 }
+
+pub trait DiskselectorExt: Sized + ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_diskselector_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+}
 pub trait BoxExt: ContainerExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_box_add(prt.as_raw()) })
@@ -2311,3 +2319,4 @@ pub trait Component: Default + 'static {
         });
     }
 }
+

@@ -1010,6 +1010,41 @@ impl ContainerExt for Conformant {
 impl ConformantExt for Conformant {}
 
 #[derive(Default)]
+pub struct Diskselector(Option<*mut Evas_Object>);
+
+impl EvasObject for Diskselector {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Diskselector {}
+impl SelectorExt for Diskselector {
+    fn selected(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_diskselector_selected_item_get(self.as_raw()) })
+    }
+    fn first(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_diskselector_first_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_diskselector_last_item_get(self.as_raw()) })
+    }
+    fn value(&self) -> u32 {
+        unsafe { elm_diskselector_selected_index_get(self.as_raw()) as u32 }
+    }
+    fn set_value(&self, value: u32) {
+        unsafe { elm_diskselector_selected_index_set(self.as_raw(), value as i32) };
+    }
+    fn clear(&self) {
+        unsafe { elm_diskselector_clear(self.as_raw()) };
+    }
+}
+impl OnChanged for Diskselector {}
+impl DiskselectorExt for Diskselector {}
+
+#[derive(Default)]
 pub struct Colorselector(Option<*mut Evas_Object>);
 
 impl EvasObject for Colorselector {
@@ -1076,3 +1111,4 @@ impl OnUnselected for Genlist {}
 impl OnActivated for Genlist {}
 impl OnClickedDouble for Genlist {}
 impl GenlistExt for Genlist {}
+
