@@ -42,6 +42,7 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
   - [x] [Containers](docs/elm_containers.md)
     - [x] [Box](docs/elm_containers.md#Box)
     - [x] [Bubble](docs/elm_containers.md#Bubble)
+    - [x] [Conformant](docs/elm_containers.md#Conformant)
     - [x] [Frame](docs/elm_containers.md#Frame)
     - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
     - [x] [Notify](docs/elm_containers.md#Notify)

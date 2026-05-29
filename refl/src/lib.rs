@@ -962,6 +962,26 @@ impl OnChanged for Check {}
 impl CheckExt for Check {}
 
 #[derive(Default)]
+pub struct Conformant(Option<*mut Evas_Object>);
+
+impl EvasObject for Conformant {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Conformant {}
+impl ContainerExt for Conformant {
+    fn add(&self, child: &impl ElmObject) {
+        self.set_content(child, "default");
+        child.show();
+    }
+}
+impl ConformantExt for Conformant {}
+
+#[derive(Default)]
 pub struct FileSelector(Option<*mut Evas_Object>);
 
 impl EvasObject for FileSelector {
