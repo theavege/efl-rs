@@ -69,7 +69,10 @@ fn compile() -> Vec<String> {
     };
     run = Command::new("meson")
         .env("EWPI_PATH", format!("{out_dir}\\ewpi_64"))
-        .env("PKG_CONFIG_PATH", format!("{out_dir}/ewpi_64/lib/pkgconfig"))
+        .env(
+            "PKG_CONFIG_PATH",
+            format!("{out_dir}/ewpi_64/lib/pkgconfig"),
+        )
         .env("CPPFLAGS", format!("-I{out_dir}/ewpi_64/include"))
         .env("LDFLAGS", format!("-L{out_dir}/ewpi_64/lib"))
         .args([
