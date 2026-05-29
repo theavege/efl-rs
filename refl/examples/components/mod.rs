@@ -10,5 +10,6 @@ mod sudoku;
 
 pub use {
     booker::Booker, calculator::Calc, colorselector::ColorselectorDemo, converter::Converter,
-    diskselector::DiskselectorDemo, niccalc::NicCalc, rangers::Ranger, selectors::Selector, sudoku::Sudoku,
+    diskselector::DiskselectorDemo, niccalc::NicCalc, rangers::Ranger, selectors::Selector,
+    sudoku::Sudoku,
 };

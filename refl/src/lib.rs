@@ -1022,6 +1022,9 @@ impl EvasObject for Diskselector {
 }
 impl ElmObject for Diskselector {}
 impl SelectorExt for Diskselector {
+    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
+        self.append(label, func)
+    }
     fn selected(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { elm_diskselector_selected_item_get(self.as_raw()) })
     }
@@ -1032,10 +1035,11 @@ impl SelectorExt for Diskselector {
         WidgetItem::from_raw(unsafe { elm_diskselector_last_item_get(self.as_raw()) })
     }
     fn value(&self) -> u32 {
-        unsafe { elm_diskselector_selected_index_get(self.as_raw()) as u32 }
+        //~ unsafe { elm_diskselector_selected_index_get(self.as_raw()) as u32 }
+        0
     }
     fn set_value(&self, value: u32) {
-        unsafe { elm_diskselector_selected_index_set(self.as_raw(), value as i32) };
+        //~ unsafe { elm_diskselector_selected_index_set(self.as_raw(), value as i32) };
     }
     fn clear(&self) {
         unsafe { elm_diskselector_clear(self.as_raw()) };
@@ -1111,4 +1115,3 @@ impl OnUnselected for Genlist {}
 impl OnActivated for Genlist {}
 impl OnClickedDouble for Genlist {}
 impl GenlistExt for Genlist {}
-
