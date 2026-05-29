@@ -354,7 +354,26 @@ pub trait ConformantExt: ContainerExt {
     }
 }
 
-pub trait BoxExt: ContainerExt {
+
+
+pub trait ColorselectorExt: Sized + ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn color(&self) -> (i32, i32, i32, i32) {
+        let mut r: i32 = 0;
+        let mut g: i32 = 0;
+        let mut b: i32 = 0;
+        let mut a: i32 = 0;
+        unsafe { elm_colorselector_color_get(self.as_raw(), &mut r, &mut g, &mut b, &mut a) };
+        (r, g, b, a)
+    }
+    fn set_color(&self, r: i32, g: i32, b: i32, a: i32) {
+        unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
+    }
+}pub trait BoxExt: ContainerExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_box_add(prt.as_raw()) })
             .with_homogeneous(false)

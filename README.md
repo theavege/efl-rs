@@ -47,3 +47,6 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
     - [x] [Grid](docs/elm_containers.md#Grid)
     - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
     - [x] [Notify](docs/elm_containers.md#Notify)
+
+  - [x] [Color Selectors](docs/elm_colorselectors.md)
+    - [x] [Colorselector](docs/elm_colorselectors.md#Colorselector)
