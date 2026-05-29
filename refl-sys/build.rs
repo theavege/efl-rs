@@ -27,8 +27,7 @@ impl ParseCallbacks for MacroCallback {
 #[cfg(target_os = "windows")]
 fn compile() -> Vec<String> {
     use std::process::Command;
-    let out = env::var("OUT_DIR").unwrap();
-    let home = env::var("HOMEPATH").unwrap();
+    let out_dir = env::var("OUT_DIR").unwrap();
     let mut run = Command::new("git")
         .args([
             "submodule",
@@ -46,22 +45,22 @@ fn compile() -> Vec<String> {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new("gcc")
-        .current_dir("use/ewpi")
         .args([
             "-O2",
             "-std=c99",
-            &format!("-o={home}\\ewpi.exe"),
-            "ewpi.c",
-            "ewpi_map.c",
-            "ewpi_spawn.c",
+            "-o",
+            &format!("{out_dir}/ewpi.exe"),
+            "use/ewpi/ewpi.c",
+            "use/ewpi/ewpi_map.c",
+            "use/ewpi/ewpi_spawn.c",
         ])
         .output()
         .expect("\x1b[31mFailed to execute gcc!\x1b[0m");
     if !run.status.success() {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
-    run = Command::new(&format!("{home}/ewpi.exe"))
-        .current_dir(&format!("{out}"))
+    run = Command::new(&format!("{out_dir}/ewpi.exe"))
+        .current_dir(&format!("{out_dir}"))
         .arg("-–jobs=8")
         .output()
         .expect("\x1b[31mFailed to execute 'ewpi -–jobs=8'!\x1b[0m");
@@ -69,13 +68,13 @@ fn compile() -> Vec<String> {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new("meson")
-        .env("EWPI_PATH", format!("{out}\\ewpi_64"))
-        .env("PKG_CONFIG_PATH", format!("{out}/ewpi_64/lib/pkgconfig"))
-        .env("CPPFLAGS", format!("-I{out}/ewpi_64/include"))
-        .env("LDFLAGS", format!("-L{out}/ewpi_64/lib"))
+        .env("EWPI_PATH", format!("{out_dir}\\ewpi_64"))
+        .env("PKG_CONFIG_PATH", format!("{out_dir}/ewpi_64/lib/pkgconfig"))
+        .env("CPPFLAGS", format!("-I{out_dir}/ewpi_64/include"))
+        .env("LDFLAGS", format!("-L{out_dir}/ewpi_64/lib"))
         .args([
             "setup",
-            &format!("--prefix={out}/efl_64"),
+            &format!("--prefix={out_dir}/efl_64"),
             "--libdir=lib",
             "--buildtype=release",
             "--strip",
@@ -98,7 +97,7 @@ fn compile() -> Vec<String> {
             "-Dbindings='cxx'",
             "-Dlua-interpreter=luajit",
             "-Delua=true",
-            &format!("{out}/build"),
+            &format!("{out_dir}/build"),
         ])
         .output()
         .expect("\x1b[31mFailed to execute meson!\x1b[0m");
@@ -106,16 +105,16 @@ fn compile() -> Vec<String> {
         panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
     };
     run = Command::new("ninja")
-        .args(["-C", &format!("{out}/build")])
+        .args(["-C", &format!("{out_dir}/build")])
         .output()
         .expect("\x1b[31mFailed to execute ninja!\x1b[0m");
     match run.status.success() {
         true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
         false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
     };
-    println!("cargo:rustc-link-search=native={out}\\build");
+    println!("cargo:rustc-link-search=native={out_dir}\\build");
     println!("cargo:rustc-link-lib=static=efl");
-    Vec::from([format!("-I{out}/ewpi_64/include")])
+    Vec::from([format!("-I{out_dir}/ewpi_64/include")])
 }
 
 #[cfg(target_os = "linux")]
