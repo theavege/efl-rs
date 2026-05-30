@@ -43,5 +43,14 @@ jobs:
           $ErrorActionPreference = 'stop'
           Set-PSDebug -Strict
           & pip install meson ninja | Out-Null
+          If ($LastExitCode -ne 0) {
+            Exit $LastExitCode
+          }
           & cargo clippy --quiet --features="all" --examples | Out-Host
+          If ($LastExitCode -ne 0) {
+            Exit $LastExitCode
+          }
           & cargo build --release --features="all" --examples | Out-Host
+          If ($LastExitCode -ne 0) {
+            Exit $LastExitCode
+          }
