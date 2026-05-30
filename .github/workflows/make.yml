@@ -40,6 +40,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: |
+          $ErrorActionPreference = 'stop'
+          Set-PSDebug -Strict
           & pip install meson ninja | Out-Null
           & cargo clippy --quiet --features="all" --examples | Out-Host
           & cargo build --release --features="all" --examples | Out-Host
