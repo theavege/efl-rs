@@ -224,11 +224,11 @@ impl Clock {
         elm
     }
     pub fn time(&self) -> (i32, i32, i32) {
-        let hrs: *mut i32 = std::ptr::null_mut();
-        let min: *mut i32 = std::ptr::null_mut();
-        let sec: *mut i32 = std::ptr::null_mut();
-        unsafe { elm_clock_time_get(self.as_raw(), hrs, min, sec) };
-        (hrs as i32, min as i32, sec as i32)
+        let mut hrs: i32 = 0;
+        let mut min: i32 = 0;
+        let mut sec: i32 = 0;
+        unsafe { elm_clock_time_get(self.as_raw(), &mut hrs, &mut min, &mut sec) };
+        (hrs, min, sec)
     }
     pub fn set_time(&self, hrs: i32, min: i32, sec: i32) {
         unsafe { elm_clock_time_set(self.as_raw(), hrs, min, sec) };
@@ -1008,6 +1008,45 @@ impl ContainerExt for Conformant {
     }
 }
 impl ConformantExt for Conformant {}
+
+#[derive(Default)]
+pub struct Diskselector(Option<*mut Evas_Object>);
+
+impl EvasObject for Diskselector {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Diskselector {}
+impl SelectorExt for Diskselector {
+    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
+        self.append(label, func)
+    }
+    fn selected(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_diskselector_selected_item_get(self.as_raw()) })
+    }
+    fn first(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_diskselector_first_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_diskselector_last_item_get(self.as_raw()) })
+    }
+    fn value(&self) -> u32 {
+        //~ unsafe { elm_diskselector_selected_index_get(self.as_raw()) as u32 }
+        0
+    }
+    fn set_value(&self, value: u32) {
+        //~ unsafe { elm_diskselector_selected_index_set(self.as_raw(), value as i32) };
+    }
+    fn clear(&self) {
+        unsafe { elm_diskselector_clear(self.as_raw()) };
+    }
+}
+impl OnChanged for Diskselector {}
+impl DiskselectorExt for Diskselector {}
 
 #[derive(Default)]
 pub struct Colorselector(Option<*mut Evas_Object>);

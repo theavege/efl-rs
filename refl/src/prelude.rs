@@ -372,6 +372,26 @@ pub trait ColorselectorExt: Sized + ElmObject {
         unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
     }
 }
+
+pub trait DiskselectorExt: Sized + ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_diskselector_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn append<F: FnMut(Self) + 'static>(&self, label_: &str, func: F) -> super::WidgetItem {
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        super::WidgetItem::from_raw(unsafe {
+            elm_diskselector_item_append(
+                self.as_raw(),
+                CString::new(label_).unwrap().as_ptr(),
+                super::Icon::new(self).with_standard(label_).as_raw(),
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            )
+        })
+    }
+}
 pub trait BoxExt: ContainerExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_box_add(prt.as_raw()) })
