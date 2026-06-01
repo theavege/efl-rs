@@ -29,21 +29,7 @@ fn compile() -> Vec<String> {
     use std::process::Command;
     let out_dir = env::var("OUT_DIR").unwrap();
     let home_path = env::var("HOMEPATH").unwrap();
-    let mut run = Command::new("gcc")
-        .args([
-            "-O2",
-            "-std=c99",
-            "-o",
-            &format!("{out_dir}/ewpi.exe"),
-            "use/ewpi/ewpi.c",
-            "use/ewpi/ewpi_map.c",
-            "use/ewpi/ewpi_spawn.c",
-        ])
-        .output()
-        .expect("\x1b[31mFailed to execute gcc!\x1b[0m");
-    if !run.status.success() {
-        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
-    };
+    shell(format!("gcc -O2 -std=c99 -o '{out_dir}/ewpi.exe' 'use/ewpi/ewpi.c' 'use/ewpi/ewpi_map.c' use/ewpi/ewpi_spawn.c"));
     run = Command::new(format!("{out_dir}/ewpi.exe"))
         .arg("--jobs=8")
         .output()

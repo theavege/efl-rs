@@ -56,16 +56,20 @@ pub enum WinType {
     Dock,
 }
 
-pub struct EventHandler(*mut Ecore_Event_Handler);
+pub struct EventHandler(Option<*mut Ecore_Event_Handler>);
 
 impl EcoreEventExt for EventHandler {
     fn as_raw(&self) -> *mut Ecore_Event_Handler {
-        self.0
-    }
-    fn from_raw(obj: *mut Ecore_Event_Handler) -> Self {
-        Self(obj)
+        self.0.expect("Empty Evas_Object!")
     }
 }
+
+impl From<*mut Ecore_Event_Handler> for EventHandler {
+    fn from(obj: *mut Ecore_Event_Handler) -> Self {
+        Self(Some(obj))
+    }
+}
+
 impl EventHandlerExt for EventHandler {}
 
 #[derive(Default)]
@@ -77,12 +81,6 @@ impl EvasObjectItemExt for WidgetItem {
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
         Self(Some(obj))
-    }
-}
-
-impl AsMut<Evas_Object> for WidgetItem {
-    fn as_mut(&mut self) -> &mut Evas_Object {
-        unsafe { &mut *self.0.unwrap() }
     }
 }
 
@@ -129,14 +127,14 @@ impl OnDismissed for Menu {}
 impl MenuExt for Menu {}
 
 #[derive(Default)]
-pub struct Timer(*mut Ecore_Timer);
+pub struct Timer(Option<*mut Ecore_Timer>);
 
 impl EcoreTimerExt for Timer {
     fn as_raw(&self) -> *mut Ecore_Timer {
-        self.0
+        self.0.expect("Empty Evas_Object!")
     }
     fn from_raw(obj: *mut Ecore_Timer) -> Self {
-        Self(obj)
+        Self(Some(obj))
     }
 }
 impl TimerExt for Timer {}

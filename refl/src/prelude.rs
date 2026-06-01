@@ -52,7 +52,6 @@ pub fn exit() {
 
 pub trait EcoreEventExt: Sized {
     fn as_raw(&self) -> *mut Ecore_Event_Handler;
-    fn from_raw(obj: *mut Ecore_Event_Handler) -> Self;
 }
 
 pub trait EcoreTimerExt: Sized {
@@ -81,10 +80,10 @@ pub trait TimerExt: EcoreTimerExt {
     }
 }
 
-pub trait EventHandlerExt: EcoreEventExt {
+pub trait EventHandlerExt: EcoreEventExt + From<*mut Ecore_Event_Handler> {
     fn new<F: FnMut() -> bool + 'static>(type_: i32, func: F) -> Self {
         let raw_ptr: *mut Box<EcoreCb> = Box::into_raw(Box::new(Box::new(func)));
-        Self::from_raw(unsafe {
+        Self::from(unsafe {
             ecore_event_handler_add(type_, Some(ecore_event_handler_cb), raw_ptr as *mut c_void)
         })
     }
