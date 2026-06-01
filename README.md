@@ -48,5 +48,7 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
     - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
     - [x] [Notify](docs/elm_containers.md#Notify)
 
+  - [x] [Popups](docs/elm_pops.md)
+    - [x] [Hover](docs/elm_pops.md#Hover)
   - [x] [Color Selectors](docs/elm_colorselectors.md)
     - [x] [Colorselector](docs/elm_colorselectors.md#Colorselector)
