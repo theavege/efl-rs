@@ -51,32 +51,28 @@ pub fn exit() {
 }
 
 pub trait EcoreEventExt: Sized {
-    fn as_raw(&self) -> *mut Ecore_Event_Handler;
+    fn into_ptr(self) -> *mut Ecore_Event_Handler;
 }
 
 pub trait EcoreTimerExt: Sized {
-    fn as_raw(&self) -> *mut Ecore_Timer;
-    fn from_raw(obj: *mut Ecore_Timer) -> Self;
+    fn into_raw(self) -> *mut Ecore_Timer;
 }
 
-pub trait TimerExt: EcoreTimerExt {
+pub trait TimerExt: EcoreTimerExt + From<*mut Ecore_Timer> {
     fn new<F: FnMut() -> bool + 'static>(timeout: f64, func: F) -> Self {
         let raw_ptr: *mut Box<EcoreCb> = Box::into_raw(Box::new(Box::new(func)));
-        Self::from_raw(unsafe {
+        Self::from(unsafe {
             ecore_timer_add(timeout, Some(ecore_task_cb), raw_ptr as *mut c_void)
         })
     }
-    fn del(&self) {
-        unsafe { ecore_timer_del(self.as_raw()) };
+    fn del(self) {
+        unsafe { ecore_timer_del(self.into_raw()) };
     }
-    fn set_freeze(&self) {
-        unsafe { ecore_timer_freeze(self.as_raw()) };
+    fn set_freeze(self) {
+        unsafe { ecore_timer_freeze(self.into_raw()) };
     }
-    fn freeze(&self) -> bool {
-        unsafe { ecore_timer_freeze_get(self.as_raw()) != 0 }
-    }
-    fn set_delay(&self, value: f64) {
-        unsafe { ecore_timer_delay(self.as_raw(), value) };
+    fn set_delay(self, value: f64) {
+        unsafe { ecore_timer_delay(self.into_raw(), value) };
     }
 }
 
@@ -87,8 +83,8 @@ pub trait EventHandlerExt: EcoreEventExt + From<*mut Ecore_Event_Handler> {
             ecore_event_handler_add(type_, Some(ecore_event_handler_cb), raw_ptr as *mut c_void)
         })
     }
-    fn del(&self) {
-        unsafe { ecore_event_handler_del(self.as_raw()) };
+    fn del(self) {
+        unsafe { ecore_event_handler_del(self.into_ptr()) };
     }
 }
 

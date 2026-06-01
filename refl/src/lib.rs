@@ -3,7 +3,7 @@ pub mod prelude;
 use {
     prelude::*,
     refl_sys::*,
-    std::{cell::RefCell, rc::Rc},
+    std::{ptr::NonNull,cell::RefCell, rc::Rc},
 };
 
 pub enum ActionSliderPos {
@@ -56,21 +56,38 @@ pub enum WinType {
     Dock,
 }
 
-pub struct EventHandler(Option<*mut Ecore_Event_Handler>);
+pub struct EventHandler(Option<NonNull<Ecore_Event_Handler>>);
 
 impl EcoreEventExt for EventHandler {
-    fn as_raw(&self) -> *mut Ecore_Event_Handler {
-        self.0.expect("Empty Evas_Object!")
+    fn into_ptr(self) -> *mut Ecore_Event_Handler {
+        self.0.expect("Empty Evas_Object!").as_ptr()
     }
 }
 
 impl From<*mut Ecore_Event_Handler> for EventHandler {
     fn from(obj: *mut Ecore_Event_Handler) -> Self {
-        Self(Some(obj))
+        Self(NonNull::new(obj))
     }
 }
 
 impl EventHandlerExt for EventHandler {}
+
+#[derive(Default)]
+pub struct Timer(Option<NonNull<Ecore_Timer>>);
+
+impl EcoreTimerExt for Timer {
+    fn into_raw(self) -> *mut Ecore_Timer {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+}
+
+impl From<*mut Ecore_Timer> for Timer {
+    fn from(obj: *mut Ecore_Timer) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+
+impl TimerExt for Timer {}
 
 #[derive(Default)]
 pub struct WidgetItem(Option<*mut Evas_Object>);
@@ -125,19 +142,6 @@ impl OnChanged for Menu {}
 impl OnClicked for Menu {}
 impl OnDismissed for Menu {}
 impl MenuExt for Menu {}
-
-#[derive(Default)]
-pub struct Timer(Option<*mut Ecore_Timer>);
-
-impl EcoreTimerExt for Timer {
-    fn as_raw(&self) -> *mut Ecore_Timer {
-        self.0.expect("Empty Evas_Object!")
-    }
-    fn from_raw(obj: *mut Ecore_Timer) -> Self {
-        Self(Some(obj))
-    }
-}
-impl TimerExt for Timer {}
 
 #[derive(Default)]
 pub struct Tm {
