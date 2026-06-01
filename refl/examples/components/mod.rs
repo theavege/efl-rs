@@ -3,14 +3,14 @@ mod calculator;
 mod colorselector;
 mod converter;
 mod diskselector;
+mod hover;
 mod niccalc;
 mod rangers;
 mod selectors;
 mod sudoku;
-mod hover;
 
 pub use {
     booker::Booker, calculator::Calc, colorselector::ColorselectorDemo, converter::Converter,
-    diskselector::DiskselectorDemo, niccalc::NicCalc, rangers::Ranger, selectors::Selector,
-    sudoku::Sudoku, hover::HoverDemo,
+    diskselector::DiskselectorDemo, hover::HoverDemo, niccalc::NicCalc, rangers::Ranger,
+    selectors::Selector, sudoku::Sudoku,
 };
