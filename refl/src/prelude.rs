@@ -373,6 +373,20 @@ pub trait ColorselectorExt: Sized + ElmObject {
     }
 }
 
+pub trait HoverExt: Sized + ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_hover_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn set_target(&self, target: &impl ElmObject) {
+        unsafe { elm_hover_target_set(self.as_raw(), target.as_raw()) };
+    }
+    fn dismiss(&self) {
+        unsafe { elm_hover_dismiss(self.as_raw()) };
+    }
+}
+
 pub trait DiskselectorExt: Sized + ElmObject {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_diskselector_add(prt.as_raw()) }).with_conf();
