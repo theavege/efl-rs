@@ -1062,6 +1062,22 @@ impl EvasObject for Colorselector {
 impl ElmObject for Colorselector {}
 impl OnChanged for Colorselector {}
 impl ColorselectorExt for Colorselector {}
+
+#[derive(Default)]
+pub struct Hover(Option<*mut Evas_Object>);
+
+impl EvasObject for Hover {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!")
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(Some(obj))
+    }
+}
+impl ElmObject for Hover {}
+impl OnDismissed for Hover {}
+impl HoverExt for Hover {}
+
 #[derive(Default)]
 pub struct FileSelector(Option<*mut Evas_Object>);
 
