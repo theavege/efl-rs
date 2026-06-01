@@ -50,30 +50,28 @@ pub fn exit() {
     };
 }
 
-pub trait EcoreEventExt: Sized {
-    fn into_ptr(self) -> *mut Ecore_Event_Handler;
-}
-
 pub trait EcoreTimerExt: Sized {
-    fn into_raw(self) -> *mut Ecore_Timer;
+    fn as_ptr(&self) -> *mut Ecore_Timer;
 }
 
 pub trait TimerExt: EcoreTimerExt + From<*mut Ecore_Timer> {
     fn new<F: FnMut() -> bool + 'static>(timeout: f64, func: F) -> Self {
         let raw_ptr: *mut Box<EcoreCb> = Box::into_raw(Box::new(Box::new(func)));
-        Self::from(unsafe {
-            ecore_timer_add(timeout, Some(ecore_task_cb), raw_ptr as *mut c_void)
-        })
+        Self::from(unsafe { ecore_timer_add(timeout, Some(ecore_task_cb), raw_ptr as *mut c_void) })
     }
-    fn del(self) {
-        unsafe { ecore_timer_del(self.into_raw()) };
+    fn del(&self) {
+        unsafe { ecore_timer_del(self.as_ptr()) };
     }
-    fn set_freeze(self) {
-        unsafe { ecore_timer_freeze(self.into_raw()) };
+    fn set_freeze(&self) {
+        unsafe { ecore_timer_freeze(self.as_ptr()) };
     }
-    fn set_delay(self, value: f64) {
-        unsafe { ecore_timer_delay(self.into_raw(), value) };
+    fn set_delay(&self, value: f64) {
+        unsafe { ecore_timer_delay(self.as_ptr(), value) };
     }
+}
+
+pub trait EcoreEventExt: Sized {
+    fn as_ptr(&self) -> *mut Ecore_Event_Handler;
 }
 
 pub trait EventHandlerExt: EcoreEventExt + From<*mut Ecore_Event_Handler> {
@@ -83,8 +81,8 @@ pub trait EventHandlerExt: EcoreEventExt + From<*mut Ecore_Event_Handler> {
             ecore_event_handler_add(type_, Some(ecore_event_handler_cb), raw_ptr as *mut c_void)
         })
     }
-    fn del(self) {
-        unsafe { ecore_event_handler_del(self.into_ptr()) };
+    fn del(&self) {
+        unsafe { ecore_event_handler_del(self.as_ptr()) };
     }
 }
 
@@ -2031,7 +2029,7 @@ pub trait WindowExt: OnDeleteRequest {
                 CString::new(title_).unwrap().as_ptr(),
             )
         });
-        elm.resize(360, 640);
+        elm.resize(400, 640);
         elm.set_autodel(true);
         elm.set_center(true, true);
         elm.on_delete_request(|_| exit());
