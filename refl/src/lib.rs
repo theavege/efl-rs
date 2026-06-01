@@ -274,6 +274,18 @@ impl ElmObject for Clock {}
 #[derive(Default)]
 pub struct Ctxpopup(Option<NonNull<Evas_Object>>);
 
+impl Ctxpopup {
+    fn first(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_ctxpopup_first_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_ctxpopup_last_item_get(self.as_raw()) })
+    }
+    fn selected(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_ctxpopup_selected_item_get(self.as_raw()) })
+    }
+}
+
 impl EvasObject for Ctxpopup {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -285,6 +297,41 @@ impl EvasObject for Ctxpopup {
 impl ElmObject for Ctxpopup {}
 impl OnDismissed for Ctxpopup {}
 impl CtxpopupExt for Ctxpopup {}
+impl SelectorExt for Ctxpopup {
+    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
+        self.append(label, label, func)
+    }
+    fn set_value(&self, value: u32) {
+        let mut temp = self.first().as_raw();
+        for _ in 0..value {
+            temp = unsafe { elm_ctxpopup_item_next_get(temp) };
+        }
+        unsafe { elm_ctxpopup_item_selected_set(temp, true as Eina_Bool) }
+    }
+    fn value(&self) -> u32 {
+        self.find(self.selected())
+    }
+    fn find(&self, item: WidgetItem) -> u32 {
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while temp != item.as_raw() {
+            temp = unsafe { elm_ctxpopup_item_next_get(temp) };
+            count += 1;
+        }
+        count
+    }
+    fn clear(&self) {
+        let mut temp = self.first().as_raw();
+        while temp != self.last().as_raw() {
+            WidgetItem::from_raw(temp).del();
+            temp = unsafe { refl_sys::elm_ctxpopup_item_next_get(temp) };
+        }
+        self.last().del();
+    }
+    fn lenght(&self) -> u32 {
+        self.find(self.last())
+    }
+}
 
 #[derive(Default)]
 pub struct Entry(Option<NonNull<Evas_Object>>);
@@ -793,6 +840,18 @@ impl RangerExt for Spinner {
 #[derive(Default)]
 pub struct ToolBar(Option<NonNull<Evas_Object>>);
 
+impl ToolBar {
+    fn first(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_toolbar_first_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_toolbar_last_item_get(self.as_raw()) })
+    }
+    fn selected(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_toolbar_selected_item_get(self.as_raw()) })
+    }
+}
+
 impl EvasObject for ToolBar {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -801,11 +860,42 @@ impl EvasObject for ToolBar {
         Self(NonNull::new(obj))
     }
 }
-//~ impl SelectorExt for ToolBar {
-//~ fn add<F: FnMut(Self) + 'static>(&self, icon: &str, label: &str, func: F) -> WidgetItem {
-//~ WidgetItem::from_raw(self.append(icon, label, func))
-//~ }
-//~ }
+
+impl SelectorExt for ToolBar {
+    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
+        self.append(label, label, func)
+    }
+    fn set_value(&self, value: u32) {
+        let mut temp = self.first().as_raw();
+        for _idx in 0..value {
+            temp = unsafe { elm_toolbar_item_next_get(temp) }
+        }
+        unsafe { elm_toolbar_item_selected_set(temp, true as Eina_Bool) };
+    }
+    fn value(&self) -> u32 {
+        self.find(self.selected())
+    }
+    fn lenght(&self) -> u32 {
+        self.find(self.last())
+    }
+    fn find(&self, item: WidgetItem) -> u32 {
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while temp != item.as_raw() {
+            temp = unsafe { elm_toolbar_item_next_get(temp) };
+            count += 1;
+        }
+        count
+    }
+    fn clear(&self) {
+        let mut temp = self.first().as_raw();
+        while temp != self.last().as_raw() {
+            WidgetItem::from_raw(temp).del();
+            temp = unsafe { refl_sys::elm_toolbar_item_next_get(temp) };
+        }
+        self.last().del();
+    }
+}
 impl ElmObject for ToolBar {}
 impl OnClicked for ToolBar {}
 impl ToolBarExt for ToolBar {}
@@ -1063,14 +1153,17 @@ impl SelectorExt for Diskselector {
         count
     }
     fn value(&self) -> u32 {
-        //~ unsafe { elm_diskselector_selected_index_get(self.as_raw()) as u32 }
-        0
+        self.find(self.selected())
     }
     fn lenght(&self) -> u32 {
         self.find(self.last())
     }
     fn set_value(&self, value: u32) {
-        //~ unsafe { elm_diskselector_selected_index_set(self.as_raw(), value as i32) };
+        let mut temp = self.first().as_raw();
+        for _idx in 0..value {
+            temp = unsafe { elm_diskselector_item_next_get(temp) }
+        }
+        unsafe { elm_diskselector_item_selected_set(temp, true as Eina_Bool) };
     }
     fn clear(&self) {
         unsafe { elm_diskselector_clear(self.as_raw()) };

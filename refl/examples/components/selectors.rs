@@ -23,7 +23,6 @@ pub struct Selector {
     radio: refl::Radio,
     list: refl::List,
     flip: refl::FlipSelector,
-    //~ combo: refl::Combobox,
 }
 
 impl Component for Selector {
@@ -34,7 +33,6 @@ impl Component for Selector {
         self.list.set_value(model.value());
         self.flip.set_value(model.value());
         self.radio.set_value(model.value() as i32);
-        //~ self.combo.set_value(model.value());
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
         match msg {

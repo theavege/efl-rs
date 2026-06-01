@@ -367,6 +367,7 @@ pub trait ColorselectorExt: Sized + ElmObject {
 }
 
 pub trait DiskselectorExt: Sized + ElmObject {
+    #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_diskselector_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
@@ -531,10 +532,9 @@ pub trait ComboboxExt: ElmObject {
         self.set_index(value);
     }
     fn index(&self) -> u32 {
-        let selected = self.selected().as_raw();
-        let mut temp = self.first().as_raw();
         let mut count = 0u32;
-        while !temp.is_null() && temp != selected {
+        let mut temp = self.first().as_raw();
+        while temp != self.selected().as_raw() {
             temp = unsafe { elm_genlist_item_next_get(temp) };
             count += 1;
         }
@@ -543,9 +543,6 @@ pub trait ComboboxExt: ElmObject {
     fn set_index(&self, value: u32) {
         let mut temp = self.first().as_raw();
         for _ in 0..value {
-            if temp.is_null() {
-                return;
-            }
             temp = unsafe { elm_genlist_item_next_get(temp) };
         }
         if !temp.is_null() {
@@ -1118,7 +1115,7 @@ pub trait CalendarExt: ElmObject {
     }
 }
 
-pub trait CtxpopupExt: ElmObject {
+pub trait CtxpopupExt: SelectorExt {
     #[deprecated = "rse refl::Notify::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_ctxpopup_add(prt.as_raw()) }).with_conf();
@@ -1148,17 +1145,8 @@ pub trait CtxpopupExt: ElmObject {
     fn set_auto_hide(&self, value: bool) {
         unsafe { elm_ctxpopup_auto_hide_disabled_set(self.as_raw(), value as Eina_Bool) };
     }
-    fn first(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_ctxpopup_first_item_get(self.as_raw()) })
-    }
     fn prev(&self) -> super::WidgetItem {
         super::WidgetItem::from_raw(unsafe { elm_ctxpopup_item_prev_get(self.as_raw()) })
-    }
-    fn last(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_ctxpopup_last_item_get(self.as_raw()) })
-    }
-    fn selected(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_ctxpopup_selected_item_get(self.as_raw()) })
     }
 }
 
@@ -1888,7 +1876,7 @@ pub trait SegmentControlExt: ElmObject {
     }
 }
 
-pub trait ToolBarExt: ElmObject {
+pub trait ToolBarExt: SelectorExt {
     #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_toolbar_add(prt.as_raw()) });
@@ -1930,43 +1918,6 @@ pub trait ToolBarExt: ElmObject {
     }
     fn set_shrink_mode(&self, value: super::Shrink) {
         unsafe { elm_toolbar_shrink_mode_set(self.as_raw(), value as u32) };
-    }
-    fn selected(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_toolbar_selected_item_get(self.as_raw()) })
-    }
-    fn value(&self) -> u32 {
-        self.index()
-    }
-    fn set_value(&self, value: u32) {
-        self.set_index(value)
-    }
-    fn set_index(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _ in 0..value {
-            temp = unsafe { elm_toolbar_item_next_get(temp) };
-        }
-        unsafe { elm_toolbar_item_selected_set(temp, true as Eina_Bool) }
-    }
-    fn index(&self) -> u32 {
-        self.find(self.selected())
-    }
-    fn lenght(&self) -> u32 {
-        self.find(self.last())
-    }
-    fn first(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_toolbar_first_item_get(self.as_raw()) })
-    }
-    fn last(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_toolbar_last_item_get(self.as_raw()) })
-    }
-    fn find(&self, item: super::WidgetItem) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first().as_raw();
-        while temp != item.as_raw() {
-            temp = unsafe { elm_toolbar_item_next_get(temp) };
-            count += 1;
-        }
-        count
     }
 }
 
