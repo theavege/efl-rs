@@ -68,7 +68,7 @@ impl Component for Selector {
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
-                            sender.send(Msg::Set(wgt.index())).unwrap();
+                            sender.send(Msg::Set(wgt.value())).unwrap();
                         }
                     }
                 });

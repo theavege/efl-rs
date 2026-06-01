@@ -104,6 +104,18 @@ impl EvasObjectItemExt for WidgetItem {
 #[derive(Default)]
 pub struct Menu(Option<NonNull<Evas_Object>>);
 
+impl Menu {
+    fn selected(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_menu_last_item_get(self.as_raw()) })
+    }
+    fn first(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { refl_sys::elm_menu_first_item_get(self.as_raw()) })
+    }
+}
+
 impl EvasObject for Menu {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -116,26 +128,38 @@ impl EvasObject for Menu {
 impl ElmObject for Menu {}
 
 impl SelectorExt for Menu {
-    fn selected(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
-    }
     fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
         self.append(label, label, func)
     }
-    fn first(&self) -> WidgetItem {
-        self.first_item()
-    }
-    fn last(&self) -> WidgetItem {
-        self.last_item()
-    }
     fn set_value(&self, value: u32) {
-        self.set_index(value)
+        let mut temp = self.first().as_raw();
+        for _idx in 0..value {
+            temp = unsafe { elm_menu_item_next_get(temp) }
+        }
+        unsafe { elm_menu_item_selected_set(temp, true as Eina_Bool) };
     }
     fn value(&self) -> u32 {
-        self.index()
+        unsafe { elm_menu_item_index_get(self.selected().as_raw()) as u32 }
+    }
+    fn lenght(&self) -> u32 {
+        self.find(self.last())
+    }
+    fn find(&self, item: WidgetItem) -> u32 {
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while temp != item.as_raw() {
+            temp = unsafe { elm_menu_item_next_get(temp) };
+            count += 1;
+        }
+        count
     }
     fn clear(&self) {
-        self.clear_items();
+        let mut temp = self.first().as_raw();
+        while temp != self.last().as_raw() {
+            WidgetItem::from_raw(temp).del();
+            temp = unsafe { refl_sys::elm_menu_item_next_get(temp) };
+        }
+        self.last().del();
     }
 }
 impl OnChanged for Menu {}
@@ -264,17 +288,7 @@ impl CtxpopupExt for Ctxpopup {}
 
 #[derive(Default)]
 pub struct Entry(Option<NonNull<Evas_Object>>);
-impl Entry {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_entry_add(prt.as_raw()) });
-        elm.conf();
-        elm.set_single_line(true);
-        elm.set_scrollable(true);
-        elm.set_menu(true);
-        prt.add(&elm);
-        elm
-    }
-}
+
 impl EvasObject for Entry {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -292,6 +306,18 @@ impl EntryExt for Entry {}
 #[derive(Default)]
 pub struct FlipSelector(Option<NonNull<Evas_Object>>);
 
+impl FlipSelector {
+    fn first(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { refl_sys::elm_flipselector_first_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_flipselector_last_item_get(self.as_raw()) })
+    }
+    fn selected(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_flipselector_selected_item_get(self.as_raw()) })
+    }
+}
+
 impl EvasObject for FlipSelector {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -303,58 +329,45 @@ impl EvasObject for FlipSelector {
 impl ElmObject for FlipSelector {}
 impl OnChanged for FlipSelector {}
 impl SelectorExt for FlipSelector {
-    fn selected(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_flipselector_selected_item_get(self.as_raw()) })
-    }
     fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
         self.append(label, func)
     }
-    fn first(&self) -> WidgetItem {
-        self.first_item()
-    }
-    fn last(&self) -> WidgetItem {
-        self.last_item()
+    fn lenght(&self) -> u32 {
+        self.find(self.last())
     }
     fn value(&self) -> u32 {
-        self.index()
+        self.find(self.selected())
     }
     fn set_value(&self, value: u32) {
-        self.set_index(value)
+        let mut temp = self.first().as_raw();
+        for _ in 0..value {
+            temp = unsafe { elm_flipselector_item_next_get(temp) };
+        }
+        unsafe { elm_flipselector_item_selected_set(temp, true as Eina_Bool) }
+    }
+    fn find(&self, item: WidgetItem) -> u32 {
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while temp != item.as_raw() {
+            temp = unsafe { elm_flipselector_item_next_get(temp) };
+            count += 1;
+        }
+        count
     }
     fn clear(&self) {
-        self.clear_items();
+        let mut temp = self.first().as_raw();
+        while temp != self.last().as_raw() {
+            WidgetItem::from_raw(temp).del();
+            temp = unsafe { refl_sys::elm_flipselector_item_next_get(temp) };
+        }
+        self.last().del();
     }
 }
 impl FlipSelExt for FlipSelector {}
 
 #[derive(Default)]
 pub struct Frame(Option<NonNull<Evas_Object>>);
-impl Frame {
-    pub fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_frame_add(parent.as_raw()) });
-        elm.conf();
-        elm.set_autocollapse(true);
-        parent.add(&elm);
-        elm
-    }
-    pub fn with_collapse(self, value: bool) -> Self {
-        self.set_collapse(value);
-        self
-    }
-    pub fn with_autocollapse(self, value: bool) -> Self {
-        self.set_autocollapse(value);
-        self
-    }
-    pub fn set_autocollapse(&self, value: bool) {
-        unsafe { elm_frame_autocollapse_set(self.as_raw(), value as Eina_Bool) };
-    }
-    pub fn set_collapse(&self, value: bool) {
-        unsafe { elm_frame_collapse_set(self.as_raw(), value as Eina_Bool) };
-    }
-    pub fn collapse(&self) -> bool {
-        unsafe { elm_frame_collapse_get(self.as_raw()) != 0 }
-    }
-}
+
 impl EvasObject for Frame {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -371,6 +384,7 @@ impl ContainerExt for Frame {
     }
 }
 impl OnClicked for Frame {}
+impl FrameExt for Frame {}
 
 #[derive(Default)]
 pub struct Icon(Option<NonNull<Evas_Object>>);
@@ -452,13 +466,14 @@ impl SeparatorExt for Separator {}
 #[derive(Default)]
 pub struct List(Option<NonNull<Evas_Object>>);
 impl List {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_list_add(prt.as_raw()) });
-        elm.conf();
-        elm.set_mode(ListMode::Expand);
-        elm.go();
-        prt.add(&elm);
-        elm
+    fn selected(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_list_selected_item_get(self.as_raw()) })
+    }
+    fn first(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_list_first_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_list_last_item_get(self.as_raw()) })
     }
 }
 
@@ -474,23 +489,30 @@ impl SelectorExt for List {
     fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
         self.append(label, label, func)
     }
-    fn selected(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_list_selected_item_get(self.as_raw()) })
-    }
-    fn first(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_list_first_item_get(self.as_raw()) })
-    }
-    fn last(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_list_last_item_get(self.as_raw()) })
-    }
     fn set_value(&self, value: u32) {
-        self.set_index(value)
+        let mut temp = self.first().as_raw();
+        for _ in 0..value {
+            temp = unsafe { elm_list_item_next(temp) };
+        }
+        unsafe { elm_list_item_selected_set(temp, true as Eina_Bool) }
     }
     fn value(&self) -> u32 {
-        self.index()
+        self.find(self.selected())
+    }
+    fn find(&self, item: WidgetItem) -> u32 {
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while temp != item.as_raw() {
+            temp = unsafe { elm_list_item_next(temp) };
+            count += 1;
+        }
+        count
     }
     fn clear(&self) {
         unsafe { elm_list_clear(self.as_raw()) };
+    }
+    fn lenght(&self) -> u32 {
+        self.find(self.last())
     }
 }
 impl ElmObject for List {}
@@ -849,14 +871,6 @@ impl BoxExt for Box {}
 #[derive(Default)]
 pub struct Grid(Option<NonNull<Evas_Object>>);
 
-impl Grid {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_grid_add(prt.as_raw()) }).with_conf();
-        prt.add(&elm);
-        elm
-    }
-}
-
 impl EvasObject for Grid {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -1014,6 +1028,18 @@ impl ConformantExt for Conformant {}
 #[derive(Default)]
 pub struct Diskselector(Option<NonNull<Evas_Object>>);
 
+impl Diskselector {
+    fn selected(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_diskselector_selected_item_get(self.as_raw()) })
+    }
+    fn first(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_diskselector_first_item_get(self.as_raw()) })
+    }
+    fn last(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_diskselector_last_item_get(self.as_raw()) })
+    }
+}
+
 impl EvasObject for Diskselector {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -1027,18 +1053,21 @@ impl SelectorExt for Diskselector {
     fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> WidgetItem {
         self.append(label, func)
     }
-    fn selected(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_diskselector_selected_item_get(self.as_raw()) })
-    }
-    fn first(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_diskselector_first_item_get(self.as_raw()) })
-    }
-    fn last(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_diskselector_last_item_get(self.as_raw()) })
+    fn find(&self, item: WidgetItem) -> u32 {
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while temp != item.as_raw() {
+            temp = unsafe { elm_diskselector_item_next_get(temp) };
+            count += 1;
+        }
+        count
     }
     fn value(&self) -> u32 {
         //~ unsafe { elm_diskselector_selected_index_get(self.as_raw()) as u32 }
         0
+    }
+    fn lenght(&self) -> u32 {
+        self.find(self.last())
     }
     fn set_value(&self, value: u32) {
         //~ unsafe { elm_diskselector_selected_index_set(self.as_raw(), value as i32) };

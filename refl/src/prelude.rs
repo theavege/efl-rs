@@ -435,9 +435,7 @@ pub trait BoxExt: ContainerExt {
 
 pub trait MenuExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_menu_add(prt.as_raw()) })
-            //~ .with_dismissed(|wgt| wgt.del())
-            .with_conf();
+        let elm = Self::from_raw(unsafe { elm_menu_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
         elm
     }
@@ -467,40 +465,6 @@ pub trait MenuExt: SelectorExt {
     }
     fn open(&self) {
         unsafe { elm_menu_open(self.as_raw()) }
-    }
-    fn index(&self) -> u32 {
-        unsafe { elm_menu_item_index_get(self.selected().as_raw()) as u32 }
-    }
-    fn icon(&self) -> String {
-        unsafe {
-            let ptr = elm_menu_item_icon_name_get(self.selected().as_raw());
-            CStr::from_ptr(ptr).to_string_lossy().into_owned()
-        }
-    }
-    fn last_item(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_menu_last_item_get(self.as_raw()) })
-    }
-    fn first_item(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { refl_sys::elm_menu_first_item_get(self.as_raw()) })
-    }
-    fn with_index(self, value: u32) -> Self {
-        self.set_index(value);
-        self
-    }
-    fn set_index(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _idx in 0..value {
-            temp = unsafe { elm_menu_item_next_get(temp) }
-        }
-        unsafe { elm_menu_item_selected_set(temp, true as Eina_Bool) };
-    }
-    fn clear_items(&self) {
-        let mut temp = self.first().as_raw();
-        while temp != self.last().as_raw() {
-            super::WidgetItem::from_raw(temp).del();
-            temp = unsafe { refl_sys::elm_menu_item_next_get(temp) };
-        }
-        self.last().del();
     }
 }
 
@@ -567,8 +531,8 @@ pub trait ComboboxExt: ElmObject {
         self.set_index(value);
     }
     fn index(&self) -> u32 {
-        let selected = self.selected_raw();
-        let mut temp = self.first_raw();
+        let selected = self.selected().as_raw();
+        let mut temp = self.first().as_raw();
         let mut count = 0u32;
         while !temp.is_null() && temp != selected {
             temp = unsafe { elm_genlist_item_next_get(temp) };
@@ -577,7 +541,7 @@ pub trait ComboboxExt: ElmObject {
         count
     }
     fn set_index(&self, value: u32) {
-        let mut temp = self.first_raw();
+        let mut temp = self.first().as_raw();
         for _ in 0..value {
             if temp.is_null() {
                 return;
@@ -588,14 +552,14 @@ pub trait ComboboxExt: ElmObject {
             unsafe { elm_genlist_item_selected_set(temp, true as Eina_Bool) };
         }
     }
-    fn selected_raw(&self) -> *mut Elm_Object_Item {
-        unsafe { elm_genlist_selected_item_get(self.as_raw()) }
+    fn selected(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_genlist_selected_item_get(self.as_raw()) })
     }
-    fn first_raw(&self) -> *mut Elm_Object_Item {
-        unsafe { elm_genlist_first_item_get(self.as_raw()) }
+    fn first(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_genlist_first_item_get(self.as_raw()) })
     }
-    fn last_raw(&self) -> *mut Elm_Object_Item {
-        unsafe { elm_genlist_last_item_get(self.as_raw()) }
+    fn last(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_genlist_last_item_get(self.as_raw()) })
     }
     fn clear(&self) {
         unsafe { elm_combobox_hover_end(self.as_raw()) };
@@ -1067,10 +1031,9 @@ pub trait RangerExt: ElmObject {
 }
 
 pub trait SelectorExt: ElmObject {
+    fn find(&self, item: super::WidgetItem) -> u32;
     fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> super::WidgetItem;
-    fn first(&self) -> super::WidgetItem;
-    fn last(&self) -> super::WidgetItem;
-    fn selected(&self) -> super::WidgetItem;
+    fn lenght(&self) -> u32;
     fn value(&self) -> u32;
     fn clear(&self);
     fn set_value(&self, value: u32);
@@ -1250,28 +1213,6 @@ pub trait FlipSelExt: SelectorExt {
         prt.add(&elm);
         elm
     }
-    fn find(&self, item: super::WidgetItem) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first().as_raw();
-        while temp != item.as_raw() {
-            temp = unsafe { elm_flipselector_item_next_get(temp) };
-            count += 1;
-        }
-        count
-    }
-    fn first_item(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe {
-            refl_sys::elm_flipselector_first_item_get(self.as_raw())
-        })
-    }
-    fn clear_items(&self) {
-        let mut temp = self.first().as_raw();
-        while temp != self.last().as_raw() {
-            super::WidgetItem::from_raw(temp).del();
-            temp = unsafe { refl_sys::elm_flipselector_item_next_get(temp) };
-        }
-        self.last().del();
-    }
     fn append<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> super::WidgetItem {
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
         super::WidgetItem::from_raw(unsafe {
@@ -1283,19 +1224,6 @@ pub trait FlipSelExt: SelectorExt {
             )
         })
     }
-    fn set_index(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _ in 0..value {
-            temp = unsafe { elm_flipselector_item_next_get(temp) };
-        }
-        unsafe { elm_flipselector_item_selected_set(temp, true as Eina_Bool) }
-    }
-    fn index(&self) -> u32 {
-        self.find(self.selected())
-    }
-    fn last_item(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_flipselector_last_item_get(self.as_raw()) })
-    }
     fn set_interval(&self, value: f64) {
         unsafe { elm_flipselector_first_interval_set(self.as_raw(), value) }
     }
@@ -1303,12 +1231,18 @@ pub trait FlipSelExt: SelectorExt {
         self.set_interval(value);
         self
     }
-    fn lenght(&self) -> u32 {
-        self.find(self.last())
-    }
 }
 
 pub trait EntryExt: ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_entry_add(prt.as_raw()) });
+        elm.conf();
+        elm.set_single_line(true);
+        elm.set_scrollable(true);
+        elm.set_menu(true);
+        prt.add(&elm);
+        elm
+    }
     fn with_editable(self, value: bool) -> Self {
         self.set_editable(value);
         self
@@ -1448,6 +1382,11 @@ pub trait LayoutExt: ContainerExt {
 }
 
 pub trait GridExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_grid_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
     fn set_virtual_size(&self, w: i32, h: i32) {
         unsafe { elm_grid_size_set(self.as_raw(), w, h) };
     }
@@ -1531,6 +1470,14 @@ pub trait TableExt: ContainerExt {
 }
 
 pub trait ListExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_list_add(prt.as_raw()) });
+        elm.conf();
+        elm.set_mode(super::ListMode::Expand);
+        elm.go();
+        prt.add(&elm);
+        elm
+    }
     fn append<F: FnMut(Self) + 'static>(
         &self,
         icon_: &str,
@@ -1568,30 +1515,32 @@ pub trait ListExt: SelectorExt {
     fn set_mode(&self, value: super::ListMode) {
         unsafe { elm_list_mode_set(self.as_raw(), value as Elm_List_Mode) };
     }
-    fn find(&self, item: super::WidgetItem) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first().as_raw();
-        while temp != item.as_raw() {
-            temp = unsafe { elm_list_item_next(temp) };
-            count += 1;
-        }
-        count
+}
+
+pub trait FrameExt: ElmObject {
+    fn new(parent: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_frame_add(parent.as_raw()) });
+        elm.conf();
+        elm.set_autocollapse(true);
+        parent.add(&elm);
+        elm
     }
-    fn set_index(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _ in 0..value {
-            temp = unsafe { elm_list_item_next(temp) };
-        }
-        unsafe { elm_list_item_selected_set(temp, true as Eina_Bool) }
+    fn with_collapse(self, value: bool) -> Self {
+        self.set_collapse(value);
+        self
     }
-    fn lenght(&self) -> u32 {
-        self.find(self.last())
+    fn with_autocollapse(self, value: bool) -> Self {
+        self.set_autocollapse(value);
+        self
     }
-    fn index(&self) -> u32 {
-        self.find(self.selected())
+    fn set_autocollapse(&self, value: bool) {
+        unsafe { elm_frame_autocollapse_set(self.as_raw(), value as Eina_Bool) };
     }
-    fn value(&self) -> u32 {
-        self.index()
+    fn set_collapse(&self, value: bool) {
+        unsafe { elm_frame_collapse_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn collapse(&self) -> bool {
+        unsafe { elm_frame_collapse_get(self.as_raw()) != 0 }
     }
 }
 

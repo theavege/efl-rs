@@ -149,7 +149,7 @@ impl Component for Sudoku {
                                                     let sender = sender.clone();
                                                     move |wgt| {
                                                         sender
-                                                            .send(Msg::Push(row, col, wgt.index()))
+                                                            .send(Msg::Push(row, col, wgt.value()))
                                                             .unwrap();
                                                         wgt.del();
                                                     }

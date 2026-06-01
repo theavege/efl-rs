@@ -70,14 +70,14 @@ impl Component for View {
         self.1.promote();
         refl::Menu::main_menu(prt).with_items(&items, {
             let sender = sender.clone();
-            move |wgt| sender.send(Msg::Slide(wgt.index() as usize)).unwrap()
+            move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
         });
         self.2 = refl::Panel::new(prt).inside(|prt| {
             refl::List::new(prt).with_items(&items, {
                 let sender = sender.clone();
                 move |wgt| {
                     if wgt.focus() {
-                        sender.send(Msg::Slide(wgt.index() as usize)).unwrap()
+                        sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
                     }
                 }
             });
