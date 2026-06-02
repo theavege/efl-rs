@@ -369,6 +369,46 @@ pub trait ColorselectorExt: Sized + ElmObject {
     }
 }
 
+pub trait ColorselectorExt: Sized + ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn color(&self) -> (i32, i32, i32, i32) {
+        let mut r: i32 = 0;
+        let mut g: i32 = 0;
+        let mut b: i32 = 0;
+        let mut a: i32 = 0;
+        unsafe { elm_colorselector_color_get(self.as_raw(), &mut r, &mut g, &mut b, &mut a) };
+        (r, g, b, a)
+    }
+    fn set_color(&self, r: i32, g: i32, b: i32, a: i32) {
+        unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
+    }
+}
+
+pub trait DayselectorExt: Sized + ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_dayselector_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn append<F: FnMut(Self) + 'static>(&self, label_: &str, func: F) -> super::WidgetItem {
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        super::WidgetItem::from_raw(unsafe {
+            elm_dayselector_item_append(
+                self.as_raw(),
+                CString::new(label_).unwrap().as_ptr(),
+                super::Icon::new(self).with_standard(label_).as_raw(),
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            )
+        })
+    }
+}
+
+pub trait DiskselectorExt: Sized + ElmObject {
 pub trait DiskselectorExt: Sized + ElmObject {
     #[deprecated = "use refl::FlipSelector::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
@@ -2237,3 +2277,4 @@ pub trait Component: Default + 'static {
         });
     }
 }
+
