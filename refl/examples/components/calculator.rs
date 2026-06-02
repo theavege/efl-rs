@@ -96,10 +96,10 @@ impl Component for Calc {
         true
     }
     fn update(&self, model: &Self::State) {
-        self.outp.set_value(&model.output.clone());
-        self.prev.set_value(&model.prev.to_string());
-        self.oper.set_value(&model.operation.clone());
-        self.curr.set_value(&model.current.clone());
+        self.outp.update(&model.output.clone());
+        self.prev.update(&model.prev.to_string());
+        self.oper.update(&model.operation.clone());
+        self.curr.update(&model.current.clone());
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         refl::Box::new(prt).with_homogeneous(false).inside(|prt| {

@@ -42,10 +42,13 @@ jobs:
         run: |
           $ErrorActionPreference = 'stop'
           Set-PSDebug -Strict
-          & pip install meson ninja | Out-Null
+          & pip install meson ninja | Out-Host
           If ($LastExitCode -ne 0) {
             Exit $LastExitCode
           }
+          (Get-Command 'gcc').Source | Out-Host
+          (Get-Command 'meson').Source | Out-Host
+          (Get-Command 'ninja').Source | Out-Host
           & cargo clippy --quiet --features="all" --examples | Out-Host
           If ($LastExitCode -ne 0) {
             Exit $LastExitCode

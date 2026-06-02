@@ -3,6 +3,7 @@
 #![allow(improper_ctypes)]
 #![allow(non_snake_case)]
 #![allow(unnecessary_transmutes)]
+#![allow(unsafe_op_in_unsafe_fn)]
 #![allow(clippy::useless_transmute)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::ptr_offset_with_cast)]

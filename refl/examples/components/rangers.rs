@@ -25,8 +25,8 @@ impl Component for Ranger {
     }
     fn update(&self, model: &Self::State) {
         self.progress.set_value(*model);
-        self.slider.set_value(*model);
-        self.spinner.set_value(*model);
+        self.slider.update(*model);
+        self.spinner.update(*model);
         self.label.set_text(&model.to_string());
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {

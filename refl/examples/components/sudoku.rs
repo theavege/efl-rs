@@ -143,13 +143,13 @@ impl Component for Sudoku {
                                     let sender = sender.clone();
                                     move |wgt| {
                                         refl::Menu::new(&wgt)
-                                            .with_items(
+                                            .with_appends(
                                                 &["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
                                                 {
                                                     let sender = sender.clone();
                                                     move |wgt| {
                                                         sender
-                                                            .send(Msg::Push(row, col, wgt.index()))
+                                                            .send(Msg::Push(row, col, wgt.value()))
                                                             .unwrap();
                                                         wgt.del();
                                                     }
