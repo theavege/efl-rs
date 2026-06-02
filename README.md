@@ -39,6 +39,7 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
     - [x] [List](docs/elm_selectors.md#List)
     - [x] [FlipSelector](docs/elm_selectors.md#FlipSelector)
     - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl)
+    - [x] [Dayselector](docs/elm_selectors.md#Dayselector)
   - [x] [Containers](docs/elm_containers.md)
     - [x] [Box](docs/elm_containers.md#Box)
     - [x] [Bubble](docs/elm_containers.md#Bubble)

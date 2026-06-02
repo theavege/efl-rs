@@ -1234,6 +1234,22 @@ impl EvasObject for Colorselector {
 impl ElmObject for Colorselector {}
 impl OnChanged for Colorselector {}
 impl ColorselectorExt for Colorselector {}
+
+#[derive(Default)]
+pub struct Dayselector(Option<NonNull<Evas_Object>>);
+
+impl EvasObject for Dayselector {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl ElmObject for Dayselector {}
+impl OnChanged for Dayselector {}
+impl DayselectorExt for Dayselector {}
+
 #[derive(Default)]
 pub struct FileSelector(Option<NonNull<Evas_Object>>);
 
