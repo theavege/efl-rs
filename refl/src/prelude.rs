@@ -1154,9 +1154,6 @@ pub trait CtxpopupExt: SelectorExt {
     fn set_auto_hide(&self, value: bool) {
         unsafe { elm_ctxpopup_auto_hide_disabled_set(self.as_raw(), value as Eina_Bool) };
     }
-    fn prev(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_ctxpopup_item_prev_get(self.as_raw()) })
-    }
 }
 
 pub trait HoverSelExt: ElmObject {
@@ -2205,7 +2202,7 @@ impl<T: SelectorExt + 'static> Update<(Vec<String>, u32)> for T {
                 }
             }
         };
-        if self.value() != value.1 {
+        if self.lenght() > value.1 && self.value() != value.1 {
             self.set_value(value.1);
         };
     }

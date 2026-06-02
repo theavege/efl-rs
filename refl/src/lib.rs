@@ -108,9 +108,6 @@ impl Menu {
     fn selected(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
     }
-    fn last(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_menu_last_item_get(self.as_raw()) })
-    }
     fn first(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { refl_sys::elm_menu_first_item_get(self.as_raw()) })
     }
@@ -142,7 +139,13 @@ impl SelectorExt for Menu {
         unsafe { elm_menu_item_index_get(self.selected().as_raw()) as u32 }
     }
     fn lenght(&self) -> u32 {
-        self.find(self.last())
+        let mut count = 0;
+        let mut temp = self.first();
+        while temp.0.is_some() {
+            count += 1;
+            temp = WidgetItem::from_raw(unsafe { refl_sys::elm_menu_item_next_get(temp.as_raw()) });
+        }
+        count
     }
     fn find(&self, item: WidgetItem) -> u32 {
         let mut count = 0;
@@ -154,17 +157,14 @@ impl SelectorExt for Menu {
         count
     }
     fn clear(&self) {
-        let mut temp = self.first().as_raw();
-        while temp != self.last().as_raw() {
-            WidgetItem::from_raw(temp).del();
-            temp = unsafe { refl_sys::elm_menu_item_next_get(temp) };
+        let mut temp = self.first();
+        while temp.0.is_some() {
+            let next = WidgetItem::from_raw(unsafe { elm_menu_item_next_get(temp.as_raw()) });
+            temp.del();
+            temp = next;
         }
-        self.last().del();
     }
 }
-impl OnChanged for Menu {}
-impl OnClicked for Menu {}
-impl OnDismissed for Menu {}
 impl MenuExt for Menu {}
 
 #[derive(Default)]
@@ -321,12 +321,12 @@ impl SelectorExt for Ctxpopup {
         count
     }
     fn clear(&self) {
-        let mut temp = self.first().as_raw();
-        while temp != self.last().as_raw() {
-            WidgetItem::from_raw(temp).del();
-            temp = unsafe { refl_sys::elm_ctxpopup_item_next_get(temp) };
+        let mut temp = self.first();
+        while temp.0.is_some() {
+            let next = WidgetItem::from_raw(unsafe { elm_ctxpopup_item_next_get(temp.as_raw()) });
+            temp.del();
+            temp = next;
         }
-        self.last().del();
     }
     fn lenght(&self) -> u32 {
         self.find(self.last())
@@ -409,7 +409,8 @@ impl SelectorExt for FlipSelector {
     fn clear(&self) {
         let mut temp = self.first();
         while temp.0.is_some() {
-            let next = WidgetItem::from_raw(unsafe { elm_flipselector_item_next_get(temp.as_raw()) });
+            let next =
+                WidgetItem::from_raw(unsafe { elm_flipselector_item_next_get(temp.as_raw()) });
             temp.del();
             temp = next;
         }
