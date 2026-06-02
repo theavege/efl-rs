@@ -32,27 +32,26 @@ fn compile() -> Vec<String> {
     let mut run = Command::new("gcc")
         .arg("-std=c99")
         .arg("-o")
-        .arg(format!("'{out_dir}/ewpi'"))
+        .arg(format!("{out_dir}/ewpi"))
         .arg("use/ewpi/ewpi.c")
         .arg("use/ewpi/ewpi_map.c")
         .arg("use/ewpi/ewpi_spawn.c")
         .output()
-        .expect("\x1b[31mFailed to execute 'ewpi -–jobs=8'!\x1b[0m");
+        .expect("\x1b[31mFailed to execute 'GCC'!\x1b[0m");
     if !run.status.success() {
         panic!(
-            "\x1b[31m{command}\nstdout:\n{}\nstderr:\n{}\x1b[0m",
+            "\x1b[31mGCC\nstdout:\n{}\nstderr:\n{}\x1b[0m",
             String::from_utf8_lossy(&run.stdout),
             String::from_utf8_lossy(&run.stderr),
         );
     }
     run = Command::new(format!("{out_dir}/ewpi.exe"))
-        .arg("--strip")
-        .arg("--verbose")
+        .args(["--strip", "--verbose"])
         .output()
-        .expect("\x1b[31mFailed to execute 'ewpi -–jobs=8'!\x1b[0m");
+        .expect("\x1b[31mFailed to execute 'EWPI'!\x1b[0m");
     if !run.status.success() {
         panic!(
-            "\x1b[31m{command}\nstdout:\n{}\nstderr:\n{}\x1b[0m",
+            "\x1b[31mEWPI\nstdout:\n{}\nstderr:\n{}\x1b[0m",
             String::from_utf8_lossy(&run.stdout),
             String::from_utf8_lossy(&run.stderr),
         );
@@ -93,10 +92,10 @@ fn compile() -> Vec<String> {
             &format!("{out_dir}/build"),
         ])
         .output()
-        .expect("\x1b[31mFailed to execute meson!\x1b[0m");
+        .expect("\x1b[31mFailed to execute 'MESON'!\x1b[0m");
     if !run.status.success() {
         panic!(
-            "\x1b[31m{command}\nstdout:\n{}\nstderr:\n{}\x1b[0m",
+            "\x1b[31mMESON\nstdout:\n{}\nstderr:\n{}\x1b[0m",
             String::from_utf8_lossy(&run.stdout),
             String::from_utf8_lossy(&run.stderr),
         );
