@@ -42,15 +42,11 @@ impl Component for Converter {
         true
     }
     fn update(&self, model: &Self::State) {
-        if let Some(value) = model.cel
-            && value.to_string() != self.cel.value()
-        {
-            self.cel.set_value(&value.to_string());
+        if let Some(value) = model.cel {
+            self.cel.update(&value.to_string());
         }
-        if let Some(value) = model.far
-            && value.to_string() != self.far.value()
-        {
-            self.far.set_value(&value.to_string());
+        if let Some(value) = model.far {
+            self.far.update(&value.to_string());
         }
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {

@@ -26,14 +26,16 @@ impl Component for Booker {
         refl::Box::new(prt).inside(|prt| {
             refl::Panes::new(prt).inside(|prt| {
                 refl::Label::new(prt).with_text("Flight");
-                refl::FlipSelector::new(prt).with_items(&["One-way", "Return"], {
-                    let sender = sender.clone();
-                    move |wgt| {
-                        if wgt.focus() {
-                            sender.send(Msg::Flight(wgt.value())).unwrap();
+                refl::FlipSelector::new(prt)
+                    .with_items(&["One-way", "Return"])
+                    .with_selected({
+                        let sender = sender.clone();
+                        move |wgt| {
+                            if wgt.focus() {
+                                sender.send(Msg::Flight(wgt.value())).unwrap();
+                            }
                         }
-                    }
-                });
+                    });
             });
             refl::Panes::new(prt).inside(|prt| {
                 refl::Label::new(prt).with_text("Departure data");

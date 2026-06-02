@@ -19,7 +19,6 @@ pub enum Msg {
 
 #[derive(Default)]
 pub struct Selector {
-    segment: refl::SegmentControl,
     radio: refl::Radio,
     list: refl::List,
     flip: refl::FlipSelector,
@@ -29,10 +28,9 @@ impl Component for Selector {
     type Event = Msg;
     type State = models::Model;
     fn update(&self, model: &Self::State) {
-        self.segment.set_value(model.value());
         self.list.set_value(model.value());
-        self.flip.set_value(model.value());
-        self.radio.set_value(model.value() as i32);
+        self.flip.update(model.value());
+        self.radio.update(model.value() as i32);
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
         match msg {
@@ -42,18 +40,11 @@ impl Component for Selector {
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         let items = ["home", "close", "folder"];
-        refl::Box::new(prt).with_homogeneous(false).inside(|prt| {
-            self.segment = refl::SegmentControl::new(prt)
-                .with_items(&items)
-                .with_changed({
-                    let sender = sender.clone();
-                    move |wgt| {
-                        sender.send(Msg::Set(wgt.value())).unwrap();
-                    }
-                });
+        refl::Box::new(prt).inside(|prt| {
             self.flip = refl::FlipSelector::new(prt)
-                .with_size(0, 45)
-                .with_items(&items, {
+                .with_size(0, 30)
+                .with_items(&items)
+                .with_selected({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -62,7 +53,7 @@ impl Component for Selector {
                     }
                 });
             refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                self.list = refl::List::new(prt).with_items(&items, {
+                self.list = refl::List::new(prt).with_items(&items).with_selected({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -78,7 +69,7 @@ impl Component for Selector {
                                 sender.send(Msg::Set(wgt.value() as u32)).unwrap();
                             }
                         }
-                    });
+                    })
                 });
             });
         });

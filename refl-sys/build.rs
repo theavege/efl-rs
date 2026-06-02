@@ -29,14 +29,34 @@ fn compile() -> Vec<String> {
     use std::process::Command;
     let out_dir = env::var("OUT_DIR").unwrap();
     let home_path = env::var("HOMEPATH").unwrap();
-    shell(format!("gcc -O2 -std=c99 -o '{out_dir}/ewpi.exe' 'use/ewpi/ewpi.c' 'use/ewpi/ewpi_map.c' use/ewpi/ewpi_spawn.c"));
-    run = Command::new(format!("{out_dir}/ewpi.exe"))
-        .arg("--jobs=8")
+    let mut run = Command::new("gcc")
+        .arg("-std=c99")
+        .arg("-o")
+        .arg(format!("'{out_dir}/ewpi'"))
+        .arg("use/ewpi/ewpi.c")
+        .arg("use/ewpi/ewpi_map.c")
+        .arg("use/ewpi/ewpi_spawn.c")
         .output()
         .expect("\x1b[31mFailed to execute 'ewpi -–jobs=8'!\x1b[0m");
     if !run.status.success() {
-        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
-    };
+        panic!(
+            "\x1b[31m{command}\nstdout:\n{}\nstderr:\n{}\x1b[0m",
+            String::from_utf8_lossy(&run.stdout),
+            String::from_utf8_lossy(&run.stderr),
+        );
+    }
+    run = Command::new(format!("{out_dir}/ewpi.exe"))
+        .arg("--strip")
+        .arg("--verbose")
+        .output()
+        .expect("\x1b[31mFailed to execute 'ewpi -–jobs=8'!\x1b[0m");
+    if !run.status.success() {
+        panic!(
+            "\x1b[31m{command}\nstdout:\n{}\nstderr:\n{}\x1b[0m",
+            String::from_utf8_lossy(&run.stdout),
+            String::from_utf8_lossy(&run.stderr),
+        );
+    }
     run = Command::new("meson")
         .env("EWPI_PATH", format!("{home_path}/ewpi_64"))
         .env(
@@ -75,16 +95,23 @@ fn compile() -> Vec<String> {
         .output()
         .expect("\x1b[31mFailed to execute meson!\x1b[0m");
     if !run.status.success() {
-        panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr));
-    };
+        panic!(
+            "\x1b[31m{command}\nstdout:\n{}\nstderr:\n{}\x1b[0m",
+            String::from_utf8_lossy(&run.stdout),
+            String::from_utf8_lossy(&run.stderr),
+        );
+    }
     run = Command::new("ninja")
         .args(["-C", &format!("{out_dir}/build")])
         .output()
         .expect("\x1b[31mFailed to execute ninja!\x1b[0m");
-    match run.status.success() {
-        true => eprintln!("\x1b[32m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
-        false => panic!("\x1b[31m{}\x1b[0m", String::from_utf8_lossy(&run.stderr)),
-    };
+    if !run.status.success() {
+        panic!(
+            "\x1b[31m{command}\nstdout:\n{}\nstderr:\n{}\x1b[0m",
+            String::from_utf8_lossy(&run.stdout),
+            String::from_utf8_lossy(&run.stderr),
+        );
+    }
     println!("cargo:rustc-link-search=native={out_dir}/build");
     println!("cargo:rustc-link-lib=static=efl");
     Vec::from([format!("-I{home_path}/ewpi_64/include")])

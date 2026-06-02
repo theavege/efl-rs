@@ -337,6 +337,9 @@ pub trait ContainerExt: ElmObject {
         func(&self);
         self
     }
+    fn append(&self, mut func: impl FnMut(&Self)) {
+        func(&self);
+    }
 }
 
 pub trait ConformantExt: ContainerExt {
@@ -367,7 +370,7 @@ pub trait ColorselectorExt: Sized + ElmObject {
 }
 
 pub trait DiskselectorExt: Sized + ElmObject {
-    #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
+    #[deprecated = "use refl::FlipSelector::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_diskselector_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
@@ -442,6 +445,12 @@ pub trait MenuExt: SelectorExt {
     }
     fn main_menu(win: &impl ContainerExt) -> Self {
         Self::from_raw(unsafe { elm_win_main_menu_get(win.as_raw()) })
+    }
+    fn with_appends<F: FnMut(Self) + 'static + Clone>(self, items: &[&str], func: F) -> Self {
+        for item in items {
+            self.append(item, item, func.clone());
+        }
+        self
     }
     fn append<F: FnMut(Self) + 'static>(
         &self,
@@ -987,7 +996,7 @@ unsafe extern "C" fn genlist_item_del(data: *mut c_void, _obj: *mut Evas_Object)
 }
 
 pub trait CheckExt: ElmObject {
-    #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
+    #[deprecated = "use refl::FlipSelector::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_check_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
@@ -1029,28 +1038,28 @@ pub trait RangerExt: ElmObject {
 
 pub trait SelectorExt: ElmObject {
     fn find(&self, item: super::WidgetItem) -> u32;
-    fn add<F: FnMut(Self) + 'static>(&self, label: &str, func: F) -> super::WidgetItem;
+    fn add(&self, label: &str) -> super::WidgetItem;
     fn lenght(&self) -> u32;
     fn value(&self) -> u32;
     fn clear(&self);
     fn set_value(&self, value: u32);
-    fn add_items<F: FnMut(Self) + 'static + Clone>(&self, items: &[&str], func: F) {
+    fn add_items(&self, items: &[&str]) {
         for item in items {
-            self.add(item, func.clone());
+            self.add(item);
         }
     }
-    fn with_item<F: FnMut(Self) + 'static>(self, label: &str, func: F) -> Self {
-        self.add(label, func);
+    fn with_item(self, label: &str) -> Self {
+        self.add(label);
         self
     }
-    fn with_items<F: FnMut(Self) + 'static + Clone>(self, items: &[&str], func: F) -> Self {
-        self.add_items(items, func);
+    fn with_items(self, items: &[&str]) -> Self {
+        self.add_items(items);
         self
     }
 }
 
 pub trait ActionSliderExt: ElmObject {
-    #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
+    #[deprecated = "use refl::FlipSelector::new(&parent) instead"]
     fn new(prt: &impl ContainerExt, left: &str, center: &str, right: &str) -> Self {
         let elm = Self::from_raw(unsafe { elm_actionslider_add(prt.as_raw()) });
         elm.conf();
@@ -1819,65 +1828,17 @@ pub trait ScrollerExt: ElmObject {
     }
 }
 
-pub trait SegmentControlExt: ElmObject {
+pub trait SegmentControlExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_segment_control_add(prt.as_raw()) });
         elm.conf();
         prt.add(&elm);
         elm
     }
-    fn selected(&self) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe { elm_segment_control_item_selected_get(self.as_raw()) })
-    }
-    fn value(&self) -> u32 {
-        self.index()
-    }
-    fn index(&self) -> u32 {
-        unsafe { elm_segment_control_item_index_get(self.selected().as_raw()) as u32 }
-    }
-    fn set_value(&self, value: u32) {
-        self.set_index(value);
-    }
-    fn set_index(&self, value: u32) {
-        unsafe {
-            elm_segment_control_item_selected_set(
-                elm_segment_control_item_get(self.as_raw(), value as i32),
-                true as Eina_Bool,
-            )
-        };
-    }
-    fn label(&self) -> String {
-        unsafe {
-            let ptr = elm_segment_control_item_label_get(self.as_raw(), self.index() as i32);
-            CStr::from_ptr(ptr).to_string_lossy().into_owned()
-        }
-    }
-    fn with_item(self, label: &str) -> Self {
-        self.add(label, label);
-        self
-    }
-    fn with_items(self, items: &[&str]) -> Self {
-        self.add_items(items);
-        self
-    }
-    fn add_items(&self, items: &[&str]) {
-        for item in items {
-            self.add(item, item);
-        }
-    }
-    fn add(&self, icon: &str, label: &str) -> super::WidgetItem {
-        super::WidgetItem::from_raw(unsafe {
-            elm_segment_control_item_add(
-                self.as_raw(),
-                super::Icon::new(self).with_standard(icon).as_raw(),
-                CString::new(label).unwrap().as_ptr(),
-            )
-        })
-    }
 }
 
 pub trait ToolBarExt: SelectorExt {
-    #[deprecated = "use refl::SegmentControl::new(&parent) instead"]
+    #[deprecated = "use refl::FlipSelector::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_toolbar_add(prt.as_raw()) });
         elm.conf();
@@ -2192,6 +2153,61 @@ pub trait OnPressedLong: ElmObject {
     fn with_pressed_long<F: FnMut(Self) + 'static>(self, func: F) -> Self {
         self.on_pressed_long(func);
         self
+    }
+}
+
+pub trait Update<T>
+where
+    Self: 'static,
+{
+    fn update(&self, value: T);
+}
+
+impl Update<i32> for super::Radio {
+    fn update(&self, value: i32) {
+        if self.value() != value {
+            self.set_value(value);
+        };
+    }
+}
+
+impl Update<&String> for super::Entry {
+    fn update(&self, value: &String) {
+        if !self.focus() && self.text() != *value {
+            self.set_text(value);
+        };
+    }
+}
+
+impl<T: SelectorExt + 'static> Update<u32> for T {
+    fn update(&self, value: u32) {
+        if self.value() != value {
+            self.set_value(value);
+        };
+    }
+}
+
+impl<T: RangerExt + 'static> Update<f64> for T {
+    fn update(&self, value: f64) {
+        if self.value() != value {
+            self.set_value(value);
+        };
+    }
+}
+
+impl<T: SelectorExt + 'static> Update<(Vec<String>, u32)> for T {
+    fn update(&self, value: (Vec<String>, u32)) {
+        if self.lenght() != (value.0.len() as u32) {
+            self.clear();
+            if !value.0.is_empty() {
+                for item in &value.0 {
+                    self.add(item);
+                }
+                if self.value() != value.1 {
+                    self.set_value(value.1);
+                };
+            }
+        };
     }
 }
 
