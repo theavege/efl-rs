@@ -103,10 +103,10 @@ fn compile() -> Vec<String> {
     run = Command::new("ninja")
         .args(["-C", &format!("{out_dir}/build")])
         .output()
-        .expect("\x1b[31mFailed to execute ninja!\x1b[0m");
+        .expect("\x1b[31mFailed to execute 'NINJA'!\x1b[0m");
     if !run.status.success() {
         panic!(
-            "\x1b[31m{command}\nstdout:\n{}\nstderr:\n{}\x1b[0m",
+            "\x1b[31mNINJA\nstdout:\n{}\nstderr:\n{}\x1b[0m",
             String::from_utf8_lossy(&run.stdout),
             String::from_utf8_lossy(&run.stderr),
         );
