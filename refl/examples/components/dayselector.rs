@@ -40,7 +40,7 @@ impl Component for DayselectorDemo {
             self.dayselector = refl::Dayselector::new(prt)
                 .with_size(0, 30)
                 .with_items(&items)
-                .with_selected({
+                .with_changed({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
