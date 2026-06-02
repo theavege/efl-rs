@@ -1235,22 +1235,8 @@ impl ElmObject for Colorselector {}
 impl OnChanged for Colorselector {}
 impl ColorselectorExt for Colorselector {}
 
-impl ColorselectorExt for Colorselector {}
-
 #[derive(Default)]
 pub struct Dayselector(Option<NonNull<Evas_Object>>);
-
-impl Dayselector {
-    fn selected(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_dayselector_selected_item_get(self.as_raw()) })
-    }
-    fn first(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_dayselector_first_item_get(self.as_raw()) })
-    }
-    fn last(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_dayselector_last_item_get(self.as_raw()) })
-    }
-}
 
 impl EvasObject for Dayselector {
     fn as_raw(&self) -> *mut Evas_Object {
@@ -1261,36 +1247,6 @@ impl EvasObject for Dayselector {
     }
 }
 impl ElmObject for Dayselector {}
-impl SelectorExt for Dayselector {
-    fn add(&self, label: &str) -> WidgetItem {
-        self.append(label, |_| {})
-    }
-    fn find(&self, item: WidgetItem) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first().as_raw();
-        while temp != item.as_raw() {
-            temp = unsafe { elm_dayselector_item_next_get(temp) };
-            count += 1;
-        }
-        count
-    }
-    fn value(&self) -> u32 {
-        self.find(self.selected())
-    }
-    fn lenght(&self) -> u32 {
-        self.find(self.last())
-    }
-    fn set_value(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _idx in 0..value {
-            temp = unsafe { elm_dayselector_item_next_get(temp) };
-        }
-        unsafe { elm_dayselector_item_selected_set(temp, true as Eina_Bool) };
-    }
-    fn clear(&self) {
-        unsafe { elm_dayselector_clear(self.as_raw()) };
-    }
-}
 impl OnChanged for Dayselector {}
 impl DayselectorExt for Dayselector {}
 
@@ -1347,4 +1303,3 @@ impl OnUnselected for Genlist {}
 impl OnActivated for Genlist {}
 impl OnClickedDouble for Genlist {}
 impl GenlistExt for Genlist {}
-
