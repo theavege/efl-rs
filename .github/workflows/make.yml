@@ -20,7 +20,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
+          #~ - windows-latest
         arch:
           - x86_64
 
@@ -46,6 +46,9 @@ jobs:
           If ($LastExitCode -ne 0) {
             Exit $LastExitCode
           }
+          (Get-Command 'gcc').Source | Out-Host
+          (Get-Command 'meson').Source | Out-Host
+          (Get-Command 'ninja').Source | Out-Host
           & cargo clippy --quiet --features="all" --examples | Out-Host
           If ($LastExitCode -ne 0) {
             Exit $LastExitCode

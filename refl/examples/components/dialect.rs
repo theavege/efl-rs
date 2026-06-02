@@ -160,7 +160,7 @@ impl Component for Dialect {
                 self.from = refl::FlipSelector::new(prt).with_selected({
                     let sender = sender.clone();
                     move |wgt| {
-                        sender.send(Msg::To(wgt.value() as i32)).unwrap();
+                        sender.send(Msg::From(wgt.value() as i32)).unwrap();
                     }
                 });
                 refl::Button::new(prt).with_text("Switch").on_clicked({

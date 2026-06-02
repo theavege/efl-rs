@@ -409,8 +409,9 @@ impl SelectorExt for FlipSelector {
     fn clear(&self) {
         let mut temp = self.first();
         while temp.0.is_some() {
+            let next = WidgetItem::from_raw(unsafe { elm_flipselector_item_next_get(temp.as_raw()) });
             temp.del();
-            temp = WidgetItem::from_raw(unsafe { elm_flipselector_item_next_get(temp.as_raw()) });
+            temp = next;
         }
     }
 }

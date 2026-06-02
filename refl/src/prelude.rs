@@ -2203,10 +2203,10 @@ impl<T: SelectorExt + 'static> Update<(Vec<String>, u32)> for T {
                 for item in &value.0 {
                     self.add(item);
                 }
-                if self.value() != value.1 {
-                    self.set_value(value.1);
-                };
             }
+        };
+        if self.value() != value.1 {
+            self.set_value(value.1);
         };
     }
 }
