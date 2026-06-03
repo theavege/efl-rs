@@ -28,92 +28,50 @@ impl ParseCallbacks for MacroCallback {
 fn compile() -> Vec<String> {
     use std::process::Command;
     let out_dir = env::var("OUT_DIR").unwrap();
-    let home_path = env::var("HOMEPATH").unwrap();
-    let mut run = Command::new("gcc")
-        .arg("-std=c99")
-        .arg("-o")
-        .arg(format!("{out_dir}/ewpi"))
-        .arg("use/ewpi/ewpi.c")
-        .arg("use/ewpi/ewpi_map.c")
-        .arg("use/ewpi/ewpi_spawn.c")
-        .output()
-        .expect("\x1b[31mFailed to execute 'GCC'!\x1b[0m");
-    if !run.status.success() {
-        panic!(
-            "\x1b[31mGCC\nstdout:\n{}\nstderr:\n{}\x1b[0m",
-            String::from_utf8_lossy(&run.stdout),
-            String::from_utf8_lossy(&run.stderr),
-        );
+    let app_data = env::var("LocalAppData").unwrap();
+    for exe in ["ewpi-x86_64-win10-1.1.exe", "efl-x86_64-win10-1.26.exe"] {
+        let path = Path::new(&out_dir).join(exe);
+        if !path.exists() {
+            let url = format!("https://download.enlightenment.org/rel/win/efl/{exe}");
+            let response = reqwest::blocking::Client::new()
+                .get(url)
+                .timeout(std::time::Duration::from_secs(120))
+                .send()
+                .expect(&format!("Failed to download {exe}"))
+                .bytes()
+                .expect(&format!("Failed to read {exe}"));
+            std::fs::write(&path, response).expect(&format!("Failed to write {exe}"));
+        }
+        let dir = Path::new(&out_dir).join(exe.split("-").next().unwrap());
+        if !dir.exists() {
+            let run = Command::new(path)
+                .args(["/NCRC", "/S", &format!("/D={}", dir.display())])
+                .output()
+                .expect(&format!("\x1b[31mFailed to execute {exe}!\x1b[0m"));
+            if !run.status.success() {
+                panic!(
+                    "\x1b[31mMESON\nstdout:\n{}\nstderr:\n{}\x1b[0m",
+                    String::from_utf8_lossy(&run.stdout),
+                    String::from_utf8_lossy(&run.stderr),
+                );
+            }
+        }
     }
-    run = Command::new(format!("{out_dir}/ewpi.exe"))
-        .args(["--strip", "--verbose"])
-        .output()
-        .expect("\x1b[31mFailed to execute 'EWPI'!\x1b[0m");
-    if !run.status.success() {
-        panic!(
-            "\x1b[31mEWPI\nstdout:\n{}\nstderr:\n{}\x1b[0m",
-            String::from_utf8_lossy(&run.stdout),
-            String::from_utf8_lossy(&run.stderr),
-        );
-    }
-    run = Command::new("meson")
-        .env("EWPI_PATH", format!("{home_path}/ewpi_64"))
-        .env(
-            "PKG_CONFIG_PATH",
-            format!("{home_path}/ewpi_64/lib/pkgconfig"),
-        )
-        .env("CPPFLAGS", format!("-I{home_path}/ewpi_64/include"))
-        .env("LDFLAGS", format!("-L{home_path}/ewpi_64/lib"))
-        .args([
-            "setup",
-            &format!("--prefix={home_path}/efl_64"),
-            "--libdir=lib",
-            "--buildtype=release",
-            "--strip",
-            "--default-library shared",
-            "-Dsystemd=false",
-            "-Dpulseaudio=false",
-            "-Dv4l2=false",
-            "-Dlibmount=false",
-            "-Deeze=false",
-            "-Dx11=false",
-            "-Dxinput2=false",
-            "-Devas-loaders-disabler='pdf','ps','rsvg','json'",
-            "-Dopengl=none",
-            "-Dpixman=true",
-            "-Dembedded-lz4=false",
-            "-Dfribidi=true",
-            "-Dinput=false",
-            "-Dbuild-examples=false",
-            "-Dbuild-tests=false",
-            "-Dbindings='cxx'",
-            "-Dlua-interpreter=luajit",
-            "-Delua=true",
-            &format!("{out_dir}/build"),
-        ])
-        .output()
-        .expect("\x1b[31mFailed to execute 'MESON'!\x1b[0m");
-    if !run.status.success() {
-        panic!(
-            "\x1b[31mMESON\nstdout:\n{}\nstderr:\n{}\x1b[0m",
-            String::from_utf8_lossy(&run.stdout),
-            String::from_utf8_lossy(&run.stderr),
-        );
-    }
-    run = Command::new("ninja")
-        .args(["-C", &format!("{out_dir}/build")])
-        .output()
-        .expect("\x1b[31mFailed to execute 'NINJA'!\x1b[0m");
-    if !run.status.success() {
-        panic!(
-            "\x1b[31mNINJA\nstdout:\n{}\nstderr:\n{}\x1b[0m",
-            String::from_utf8_lossy(&run.stdout),
-            String::from_utf8_lossy(&run.stderr),
-        );
-    }
-    println!("cargo:rustc-link-search=native={out_dir}/build");
+    println!("cargo:rustc-link-search=native={app_data}\\efl_64\\lib");
     println!("cargo:rustc-link-lib=static=efl");
-    Vec::from([format!("-I{home_path}/ewpi_64/include")])
+    let mut includes = Vec::new();
+    for source in ["ewpi", "efl"] {
+        for entry in glob::glob(&format!("{app_data}\\{source}_64\\**\\*.h"))
+            .expect("Failed to read glob pattern")
+        {
+            match entry {
+                Ok(path) => includes.push(format!("-I{}", path.parent().unwrap().display())),
+                Err(e) => panic!("Failed to find: {e}"),
+            }
+        }
+    }
+    includes.dedup();
+    includes
 }
 
 #[cfg(target_os = "linux")]
