@@ -1329,6 +1329,158 @@ pub trait IconExt: ElmObject {
     }
 }
 
+pub trait ImageExt: ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_image_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn with_file_group(self, file: &str, group: &str) -> Self {
+        self.set_file_group(file, group);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        let cfile = CString::new(file).unwrap();
+        unsafe { elm_image_file_set(self.as_raw(), cfile.as_ptr(), std::ptr::null()) != 0 }
+    }
+    fn set_file_group(&self, file: &str, group: &str) -> bool {
+        let cfile = CString::new(file).unwrap();
+        let cgroup = CString::new(group).unwrap();
+        unsafe { elm_image_file_set(self.as_raw(), cfile.as_ptr(), cgroup.as_ptr()) != 0 }
+    }
+    fn set_prescale(&self, size: i32) {
+        unsafe { elm_image_prescale_set(self.as_raw(), size) };
+    }
+    fn prescale(&self) -> i32 {
+        unsafe { elm_image_prescale_get(self.as_raw()) }
+    }
+    fn set_smooth(&self, value: bool) {
+        unsafe { elm_image_smooth_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn smooth(&self) -> bool {
+        unsafe { elm_image_smooth_get(self.as_raw()) != 0 }
+    }
+    fn set_animated(&self, value: bool) {
+        unsafe { elm_image_animated_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn animated(&self) -> bool {
+        unsafe { elm_image_animated_get(self.as_raw()) != 0 }
+    }
+    fn set_animated_play(&self, value: bool) {
+        unsafe { elm_image_animated_play_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn animated_play(&self) -> bool {
+        unsafe { elm_image_animated_play_get(self.as_raw()) != 0 }
+    }
+    fn animated_available(&self) -> bool {
+        unsafe { elm_image_animated_available_get(self.as_raw()) != 0 }
+    }
+    fn set_editable(&self, value: bool) {
+        unsafe { elm_image_editable_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn editable(&self) -> bool {
+        unsafe { elm_image_editable_get(self.as_raw()) != 0 }
+    }
+    fn set_fill_outside(&self, value: bool) {
+        unsafe { elm_image_fill_outside_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn fill_outside(&self) -> bool {
+        unsafe { elm_image_fill_outside_get(self.as_raw()) != 0 }
+    }
+    fn set_orient(&self, orient: super::ImageOrient) {
+        unsafe { elm_image_orient_set(self.as_raw(), orient as u32) };
+    }
+    fn set_resizable(&self, up: bool, down: bool) {
+        unsafe { elm_image_resizable_set(self.as_raw(), up as Eina_Bool, down as Eina_Bool) };
+    }
+    fn image_size(&self) -> (i32, i32) {
+        let (mut w, mut h) = (0i32, 0i32);
+        unsafe { elm_image_object_size_get(self.as_raw(), &mut w, &mut h) };
+        (w, h)
+    }
+}
+
+pub trait IndexExt: LayoutExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_index_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn append<F: FnMut(Self) + 'static>(&self, letter: &str, func: F) -> super::WidgetItem {
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        super::WidgetItem::from_raw(unsafe {
+            elm_index_item_append(
+                self.as_raw(),
+                CString::new(letter).unwrap().as_ptr(),
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            )
+        })
+    }
+    fn with_item<F: FnMut(Self) + 'static>(self, letter: &str, func: F) -> Self {
+        self.append(letter, func);
+        self
+    }
+    fn add(&self, letter: &str) -> super::WidgetItem {
+        self.append(letter, |_| {})
+    }
+    fn add_items(&self, items: &[&str]) {
+        for item in items {
+            self.add(item);
+        }
+    }
+    fn with_items(self, items: &[&str]) -> Self {
+        self.add_items(items);
+        self
+    }
+    fn selected(&self) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_index_selected_item_get(self.as_raw(), 0) })
+    }
+    fn selected_at_level(&self, level: i32) -> super::WidgetItem {
+        super::WidgetItem::from_raw(unsafe { elm_index_selected_item_get(self.as_raw(), level) })
+    }
+    fn clear(&self) {
+        unsafe { elm_index_item_clear(self.as_raw()) };
+    }
+    fn level_go(&self, level: i32) {
+        unsafe { elm_index_level_go(self.as_raw(), level) };
+    }
+    fn set_item_level(&self, level: i32) {
+        unsafe { elm_index_item_level_set(self.as_raw(), level) };
+    }
+    fn item_level(&self) -> i32 {
+        unsafe { elm_index_item_level_get(self.as_raw()) }
+    }
+    fn set_horizontal(&self, value: bool) {
+        unsafe { elm_index_horizontal_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn horizontal(&self) -> bool {
+        unsafe { elm_index_horizontal_get(self.as_raw()) != 0 }
+    }
+    fn set_autohide_disabled(&self, value: bool) {
+        unsafe { elm_index_autohide_disabled_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn autohide_disabled(&self) -> bool {
+        unsafe { elm_index_autohide_disabled_get(self.as_raw()) != 0 }
+    }
+    fn set_indicator_disabled(&self, value: bool) {
+        unsafe { elm_index_indicator_disabled_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn indicator_disabled(&self) -> bool {
+        unsafe { elm_index_indicator_disabled_get(self.as_raw()) != 0 }
+    }
+    fn set_delay_change_time(&self, value: f64) {
+        unsafe { elm_index_delay_change_time_set(self.as_raw(), value) };
+    }
+    fn delay_change_time(&self) -> f64 {
+        unsafe { elm_index_delay_change_time_get(self.as_raw()) }
+    }
+}
+
 pub trait SeparatorExt: ElmObject {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_separator_add(prt.as_raw()) });
@@ -1750,6 +1902,136 @@ pub trait RadioExt: OnChanged {
     }
     fn set_value(&self, value: i32) {
         unsafe { elm_radio_value_set(self.as_raw(), value) };
+    }
+}
+
+pub trait PrefsExt: ElmObject {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_prefs_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn with_file_group(self, file: &str, group: &str) -> Self {
+        self.set_file_group(file, group);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        let cfile = CString::new(file).unwrap();
+        unsafe { elm_prefs_file_set(self.as_raw(), cfile.as_ptr(), std::ptr::null()) != 0 }
+    }
+    fn set_file_group(&self, file: &str, group: &str) -> bool {
+        let cfile = CString::new(file).unwrap();
+        let cgroup = CString::new(group).unwrap();
+        unsafe { elm_prefs_file_set(self.as_raw(), cfile.as_ptr(), cgroup.as_ptr()) != 0 }
+    }
+    fn set_autosave(&self, value: bool) {
+        unsafe { elm_prefs_autosave_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn autosave(&self) -> bool {
+        unsafe { elm_prefs_autosave_get(self.as_raw()) != 0 }
+    }
+    fn reset(&self, mode: super::PrefsResetMode) {
+        unsafe { elm_prefs_reset(self.as_raw(), mode as u32) };
+    }
+    fn set_item_disabled(&self, name: &str, value: bool) {
+        let cname = CString::new(name).unwrap();
+        unsafe { elm_prefs_item_disabled_set(self.as_raw(), cname.as_ptr(), value as Eina_Bool) };
+    }
+    fn item_disabled(&self, name: &str) -> bool {
+        let cname = CString::new(name).unwrap();
+        unsafe { elm_prefs_item_disabled_get(self.as_raw(), cname.as_ptr()) != 0 }
+    }
+    fn item_swallow(&self, name: &str, child: &impl ElmObject) -> bool {
+        let cname = CString::new(name).unwrap();
+        unsafe { elm_prefs_item_swallow(self.as_raw(), cname.as_ptr(), child.as_raw()) != 0 }
+    }
+    fn set_item_editable(&self, name: &str, value: bool) {
+        let cname = CString::new(name).unwrap();
+        unsafe { elm_prefs_item_editable_set(self.as_raw(), cname.as_ptr(), value as Eina_Bool) };
+    }
+    fn item_editable(&self, name: &str) -> bool {
+        let cname = CString::new(name).unwrap();
+        unsafe { elm_prefs_item_editable_get(self.as_raw(), cname.as_ptr()) != 0 }
+    }
+    fn set_item_visible(&self, name: &str, value: bool) {
+        let cname = CString::new(name).unwrap();
+        unsafe { elm_prefs_item_visible_set(self.as_raw(), cname.as_ptr(), value as Eina_Bool) };
+    }
+    fn item_visible(&self, name: &str) -> bool {
+        let cname = CString::new(name).unwrap();
+        unsafe { elm_prefs_item_visible_get(self.as_raw(), cname.as_ptr()) != 0 }
+    }
+}
+
+pub trait VideoExt: LayoutExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_video_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, filename: &str) -> Self {
+        self.set_file(filename);
+        self
+    }
+    fn set_file(&self, filename: &str) -> bool {
+        let cfilename = CString::new(filename).unwrap();
+        unsafe { elm_video_file_set(self.as_raw(), cfilename.as_ptr()) != 0 }
+    }
+    fn set_audio_level(&self, value: f64) {
+        unsafe { elm_video_audio_level_set(self.as_raw(), value) };
+    }
+    fn audio_level(&self) -> f64 {
+        unsafe { elm_video_audio_level_get(self.as_raw()) }
+    }
+    fn set_audio_mute(&self, value: bool) {
+        unsafe { elm_video_audio_mute_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn audio_mute(&self) -> bool {
+        unsafe { elm_video_audio_mute_get(self.as_raw()) != 0 }
+    }
+    fn play_length(&self) -> f64 {
+        unsafe { elm_video_play_length_get(self.as_raw()) }
+    }
+    fn seekable(&self) -> bool {
+        unsafe { elm_video_is_seekable_get(self.as_raw()) != 0 }
+    }
+    fn set_play_position(&self, value: f64) {
+        unsafe { elm_video_play_position_set(self.as_raw(), value) };
+    }
+    fn play_position(&self) -> f64 {
+        unsafe { elm_video_play_position_get(self.as_raw()) }
+    }
+    fn playing(&self) -> bool {
+        unsafe { elm_video_is_playing_get(self.as_raw()) != 0 }
+    }
+    fn play(&self) {
+        unsafe { elm_video_play(self.as_raw()) };
+    }
+    fn pause(&self) {
+        unsafe { elm_video_pause(self.as_raw()) };
+    }
+    fn stop(&self) {
+        unsafe { elm_video_stop(self.as_raw()) };
+    }
+}
+
+pub trait PlayerExt: LayoutExt + ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_player_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn with_video(self, video: &impl VideoExt) -> Self {
+        self.set_video(video);
+        self
+    }
+    fn set_video(&self, video: &impl VideoExt) {
+        self.set_content(video, "video");
+        video.show();
     }
 }
 

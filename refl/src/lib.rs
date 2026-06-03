@@ -56,6 +56,26 @@ pub enum WinType {
     Dock,
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub enum ImageOrient {
+    #[default]
+    None = 0,
+    Rotate90 = 1,
+    Rotate180 = 2,
+    Rotate270 = 3,
+    FlipHorizontal = 4,
+    FlipVertical = 5,
+    FlipTranspose = 6,
+    FlipTransverse = 7,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub enum PrefsResetMode {
+    #[default]
+    Defaults = 0,
+    Last = 1,
+}
+
 pub struct EventHandler(Option<NonNull<Ecore_Event_Handler>>);
 
 impl EcoreEventExt for EventHandler {
@@ -455,6 +475,40 @@ impl ElmObject for Icon {}
 impl IconExt for Icon {}
 
 #[derive(Default)]
+pub struct Image(Option<NonNull<Evas_Object>>);
+
+impl EvasObject for Image {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl ElmObject for Image {}
+impl OnClicked for Image {}
+impl ImageExt for Image {}
+
+#[derive(Default)]
+pub struct Index(Option<NonNull<Evas_Object>>);
+
+impl EvasObject for Index {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl ElmObject for Index {}
+impl ContainerExt for Index {}
+impl LayoutExt for Index {}
+impl OnChanged for Index {}
+impl OnChangedDelay for Index {}
+impl OnSelected for Index {}
+impl IndexExt for Index {}
+
+#[derive(Default)]
 pub struct Label(Option<NonNull<Evas_Object>>);
 
 impl Label {
@@ -733,6 +787,58 @@ impl EvasObject for Radio {
 impl ElmObject for Radio {}
 impl OnChanged for Radio {}
 impl RadioExt for Radio {}
+
+#[derive(Default)]
+pub struct Prefs(Option<NonNull<Evas_Object>>);
+
+impl EvasObject for Prefs {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl ElmObject for Prefs {}
+impl OnChanged for Prefs {}
+impl PrefsExt for Prefs {}
+
+#[derive(Default)]
+pub struct Video(Option<NonNull<Evas_Object>>);
+
+impl EvasObject for Video {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl ElmObject for Video {}
+impl ContainerExt for Video {}
+impl LayoutExt for Video {}
+impl VideoExt for Video {}
+
+#[derive(Default)]
+pub struct Player(Option<NonNull<Evas_Object>>);
+
+impl EvasObject for Player {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl ElmObject for Player {}
+impl ContainerExt for Player {
+    fn add(&self, child: &impl ElmObject) {
+        self.set_content(child, "video");
+        child.show();
+    }
+}
+impl LayoutExt for Player {}
+impl PlayerExt for Player {}
 
 #[derive(Default)]
 pub struct Scroller(Option<NonNull<Evas_Object>>);
