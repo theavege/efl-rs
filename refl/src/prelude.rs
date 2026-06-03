@@ -1056,6 +1056,10 @@ pub trait SelectorExt: ElmObject {
             self.add(item);
         }
     }
+    fn with_value(self, value: u32) -> Self {
+        self.set_value(value);
+        self
+    }
     fn with_item(self, label: &str) -> Self {
         self.add(label);
         self
@@ -1497,7 +1501,7 @@ pub trait SeparatorExt: ElmObject {
     }
 }
 
-pub trait LayoutExt: ContainerExt {
+pub trait LayoutExt: ElmObject {
     fn with_file(self, file: &str, group: &str) -> Self {
         self.set_file(file, group);
         self
@@ -1795,6 +1799,16 @@ pub trait PanesExt: ElmObject {
             unsafe { elm_panes_content_left_size_set(self.as_raw(), value) };
         }
     }
+    fn with_fixed_size(self, left: f64, right: f64) -> Self {
+        if (0.0..1.0).contains(&left) {
+            self.set_left_size(left);
+        }
+        if (0.0..1.0).contains(&right) {
+            self.set_right_size(left);
+        }
+        self.set_fixed(true);
+        self
+    }
     fn set_left_min_size(&self, value: i32) {
         unsafe { elm_panes_content_left_min_size_set(self.as_raw(), value) };
     }
@@ -1967,7 +1981,7 @@ pub trait PrefsExt: ElmObject {
     }
 }
 
-pub trait VideoExt: LayoutExt {
+pub trait VideoExt: ElmObject {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_video_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
