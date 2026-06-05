@@ -9,6 +9,7 @@ keywords = ["EFL", "enlightenment"]
 categories = ["external-ffi-bindings"]
 readme = "README.md"
 edition = "2024"
+exclude = ["use"]
 
 [build-dependencies]
 bindgen = "0.72"
