@@ -6,3 +6,11 @@
 	path = refl-sys/use/ewpi
 	url = https://github.com/vtorri/ewpi.git
 	branch = master
+[submodule "efltk-sys/use/ewpi"]
+	path = efltk-sys/use/ewpi
+	url = https://github.com/vtorri/ewpi.git
+	branch = master
+[submodule "efltk-sys/use/efl"]
+	path = efltk-sys/use/efl
+	url = https://github.com/Enlightenment/efl.git
+	branch = master
