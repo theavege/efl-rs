@@ -20,6 +20,7 @@ pub enum Msg {
 #[derive(Default)]
 pub struct Selector {
     radio: refl::Radio,
+    sel: refl::HoverSel,
     list: refl::List,
     flip: refl::FlipSelector,
 }
@@ -29,6 +30,9 @@ impl Component for Selector {
     type State = models::Model;
     fn update(&self, model: &Self::State) {
         self.list.set_value(model.value());
+        let choice = ["home", "close", "folder"][model.value() as usize];
+        self.sel.set_text(choice);
+        self.sel.set_icon(choice);
         self.flip.update(model.value());
         self.radio.update(model.value() as i32);
     }
@@ -41,17 +45,28 @@ impl Component for Selector {
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         let items = ["home", "close", "folder"];
         refl::Box::new(prt).inside(|prt| {
-            self.flip = refl::FlipSelector::new(prt)
-                .with_size(0, 30)
-                .with_items(&items)
-                .with_selected({
-                    let sender = sender.clone();
-                    move |wgt| {
-                        if wgt.focus() {
-                            sender.send(Msg::Set(wgt.value())).unwrap();
+            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                self.sel = refl::HoverSel::new(prt);
+                for (idx, item) in items.iter().enumerate() {
+                    self.sel.add_item(item, item, {
+                        let sender = sender.clone();
+                        move |_| {
+                            sender.send(Msg::Set(idx as u32)).unwrap();
                         }
-                    }
-                });
+                    });
+                }
+                self.flip = refl::FlipSelector::new(prt)
+                    .with_size(0, 30)
+                    .with_items(&items)
+                    .with_selected({
+                        let sender = sender.clone();
+                        move |wgt| {
+                            if wgt.focus() {
+                                sender.send(Msg::Set(wgt.value())).unwrap();
+                            }
+                        }
+                    });
+            });
             refl::Box::new(prt).with_horizontal(true).inside(|prt| {
                 self.list = refl::List::new(prt).with_items(&items).with_selected({
                     let sender = sender.clone();

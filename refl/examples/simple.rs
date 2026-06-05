@@ -34,28 +34,29 @@ impl Component for View {
             let sender = sender.clone();
             move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
         });
-        self.1 = refl::Naviframe::new(prt).inside(|prt| {
-            refl::Box::new(prt).append(|prt| {
+        self.1 = refl::Naviframe::new(prt);
+        self.1.inside(|prt| {
+            refl::Box::new(prt).inside(|prt| {
                 for (idx, item) in ["Rangers", "Selectors", "Booker", "Converter"]
                     .iter()
                     .enumerate()
                 {
-                    refl::Box::new(prt).with_horizontal(true).append(|prt| {
+                    refl::Box::new(prt).with_horizontal(true).inside(|prt| {
                         self.0[idx] = refl::Frame::new(prt)
                             .with_autocollapse(false)
                             .with_text(item)
                             .with_clicked({
                                 let sender = sender.clone();
                                 move |_| sender.send(Msg::Set(idx)).unwrap()
-                            })
-                            .inside(move |prt| {
-                                match idx {
-                                    0 => components::Ranger::mount(prt),
-                                    1 => components::Selector::mount(prt),
-                                    2 => components::Booker::mount(prt),
-                                    _ => components::Converter::mount(prt),
-                                };
                             });
+                        self.0[idx].inside(move |prt| {
+                            match idx {
+                                0 => components::Ranger::mount(prt),
+                                1 => components::Selector::mount(prt),
+                                2 => components::Booker::mount(prt),
+                                _ => components::Converter::mount(prt),
+                            };
+                        });
                     })
                 }
             });

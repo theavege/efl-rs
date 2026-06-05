@@ -157,30 +157,40 @@ impl Component for Dialect {
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         refl::Box::new(prt).inside(|prt| {
             refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                self.from = refl::FlipSelector::new(prt).with_selected({
-                    let sender = sender.clone();
-                    move |wgt| {
-                        sender.send(Msg::From(wgt.value() as i32)).unwrap();
-                    }
-                });
-                refl::Button::new(prt).with_text("Switch").on_clicked({
-                    let sender = sender.clone();
-                    move |_| {
-                        sender.send(Msg::Switch).unwrap();
-                    }
-                });
-                self.to = refl::FlipSelector::new(prt).with_selected({
-                    let sender = sender.clone();
-                    move |wgt| {
-                        sender.send(Msg::To(wgt.value() as i32)).unwrap();
-                    }
-                });
-                refl::Button::new(prt).with_text("Translate").on_clicked({
-                    let sender = sender.clone();
-                    move |_| {
-                        sender.send(Msg::Run).unwrap();
-                    }
-                });
+                self.from = refl::FlipSelector::new(prt)
+                    .with_size(0, 30)
+                    .with_selected({
+                        let sender = sender.clone();
+                        move |wgt| {
+                            sender.send(Msg::From(wgt.value() as i32)).unwrap();
+                        }
+                    });
+                refl::Button::new(prt)
+                    .with_text("Switch")
+                    .with_size(0, 30)
+                    .on_clicked({
+                        let sender = sender.clone();
+                        move |_| {
+                            sender.send(Msg::Switch).unwrap();
+                        }
+                    });
+                self.to = refl::FlipSelector::new(prt)
+                    .with_size(0, 30)
+                    .with_selected({
+                        let sender = sender.clone();
+                        move |wgt| {
+                            sender.send(Msg::To(wgt.value() as i32)).unwrap();
+                        }
+                    });
+                refl::Button::new(prt)
+                    .with_text("Translate")
+                    .with_size(0, 30)
+                    .on_clicked({
+                        let sender = sender.clone();
+                        move |_| {
+                            sender.send(Msg::Run).unwrap();
+                        }
+                    });
             });
             refl::Box::new(prt)
                 .with_horizontal(true)

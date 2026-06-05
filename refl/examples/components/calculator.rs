@@ -82,7 +82,7 @@ pub enum Msg {
 pub struct Calc {
     outp: refl::Entry,
     prev: refl::Entry,
-    oper: refl::Entry,
+    oper: refl::Label,
     curr: refl::Entry,
 }
 
@@ -98,31 +98,29 @@ impl Component for Calc {
     fn update(&self, model: &Self::State) {
         self.outp.update(&model.output.clone());
         self.prev.update(&model.prev.to_string());
-        self.oper.update(&model.operation.clone());
+        self.oper.set_text(&model.operation.clone());
         self.curr.update(&model.current.clone());
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(prt).with_homogeneous(false).inside(|prt| {
+        refl::Box::new(prt).inside(|prt| {
             self.outp = refl::Entry::new(prt)
                 .with_editable(false)
                 .with_single_line(false)
                 .with_tooltip("Output");
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                self.oper = refl::Entry::new(prt)
-                    .with_editable(false)
-                    .with_single_line(false)
-                    .with_tooltip("Operation");
-                refl::Box::new(prt).inside(|prt| {
-                    self.prev = refl::Entry::new(prt)
-                        .with_size(0, 45)
-                        .with_editable(false)
-                        .with_tooltip("Previos");
-                    self.curr = refl::Entry::new(prt)
-                        .with_size(0, 45)
-                        .with_editable(false)
-                        .with_tooltip("Current");
+            refl::Box::new(prt)
+                .with_homogeneous(true)
+                .with_horizontal(true)
+                .inside(|prt| {
+                    self.oper = refl::Label::new(prt).with_tooltip("Operation");
+                    refl::Box::new(prt).with_homogeneous(true).inside(|prt| {
+                        self.prev = refl::Entry::new(prt)
+                            .with_editable(false)
+                            .with_tooltip("Previos");
+                        self.curr = refl::Entry::new(prt)
+                            .with_editable(false)
+                            .with_tooltip("Current");
+                    });
                 });
-            });
             for row in [
                 ["CE", "C", "%", "/"],
                 ["7", "8", "9", "x"],
@@ -130,24 +128,21 @@ impl Component for Calc {
                 ["1", "2", "3", "+"],
                 ["0", ".", "<", "="],
             ] {
-                refl::Box::new(prt)
-                    .with_weight(true, false)
-                    .with_horizontal(true)
-                    .inside(|prt| {
-                        for cell in row {
-                            refl::Button::new(prt)
-                                .with_size(90, 90)
-                                .with_text(cell)
-                                .with_tooltip(cell)
-                                .with_cursor("hand1")
-                                .on_clicked({
-                                    let sender = sender.clone();
-                                    move |wgt| {
-                                        sender.send(Msg::Push(wgt.text())).unwrap();
-                                    }
-                                });
-                        }
-                    });
+                refl::Box::new(prt).with_horizontal(true).inside(|prt| {
+                    for cell in row {
+                        refl::Button::new(prt)
+                            .with_size(90, 90)
+                            .with_text(cell)
+                            .with_tooltip(cell)
+                            .with_cursor(Cursor::Hand1)
+                            .on_clicked({
+                                let sender = sender.clone();
+                                move |wgt| {
+                                    sender.send(Msg::Push(wgt.text())).unwrap();
+                                }
+                            });
+                    }
+                });
             }
         });
     }

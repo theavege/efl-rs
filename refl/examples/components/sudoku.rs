@@ -104,7 +104,7 @@ mod models {
 use refl::prelude::*;
 
 #[derive(Default)]
-pub struct Sudoku([[refl::Button; 9]; 9]);
+pub struct Sudoku([[refl::HoverSel; 9]; 9]);
 
 pub enum Msg {
     Push(usize, usize, u32),
@@ -138,26 +138,15 @@ impl Component for Sudoku {
                     .with_homogeneous(true)
                     .inside(|prt| {
                         for col in 0..9 {
-                            self.0[row][col] =
-                                refl::Button::new(prt).with_cursor("hand2").with_clicked({
+                            self.0[row][col] = refl::HoverSel::new(prt).with_size(60, 60);
+                            for item in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] {
+                                self.0[row][col].add_item(&item.to_string(), &item.to_string(), {
                                     let sender = sender.clone();
-                                    move |wgt| {
-                                        refl::Menu::new(&wgt)
-                                            .with_appends(
-                                                &["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-                                                {
-                                                    let sender = sender.clone();
-                                                    move |wgt| {
-                                                        sender
-                                                            .send(Msg::Push(row, col, wgt.value()))
-                                                            .unwrap();
-                                                        wgt.del();
-                                                    }
-                                                },
-                                            )
-                                            .open();
+                                    move |_| {
+                                        sender.send(Msg::Push(row, col, item)).unwrap();
                                     }
                                 });
+                            }
                         }
                     });
             }
@@ -165,18 +154,24 @@ impl Component for Sudoku {
                 .with_horizontal(true)
                 .with_homogeneous(true)
                 .inside(|prt| {
-                    refl::Button::new(prt).with_text("Answer").on_clicked({
-                        let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Solve).unwrap();
-                        }
-                    });
-                    refl::Button::new(prt).with_text("Clear").on_clicked({
-                        let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Clear).unwrap();
-                        }
-                    });
+                    refl::Button::new(prt)
+                        .with_text("Answer")
+                        .with_size(0, 60)
+                        .on_clicked({
+                            let sender = sender.clone();
+                            move |_wgt| {
+                                sender.send(Msg::Solve).unwrap();
+                            }
+                        });
+                    refl::Button::new(prt)
+                        .with_text("Clear")
+                        .with_size(0, 60)
+                        .on_clicked({
+                            let sender = sender.clone();
+                            move |_wgt| {
+                                sender.send(Msg::Clear).unwrap();
+                            }
+                        });
                 });
         });
     }
