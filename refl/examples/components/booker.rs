@@ -43,42 +43,22 @@ impl Component for Booker {
             refl::Panes::new(prt)
                 .with_fixed_size(0.6, 0.4)
                 .inside(|prt| {
-                    refl::Label::new(prt).with_text("Departure data");
+                    refl::Label::new(prt).set_text("Departure data");
                     refl::Entry::new(prt)
-                        .with_clicked(move |wgt| {
-                            refl::Notify::new(&wgt).inside(|ntf| {
-                                let _ = refl::Calendar::new(ntf);
-                            });
-                        })
-                        .with_changed({
-                            let _sender = sender.clone();
-                            move |wgt| {
-                                if wgt.focus() {
-                                    let _value = wgt.value().parse::<f64>().unwrap_or_default();
-                                }
-                            }
+                        .with_editable(false)
+                        .on_clicked(|wgt| {
+                            refl::Popup::new(&wgt)
+                                .with_timeout(0.0)
+                                .set_message("home", "TTT", "PPPP");
                         });
                 });
             refl::Panes::new(prt)
                 .with_fixed_size(0.6, 0.4)
                 .inside(|prt| {
-                    refl::Label::new(prt).with_text("Return data");
-                    refl::Entry::new(prt)
-                        .with_clicked(move |wgt| {
-                            refl::Notify::new(&wgt).inside(|ntf| {
-                                let _ = &refl::Calendar::new(ntf);
-                            });
-                        })
-                        .with_changed({
-                            let _sender = sender.clone();
-                            move |wgt| {
-                                if wgt.focus() {
-                                    let _value = wgt.value().parse::<f64>().unwrap_or_default();
-                                }
-                            }
-                        });
+                    refl::Label::new(prt).set_text("Return data");
+                    refl::Entry::new(prt).set_editable(false);
                 });
-            refl::Button::new(prt).set_text("4");
+            refl::Button::new(prt).set_text("Book");
         });
     }
 }

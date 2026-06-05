@@ -1,19 +1,10 @@
-![bubble](https://www.enlightenment.org/_legacy_embed/img/widget/bubble/preview-00.png)
-
 ![frame](https://www.enlightenment.org/_legacy_embed/img/widget/frame/preview-00.png)
 
-# Conformant
+# [Bubble](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Bubble.html)
 
-`Conformant` is a container that can wrap one child in its default content part and resize that content around system UI areas such as the virtual keypad.
-# Grid
+![Bubble](https://www.enlightenment.org/_legacy_embed/img/widget/bubble/preview-00.png)
 
-Grid is a container that lays children out at explicit positions in a virtual coordinate space.
+# [Popup](https://www.enlightenment.org/develop/legacy/program_guide/widgets/popup)
 
-```rust
-refl::Grid::new(parent)
-    .with_virtual_size(100, 100)
-    .inside(|grid| {
-        let button = refl::Button::new(grid).with_text("Button");
-        grid.set_pack(&button, 10, 10, 40, 20);
-    });
-```
+# [CtxPopup](https://www.enlightenment.org/develop/legacy/program_guide/widgets/ctxpopup)
+

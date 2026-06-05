@@ -56,7 +56,7 @@ pub enum WinType {
     Dock,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Default)]
 pub enum ImageOrient {
     #[default]
     None = 0,
@@ -69,7 +69,7 @@ pub enum ImageOrient {
     FlipTransverse = 7,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Default)]
 pub enum PrefsResetMode {
     #[default]
     Defaults = 0,
@@ -668,18 +668,6 @@ impl NaviframeExt for Naviframe {}
 #[derive(Default)]
 pub struct Notify(Option<NonNull<Evas_Object>>);
 
-impl Notify {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_notify_add(prt.window().as_raw()) });
-        elm.conf();
-        prt.add(&elm);
-        elm
-    }
-    pub fn set_timeout(&self, value: f64) {
-        unsafe { elm_notify_timeout_set(self.as_raw(), value) };
-    }
-}
-
 impl EvasObject for Notify {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -689,6 +677,7 @@ impl EvasObject for Notify {
     }
 }
 impl ElmObject for Notify {}
+impl NotifyExt for Notify {}
 impl ContainerExt for Notify {
     fn add(&self, child: &impl ElmObject) {
         self.set_content(child, "default");
@@ -742,7 +731,7 @@ impl OnClickedDouble for Panes {}
 impl OnPressed for Panes {}
 impl PanesExt for Panes {}
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Popup(Option<NonNull<Evas_Object>>);
 
 impl EvasObject for Popup {
@@ -753,9 +742,9 @@ impl EvasObject for Popup {
         Self(NonNull::new(obj))
     }
 }
-impl ContainerExt for Popup {}
 impl ElmObject for Popup {}
 impl PopupExt for Popup {}
+impl ContainerExt for Popup {}
 
 #[derive(Default)]
 pub struct ProgressBar(Option<NonNull<Evas_Object>>);
@@ -1067,7 +1056,7 @@ impl EvasObject for Window {
 }
 impl ContainerExt for Window {
     fn add(&self, child: &impl ElmObject) {
-        self.add_object(child);
+        unsafe { elm_win_resize_object_add(self.as_raw(), child.as_raw()) };
         child.show();
     }
 }
@@ -1124,12 +1113,7 @@ impl EvasObject for Grid {
     }
 }
 impl ElmObject for Grid {}
-impl ContainerExt for Grid {
-    fn add(&self, child: &impl ElmObject) {
-        self.pack(child, 0, 0, 1, 1);
-        child.show();
-    }
-}
+impl ContainerExt for Grid {}
 impl GridExt for Grid {}
 
 #[derive(Default)]
@@ -1248,6 +1232,20 @@ impl EvasObject for Check {
 impl ElmObject for Check {}
 impl OnChanged for Check {}
 impl CheckExt for Check {}
+
+#[derive(Default)]
+pub struct HoverSel(Option<NonNull<Evas_Object>>);
+
+impl EvasObject for HoverSel {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl ElmObject for HoverSel {}
+impl HoverSelExt for HoverSel {}
 
 #[derive(Default)]
 pub struct Conformant(Option<NonNull<Evas_Object>>);
@@ -1393,9 +1391,9 @@ impl OnClickedDouble for Gengrid {}
 impl GengridExt for Gengrid {}
 
 #[derive(Default)]
-pub struct Genlist(Option<NonNull<Evas_Object>>);
+pub struct GenList(Option<NonNull<Evas_Object>>);
 
-impl EvasObject for Genlist {
+impl EvasObject for GenList {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
     }
@@ -1403,9 +1401,9 @@ impl EvasObject for Genlist {
         Self(NonNull::new(obj))
     }
 }
-impl ElmObject for Genlist {}
-impl OnSelected for Genlist {}
-impl OnUnselected for Genlist {}
-impl OnActivated for Genlist {}
-impl OnClickedDouble for Genlist {}
-impl GenlistExt for Genlist {}
+impl ElmObject for GenList {}
+impl OnSelected for GenList {}
+impl OnUnselected for GenList {}
+impl OnActivated for GenList {}
+impl OnClickedDouble for GenList {}
+impl GenlistExt for GenList {}

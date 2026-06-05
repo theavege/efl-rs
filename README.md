@@ -23,31 +23,27 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
 
 - [x] [Application](docs/elm_app.md)
 - [x] [Widgets](https://www.enlightenment.org/_legacy_embed/widgetslist.html)
+  - [x] [Containers](docs/elm_containers.md)
+    - [x] [Window](docs/elm_containers.md#Window) - Primari application window
+    - [x] [Box](docs/elm_containers.md#Box) - Basic horizontal/vertical packing
+    - [x] [Bubble](docs/elm_containers.md#Bubble) - Basic container with title
+    - [x] [Frame](docs/elm_containers.md#Frame) - Framed container with title
+    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
+    - [x] [Popup](docs/elm_containers.md#Popup) - Overlays and dialogs
   - [x] [Triggers](docs/elm_triggers.md)
-    - [x] [Button](docs/elm_triggers.md#Button)
+    - [x] [Button](docs/elm_triggers.md#Button) - Standart push button
     - [x] [Menu](docs/elm_triggers.md#Menu)
   - [x] [Inputs](docs/elm_inputs.md)
-    - [x] [Entry](docs/elm_inputs.md#Entry)
+    - [x] [Entry](docs/elm_inputs.md#Entry) - Basic text input
   - [x] [Outputs](docs/elm_outputs.md)
-    - [x] [Label](docs/elm_outputs.md#Label)
+    - [x] [Label](docs/elm_outputs.md#Label) - Text and icon display
     - [x] [Separator](docs/elm_outputs.md#Separator)
     - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar)
   - [x] [Rangers](docs/elm_outputs.md)
-    - [x] [Spinner](docs/elm_ranges.md#Spinner)
-    - [x] [Slider](docs/elm_ranges.md#Slider)
+    - [x] [Spinner](docs/elm_ranges.md#Spinner) - Numeric input with arrows
+    - [x] [Slider](docs/elm_ranges.md#Slider) - Value slider
   - [x] [Selectors](docs/elm_selectors.md)
-    - [x] [List](docs/elm_selectors.md#List)
+    - [x] [List](docs/elm_selectors.md#List) - Simple vertical item list
     - [x] [FlipSelector](docs/elm_selectors.md#FlipSelector)
-    - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl)
-    - [x] [Dayselector](docs/elm_selectors.md#Dayselector)
-  - [x] [Containers](docs/elm_containers.md)
-    - [x] [Box](docs/elm_containers.md#Box)
-    - [x] [Bubble](docs/elm_containers.md#Bubble)
-    - [x] [Conformant](docs/elm_containers.md#Conformant)
-    - [x] [Frame](docs/elm_containers.md#Frame)
-    - [x] [Grid](docs/elm_containers.md#Grid)
-    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
-    - [x] [Notify](docs/elm_containers.md#Notify)
-
-  - [x] [Color Selectors](docs/elm_colorselectors.md)
-    - [x] [Colorselector](docs/elm_colorselectors.md#Colorselector)
+    - [x] [HoverSelector](docs/elm_selectors.md#HoverSelector)
+    - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Simple horizontal item list
