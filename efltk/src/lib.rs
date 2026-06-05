@@ -2,7 +2,7 @@ pub mod prelude;
 
 use {
     prelude::*,
-    refl_sys::*,
+    efltk_sys::*,
     std::{cell::RefCell, ptr::NonNull, rc::Rc},
 };
 
@@ -129,7 +129,7 @@ impl Menu {
         WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { refl_sys::elm_menu_first_item_get(self.as_raw()) })
+        WidgetItem::from_raw(unsafe {  elm_menu_first_item_get(self.as_raw()) })
     }
 }
 
@@ -163,7 +163,7 @@ impl SelectorExt for Menu {
         let mut temp = self.first();
         while temp.0.is_some() {
             count += 1;
-            temp = WidgetItem::from_raw(unsafe { refl_sys::elm_menu_item_next_get(temp.as_raw()) });
+            temp = WidgetItem::from_raw(unsafe { elm_menu_item_next_get(temp.as_raw()) });
         }
         count
     }
@@ -375,7 +375,7 @@ pub struct FlipSelector(Option<NonNull<Evas_Object>>);
 
 impl FlipSelector {
     fn first(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { refl_sys::elm_flipselector_first_item_get(self.as_raw()) })
+        WidgetItem::from_raw(unsafe { elm_flipselector_first_item_get(self.as_raw()) })
     }
     fn selected(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { elm_flipselector_selected_item_get(self.as_raw()) })
@@ -402,7 +402,7 @@ impl SelectorExt for FlipSelector {
         while temp.0.is_some() {
             count += 1;
             temp = WidgetItem::from_raw(unsafe {
-                refl_sys::elm_flipselector_item_next_get(temp.as_raw())
+                elm_flipselector_item_next_get(temp.as_raw())
             });
         }
         count
@@ -1034,7 +1034,7 @@ impl SelectorExt for ToolBar {
         let mut temp = self.first().as_raw();
         while temp != self.last().as_raw() {
             WidgetItem::from_raw(temp).del();
-            temp = unsafe { refl_sys::elm_toolbar_item_next_get(temp) };
+            temp = unsafe { elm_toolbar_item_next_get(temp) };
         }
         self.last().del();
     }

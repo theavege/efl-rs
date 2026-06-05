@@ -1,6 +1,6 @@
 pub use std::sync::mpsc::Sender;
 use {
-    refl_sys::*,
+    efltk_sys::*,
     std::{
         ffi::{CStr, CString, c_void},
         sync::mpsc::channel,
