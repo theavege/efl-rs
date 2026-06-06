@@ -2,8 +2,8 @@
 
 resolver = "2"
 members = [
-    "refl-sys",
-    "refl",
+    "efltk-sys",
+    "efltk",
 ]
 
 [profile.release]

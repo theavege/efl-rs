@@ -2,7 +2,7 @@
 
 mod components;
 
-use refl::prelude::*;
+use efltk::prelude::*;
 
 pub enum Msg {
     Set(usize),
@@ -10,7 +10,7 @@ pub enum Msg {
 }
 
 #[derive(Default)]
-pub struct View([refl::Frame; 4], refl::Naviframe);
+pub struct View([efltk::Frame; 4], efltk::Naviframe);
 
 impl Component for View {
     type Event = Msg;
@@ -29,20 +29,20 @@ impl Component for View {
         true
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        let items = ["Simple", "NicCalc", "Calc", "Sudoku", "Dialect"];
-        refl::Menu::main_menu(prt).with_appends(&items, {
+        let items = ["Simple", "Calc", "Sudoku", "Dialect", "NicCalc"];
+        efltk::Menu::main_menu(prt).with_appends(&items, {
             let sender = sender.clone();
             move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
         });
-        self.1 = refl::Naviframe::new(prt);
+        self.1 = efltk::Naviframe::new(prt);
         self.1.inside(|prt| {
-            refl::Box::new(prt).inside(|prt| {
-                for (idx, item) in ["Rangers", "Selectors", "Booker", "Converter"]
+            efltk::Box::new(prt).inside(|prt| {
+                for (idx, item) in ["Inputs", "Rangers", "Selectors", "Booker"]
                     .iter()
                     .enumerate()
                 {
-                    refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                        self.0[idx] = refl::Frame::new(prt)
+                    efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
+                        self.0[idx] = efltk::Frame::new(prt)
                             .with_autocollapse(false)
                             .with_text(item)
                             .with_clicked({
@@ -51,19 +51,20 @@ impl Component for View {
                             });
                         self.0[idx].inside(move |prt| {
                             match idx {
-                                0 => components::Ranger::mount(prt),
-                                1 => components::Selector::mount(prt),
-                                2 => components::Booker::mount(prt),
-                                _ => components::Converter::mount(prt),
+                                0 => components::Converter::mount(prt),
+                                1 => components::Ranger::mount(prt),
+                                2 => components::Selector::mount(prt),
+                                _ => components::Booker::mount(prt),
                             };
                         });
                     })
                 }
+                efltk::Label::new(prt);
             });
-            components::NicCalc::mount(prt);
             components::Calc::mount(prt);
             components::Sudoku::mount(prt);
             components::Dialect::mount(prt);
+            components::NicCalc::mount(prt);
         });
         self.1.promote();
     }

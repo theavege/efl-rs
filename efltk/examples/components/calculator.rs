@@ -72,7 +72,7 @@ mod models {
     }
 }
 
-use refl::prelude::*;
+use efltk::prelude::*;
 
 pub enum Msg {
     Push(String),
@@ -80,10 +80,10 @@ pub enum Msg {
 
 #[derive(Default)]
 pub struct Calc {
-    outp: refl::Entry,
-    prev: refl::Entry,
-    oper: refl::Label,
-    curr: refl::Entry,
+    outp: efltk::Entry,
+    prev: efltk::Entry,
+    oper: efltk::Label,
+    curr: efltk::Entry,
 }
 
 impl Component for Calc {
@@ -102,21 +102,21 @@ impl Component for Calc {
         self.curr.update(&model.current.clone());
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(prt).inside(|prt| {
-            self.outp = refl::Entry::new(prt)
+        efltk::Box::new(prt).inside(|prt| {
+            self.outp = efltk::Entry::new(prt)
                 .with_editable(false)
                 .with_single_line(false)
                 .with_tooltip("Output");
-            refl::Box::new(prt)
+            efltk::Box::new(prt)
                 .with_homogeneous(true)
                 .with_horizontal(true)
                 .inside(|prt| {
-                    self.oper = refl::Label::new(prt).with_tooltip("Operation");
-                    refl::Box::new(prt).with_homogeneous(true).inside(|prt| {
-                        self.prev = refl::Entry::new(prt)
+                    self.oper = efltk::Label::new(prt).with_tooltip("Operation");
+                    efltk::Box::new(prt).with_homogeneous(true).inside(|prt| {
+                        self.prev = efltk::Entry::new(prt)
                             .with_editable(false)
                             .with_tooltip("Previos");
-                        self.curr = refl::Entry::new(prt)
+                        self.curr = efltk::Entry::new(prt)
                             .with_editable(false)
                             .with_tooltip("Current");
                     });
@@ -128,21 +128,24 @@ impl Component for Calc {
                 ["1", "2", "3", "+"],
                 ["0", ".", "<", "="],
             ] {
-                refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                    for cell in row {
-                        refl::Button::new(prt)
-                            .with_size(90, 90)
-                            .with_text(cell)
-                            .with_tooltip(cell)
-                            .with_cursor(Cursor::Hand1)
-                            .on_clicked({
-                                let sender = sender.clone();
-                                move |wgt| {
-                                    sender.send(Msg::Push(wgt.text())).unwrap();
-                                }
-                            });
-                    }
-                });
+                efltk::Box::new(prt)
+                    .with_homogeneous(true)
+                    .with_horizontal(true)
+                    .inside(|prt| {
+                        for cell in row {
+                            efltk::Button::new(prt)
+                                .with_size(0, 45)
+                                .with_text(cell)
+                                .with_tooltip(cell)
+                                .with_cursor(Cursor::Hand1)
+                                .on_clicked({
+                                    let sender = sender.clone();
+                                    move |wgt| {
+                                        sender.send(Msg::Push(wgt.text())).unwrap();
+                                    }
+                                });
+                        }
+                    });
             }
         });
     }

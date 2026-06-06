@@ -1,14 +1,15 @@
 [package]
-name = "refl-sys"
+name = "efltk-sys"
 version = "0.0.2"
 authors = ["Artem V. Ageev <artem.v.ageev@gmail.com>"]
-license = "LGPL"
+license = "LGPL-2.1-only"
 repository = "https://github.com/theavege/efl-rs"
 description = "Enlightenment Foundation Libraries bindings in Rust"
 keywords = ["EFL", "enlightenment"]
 categories = ["external-ffi-bindings"]
 readme = "README.md"
 edition = "2024"
+exclude = ["use"]
 
 [build-dependencies]
 bindgen = "0.72"
