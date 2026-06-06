@@ -11,7 +11,7 @@ mod models {
     }
 }
 
-use refl::prelude::*;
+use efltk::prelude::*;
 
 pub enum Msg {
     Set(u32),
@@ -19,10 +19,10 @@ pub enum Msg {
 
 #[derive(Default)]
 pub struct Selector {
-    radio: refl::Radio,
-    sel: refl::HoverSel,
-    list: refl::List,
-    flip: refl::FlipSelector,
+    radio: efltk::Radio,
+    sel: efltk::HoverSel,
+    list: efltk::List,
+    flip: efltk::FlipSelector,
 }
 
 impl Component for Selector {
@@ -44,9 +44,9 @@ impl Component for Selector {
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         let items = ["home", "close", "folder"];
-        refl::Box::new(prt).inside(|prt| {
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                self.sel = refl::HoverSel::new(prt);
+        efltk::Box::new(prt).inside(|prt| {
+            efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
+                self.sel = efltk::HoverSel::new(prt);
                 for (idx, item) in items.iter().enumerate() {
                     self.sel.add_item(item, item, {
                         let sender = sender.clone();
@@ -55,7 +55,7 @@ impl Component for Selector {
                         }
                     });
                 }
-                self.flip = refl::FlipSelector::new(prt)
+                self.flip = efltk::FlipSelector::new(prt)
                     .with_size(0, 30)
                     .with_items(&items)
                     .with_selected({
@@ -67,8 +67,8 @@ impl Component for Selector {
                         }
                     });
             });
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                self.list = refl::List::new(prt).with_items(&items).with_selected({
+            efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
+                self.list = efltk::List::new(prt).with_items(&items).with_selected({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -76,8 +76,8 @@ impl Component for Selector {
                         }
                     }
                 });
-                refl::Box::new(prt).inside(|prt| {
-                    self.radio = refl::Radio::new(prt, &items, {
+                efltk::Box::new(prt).inside(|prt| {
+                    self.radio = efltk::Radio::new(prt, &items, {
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {

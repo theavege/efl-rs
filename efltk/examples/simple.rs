@@ -2,7 +2,7 @@
 
 mod components;
 
-use refl::prelude::*;
+use efltk::prelude::*;
 
 pub enum Msg {
     Set(usize),
@@ -10,7 +10,7 @@ pub enum Msg {
 }
 
 #[derive(Default)]
-pub struct View([refl::Frame; 4], refl::Naviframe);
+pub struct View([efltk::Frame; 4], efltk::Naviframe);
 
 impl Component for View {
     type Event = Msg;
@@ -30,19 +30,19 @@ impl Component for View {
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         let items = ["Simple", "NicCalc", "Calc", "Sudoku", "Dialect"];
-        refl::Menu::main_menu(prt).with_appends(&items, {
+        efltk::Menu::main_menu(prt).with_appends(&items, {
             let sender = sender.clone();
             move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
         });
-        self.1 = refl::Naviframe::new(prt);
+        self.1 = efltk::Naviframe::new(prt);
         self.1.inside(|prt| {
-            refl::Box::new(prt).inside(|prt| {
+            efltk::Box::new(prt).inside(|prt| {
                 for (idx, item) in ["Rangers", "Selectors", "Booker", "Converter"]
                     .iter()
                     .enumerate()
                 {
-                    refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                        self.0[idx] = refl::Frame::new(prt)
+                    efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
+                        self.0[idx] = efltk::Frame::new(prt)
                             .with_autocollapse(false)
                             .with_text(item)
                             .with_clicked({

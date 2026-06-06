@@ -1,8 +1,8 @@
 pub mod prelude;
 
 use {
-    prelude::*,
     efltk_sys::*,
+    prelude::*,
     std::{cell::RefCell, ptr::NonNull, rc::Rc},
 };
 
@@ -129,7 +129,7 @@ impl Menu {
         WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe {  elm_menu_first_item_get(self.as_raw()) })
+        WidgetItem::from_raw(unsafe { elm_menu_first_item_get(self.as_raw()) })
     }
 }
 
@@ -401,9 +401,7 @@ impl SelectorExt for FlipSelector {
         let mut temp = self.first();
         while temp.0.is_some() {
             count += 1;
-            temp = WidgetItem::from_raw(unsafe {
-                elm_flipselector_item_next_get(temp.as_raw())
-            });
+            temp = WidgetItem::from_raw(unsafe { elm_flipselector_item_next_get(temp.as_raw()) });
         }
         count
     }

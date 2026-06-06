@@ -61,7 +61,7 @@ mod models {
     }
 }
 
-use refl::prelude::*;
+use efltk::prelude::*;
 use std::collections::HashMap;
 
 pub enum Msg {
@@ -79,10 +79,10 @@ pub enum Msg {
 
 #[derive(Default)]
 pub struct Dialect {
-    source: refl::Entry,
-    target: refl::Entry,
-    from: refl::FlipSelector,
-    to: refl::FlipSelector,
+    source: efltk::Entry,
+    target: efltk::Entry,
+    from: efltk::FlipSelector,
+    to: efltk::FlipSelector,
 }
 
 impl Component for Dialect {
@@ -155,9 +155,9 @@ impl Component for Dialect {
         self.target.update(&state.target);
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(prt).inside(|prt| {
-            refl::Box::new(prt).with_horizontal(true).inside(|prt| {
-                self.from = refl::FlipSelector::new(prt)
+        efltk::Box::new(prt).inside(|prt| {
+            efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
+                self.from = efltk::FlipSelector::new(prt)
                     .with_size(0, 30)
                     .with_selected({
                         let sender = sender.clone();
@@ -165,7 +165,7 @@ impl Component for Dialect {
                             sender.send(Msg::From(wgt.value() as i32)).unwrap();
                         }
                     });
-                refl::Button::new(prt)
+                efltk::Button::new(prt)
                     .with_text("Switch")
                     .with_size(0, 30)
                     .on_clicked({
@@ -174,7 +174,7 @@ impl Component for Dialect {
                             sender.send(Msg::Switch).unwrap();
                         }
                     });
-                self.to = refl::FlipSelector::new(prt)
+                self.to = efltk::FlipSelector::new(prt)
                     .with_size(0, 30)
                     .with_selected({
                         let sender = sender.clone();
@@ -182,7 +182,7 @@ impl Component for Dialect {
                             sender.send(Msg::To(wgt.value() as i32)).unwrap();
                         }
                     });
-                refl::Button::new(prt)
+                efltk::Button::new(prt)
                     .with_text("Translate")
                     .with_size(0, 30)
                     .on_clicked({
@@ -192,20 +192,22 @@ impl Component for Dialect {
                         }
                     });
             });
-            refl::Box::new(prt)
+            efltk::Box::new(prt)
                 .with_horizontal(true)
                 .with_homogeneous(true)
                 .with_size(0, 0)
                 .inside(|prt| {
-                    self.source = refl::Entry::new(prt).with_single_line(false).with_changed({
-                        let sender = sender.clone();
-                        move |wgt| {
-                            if wgt.focus() {
-                                sender.send(Msg::Source(wgt.text())).unwrap();
+                    self.source = efltk::Entry::new(prt)
+                        .with_single_line(false)
+                        .with_changed({
+                            let sender = sender.clone();
+                            move |wgt| {
+                                if wgt.focus() {
+                                    sender.send(Msg::Source(wgt.text())).unwrap();
+                                }
                             }
-                        }
-                    });
-                    self.target = refl::Entry::new(prt)
+                        });
+                    self.target = efltk::Entry::new(prt)
                         .with_single_line(false)
                         .with_editable(false);
                 });

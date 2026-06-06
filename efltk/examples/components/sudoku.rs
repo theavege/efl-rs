@@ -101,10 +101,10 @@ mod models {
     }
 }
 
-use refl::prelude::*;
+use efltk::prelude::*;
 
 #[derive(Default)]
-pub struct Sudoku([[refl::HoverSel; 9]; 9]);
+pub struct Sudoku([[efltk::HoverSel; 9]; 9]);
 
 pub enum Msg {
     Push(usize, usize, u32),
@@ -131,14 +131,14 @@ impl Component for Sudoku {
         }
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(prt).inside(|prt| {
+        efltk::Box::new(prt).inside(|prt| {
             for row in 0..9 {
-                refl::Box::new(prt)
+                efltk::Box::new(prt)
                     .with_horizontal(true)
                     .with_homogeneous(true)
                     .inside(|prt| {
                         for col in 0..9 {
-                            self.0[row][col] = refl::HoverSel::new(prt).with_size(60, 60);
+                            self.0[row][col] = efltk::HoverSel::new(prt).with_size(60, 60);
                             for item in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] {
                                 self.0[row][col].add_item(&item.to_string(), &item.to_string(), {
                                     let sender = sender.clone();
@@ -150,11 +150,11 @@ impl Component for Sudoku {
                         }
                     });
             }
-            refl::Box::new(prt)
+            efltk::Box::new(prt)
                 .with_horizontal(true)
                 .with_homogeneous(true)
                 .inside(|prt| {
-                    refl::Button::new(prt)
+                    efltk::Button::new(prt)
                         .with_text("Answer")
                         .with_size(0, 60)
                         .on_clicked({
@@ -163,7 +163,7 @@ impl Component for Sudoku {
                                 sender.send(Msg::Solve).unwrap();
                             }
                         });
-                    refl::Button::new(prt)
+                    efltk::Button::new(prt)
                         .with_text("Clear")
                         .with_size(0, 60)
                         .on_clicked({

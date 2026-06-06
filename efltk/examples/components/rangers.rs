@@ -1,4 +1,4 @@
-use refl::prelude::*;
+use efltk::prelude::*;
 
 pub enum Msg {
     Set(f64),
@@ -7,10 +7,10 @@ pub enum Msg {
 
 #[derive(Default)]
 pub struct Ranger {
-    progress: refl::ProgressBar,
-    slider: refl::Slider,
-    spinner: refl::Spinner,
-    label: refl::Label,
+    progress: efltk::ProgressBar,
+    slider: efltk::Slider,
+    spinner: efltk::Spinner,
+    label: efltk::Label,
 }
 
 impl Component for Ranger {
@@ -30,12 +30,12 @@ impl Component for Ranger {
         self.label.set_text(&model.to_string());
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(prt).with_homogeneous(false).inside(|prt| {
-            refl::Box::new(prt)
+        efltk::Box::new(prt).with_homogeneous(false).inside(|prt| {
+            efltk::Box::new(prt)
                 .with_horizontal(true)
                 .with_homogeneous(false)
                 .inside(|prt| {
-                    refl::Button::new(prt)
+                    efltk::Button::new(prt)
                         .with_size(45, 45)
                         .with_icon("media_player/prev")
                         .on_clicked({
@@ -46,8 +46,8 @@ impl Component for Ranger {
                                 }
                             }
                         });
-                    self.label = refl::Label::new(prt).with_style("marker");
-                    refl::Button::new(prt)
+                    self.label = efltk::Label::new(prt).with_style("marker");
+                    efltk::Button::new(prt)
                         .with_size(45, 45)
                         .with_icon("media_player/next")
                         .on_clicked({
@@ -59,7 +59,7 @@ impl Component for Ranger {
                             }
                         });
                 });
-            self.spinner = refl::Spinner::new(prt)
+            self.spinner = efltk::Spinner::new(prt)
                 .with_size(0, 45)
                 .with_range(0.0, 1.0)
                 .with_step(0.1)
@@ -72,8 +72,8 @@ impl Component for Ranger {
                         }
                     }
                 });
-            self.progress = refl::ProgressBar::new(prt).with_size(0, 45);
-            self.slider = refl::Slider::new(prt).with_size(0, 45).with_changed({
+            self.progress = efltk::ProgressBar::new(prt).with_size(0, 45);
+            self.slider = efltk::Slider::new(prt).with_size(0, 45).with_changed({
                 let sender = sender.clone();
                 move |wgt| {
                     if wgt.focus() {

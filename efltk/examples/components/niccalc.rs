@@ -44,7 +44,7 @@ mod models {
     }
 }
 
-use refl::prelude::*;
+use efltk::prelude::*;
 
 pub enum Msg {
     Shotstr(f64),
@@ -55,10 +55,10 @@ pub enum Msg {
 
 #[derive(Default)]
 pub struct NicCalc {
-    base: refl::ProgressBar,
-    nicotine_base: refl::ProgressBar,
-    flavour: refl::ProgressBar,
-    list: refl::List,
+    base: efltk::ProgressBar,
+    nicotine_base: efltk::ProgressBar,
+    flavour: efltk::ProgressBar,
+    list: efltk::List,
 }
 
 impl Component for NicCalc {
@@ -104,9 +104,9 @@ impl Component for NicCalc {
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         const WIDTH: i32 = 400;
-        refl::Box::new(prt).inside(|prt| {
-            refl::Bubble::new(prt).with_part("info", "Nicotine base strength (mg/ml):").inside(|prt| {
-                refl::Entry::new(prt)
+        efltk::Box::new(prt).inside(|prt| {
+            efltk::Bubble::new(prt).with_part("info", "Nicotine base strength (mg/ml):").inside(|prt| {
+                efltk::Entry::new(prt)
                     .with_tooltip("Nicotine base strength must be between 0.0 und 999.9mg/ml")
                     .with_changed({
                         let sender = sender.clone();
@@ -118,8 +118,8 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Bubble::new(prt).with_part("info", "Nicotine strength wanted (mg/ml):").inside(|prt| {
-                refl::Entry::new(prt)
+            efltk::Bubble::new(prt).with_part("info", "Nicotine strength wanted (mg/ml):").inside(|prt| {
+                efltk::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
                     .with_changed({
                         let sender = sender.clone();
@@ -131,8 +131,8 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Bubble::new(prt).with_part("info", "Amount wanted (ml):").inside(|prt| {
-                refl::Entry::new(prt)
+            efltk::Bubble::new(prt).with_part("info", "Amount wanted (ml):").inside(|prt| {
+                efltk::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
                     .with_changed({
                         let sender = sender.clone();
@@ -144,8 +144,8 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Bubble::new(prt).with_part("info", "Flavour amount (ml):").inside(|prt| {
-                refl::Entry::new(prt)
+            efltk::Bubble::new(prt).with_part("info", "Flavour amount (ml):").inside(|prt| {
+                efltk::Entry::new(prt)
                     .with_tooltip("The flavour amount must be between 0 and the base amount minus nicotine base amount!")
                     .with_changed({
                         let sender = sender.clone();
@@ -157,21 +157,21 @@ impl Component for NicCalc {
                         }
                     });
             });
-            refl::Separator::new(prt).with_horizontal(true);
-            refl::Bubble::new(prt).with_part("info", "Nicotin base").inside(|prt| {
-                self.nicotine_base = refl::ProgressBar::new(prt);
+            efltk::Separator::new(prt).with_horizontal(true);
+            efltk::Bubble::new(prt).with_part("info", "Nicotin base").inside(|prt| {
+                self.nicotine_base = efltk::ProgressBar::new(prt);
             });
-            refl::Bubble::new(prt).with_part("info", "Base").inside(|prt| {
-                self.base = refl::ProgressBar::new(prt);
+            efltk::Bubble::new(prt).with_part("info", "Base").inside(|prt| {
+                self.base = efltk::ProgressBar::new(prt);
             });
-            refl::Bubble::new(prt).with_part("info", "Flavour").inside(|prt| {
-                self.flavour = refl::ProgressBar::new(prt);
+            efltk::Bubble::new(prt).with_part("info", "Flavour").inside(|prt| {
+                self.flavour = efltk::ProgressBar::new(prt);
             });
-            refl::Bubble::new(prt).with_part("info", "Total").inside(|prt| {
-                refl::ProgressBar::new(prt).set_value(1.0);
+            efltk::Bubble::new(prt).with_part("info", "Total").inside(|prt| {
+                efltk::ProgressBar::new(prt).set_value(1.0);
             });
-            refl::Separator::new(prt).with_size(WIDTH, 0).set_horizontal(true);
-            self.list = refl::List::new(prt);
+            efltk::Separator::new(prt).with_size(WIDTH, 0).set_horizontal(true);
+            self.list = efltk::List::new(prt);
         });
     }
 }

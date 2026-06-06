@@ -3,7 +3,7 @@ mod models {
     pub struct Model {}
 }
 
-use refl::prelude::*;
+use efltk::prelude::*;
 
 pub enum Msg {
     Flight(u32),
@@ -23,12 +23,12 @@ impl Component for Booker {
         true
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(prt).with_homogeneous(true).inside(|prt| {
-            refl::Panes::new(prt)
+        efltk::Box::new(prt).with_homogeneous(true).inside(|prt| {
+            efltk::Panes::new(prt)
                 .with_fixed_size(0.6, 0.4)
                 .inside(|prt| {
-                    refl::Label::new(prt).with_text("Flight");
-                    refl::SegmentControl::new(prt)
+                    efltk::Label::new(prt).with_text("Flight");
+                    efltk::SegmentControl::new(prt)
                         .with_items(&["One-way", "Return"])
                         .with_value(0)
                         .with_changed({
@@ -40,25 +40,25 @@ impl Component for Booker {
                             }
                         });
                 });
-            refl::Panes::new(prt)
+            efltk::Panes::new(prt)
                 .with_fixed_size(0.6, 0.4)
                 .inside(|prt| {
-                    refl::Label::new(prt).set_text("Departure data");
-                    refl::Entry::new(prt)
+                    efltk::Label::new(prt).set_text("Departure data");
+                    efltk::Entry::new(prt)
                         .with_editable(false)
                         .on_clicked(|wgt| {
-                            refl::Popup::new(&wgt)
+                            efltk::Popup::new(&wgt)
                                 .with_timeout(0.0)
                                 .set_message("home", "TTT", "PPPP");
                         });
                 });
-            refl::Panes::new(prt)
+            efltk::Panes::new(prt)
                 .with_fixed_size(0.6, 0.4)
                 .inside(|prt| {
-                    refl::Label::new(prt).set_text("Return data");
-                    refl::Entry::new(prt).set_editable(false);
+                    efltk::Label::new(prt).set_text("Return data");
+                    efltk::Entry::new(prt).set_editable(false);
                 });
-            refl::Button::new(prt).set_text("Book");
+            efltk::Button::new(prt).set_text("Book");
         });
     }
 }

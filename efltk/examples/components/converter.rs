@@ -18,7 +18,7 @@ mod models {
     }
 }
 
-use refl::prelude::*;
+use efltk::prelude::*;
 
 pub enum Msg {
     Cel(f64),
@@ -27,8 +27,8 @@ pub enum Msg {
 
 #[derive(Default)]
 pub struct Converter {
-    cel: refl::Entry,
-    far: refl::Entry,
+    cel: efltk::Entry,
+    far: efltk::Entry,
 }
 
 impl Component for Converter {
@@ -50,11 +50,11 @@ impl Component for Converter {
         }
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        refl::Box::new(prt).inside(|prt| {
-            refl::Bubble::new(prt)
+        efltk::Box::new(prt).inside(|prt| {
+            efltk::Bubble::new(prt)
                 .with_part("info", "Celsius")
                 .inside(|prt| {
-                    self.cel = refl::Entry::new(prt)
+                    self.cel = efltk::Entry::new(prt)
                         .with_value("0")
                         .with_editable(true)
                         .with_changed({
@@ -67,10 +67,10 @@ impl Component for Converter {
                             }
                         });
                 });
-            refl::Bubble::new(prt)
+            efltk::Bubble::new(prt)
                 .with_part("info", "Fahrenheit")
                 .inside(|prt| {
-                    self.far = refl::Entry::new(prt)
+                    self.far = efltk::Entry::new(prt)
                         .with_size(45, 45)
                         .with_value("0")
                         .with_editable(true)
