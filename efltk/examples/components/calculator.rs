@@ -128,21 +128,24 @@ impl Component for Calc {
                 ["1", "2", "3", "+"],
                 ["0", ".", "<", "="],
             ] {
-                efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                    for cell in row {
-                        efltk::Button::new(prt)
-                            .with_size(90, 90)
-                            .with_text(cell)
-                            .with_tooltip(cell)
-                            .with_cursor(Cursor::Hand1)
-                            .on_clicked({
-                                let sender = sender.clone();
-                                move |wgt| {
-                                    sender.send(Msg::Push(wgt.text())).unwrap();
-                                }
-                            });
-                    }
-                });
+                efltk::Box::new(prt)
+                    .with_homogeneous(true)
+                    .with_horizontal(true)
+                    .inside(|prt| {
+                        for cell in row {
+                            efltk::Button::new(prt)
+                                .with_size(0, 45)
+                                .with_text(cell)
+                                .with_tooltip(cell)
+                                .with_cursor(Cursor::Hand1)
+                                .on_clicked({
+                                    let sender = sender.clone();
+                                    move |wgt| {
+                                        sender.send(Msg::Push(wgt.text())).unwrap();
+                                    }
+                                });
+                        }
+                    });
             }
         });
     }

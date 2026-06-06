@@ -21,6 +21,7 @@ pub enum Msg {
 pub struct Selector {
     radio: efltk::Radio,
     sel: efltk::HoverSel,
+    seg: efltk::SegmentControl,
     list: efltk::List,
     flip: efltk::FlipSelector,
 }
@@ -33,6 +34,7 @@ impl Component for Selector {
         let choice = ["home", "close", "folder"][model.value() as usize];
         self.sel.set_text(choice);
         self.sel.set_icon(choice);
+        self.seg.set_value(model.value());
         self.flip.update(model.value());
         self.radio.update(model.value() as i32);
     }
@@ -45,20 +47,35 @@ impl Component for Selector {
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         let items = ["home", "close", "folder"];
         efltk::Box::new(prt).inside(|prt| {
-            efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                self.sel = efltk::HoverSel::new(prt);
-                for (idx, item) in items.iter().enumerate() {
-                    self.sel.add_item(item, item, {
-                        let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Set(idx as u32)).unwrap();
-                        }
-                    });
-                }
-                self.flip = efltk::FlipSelector::new(prt)
-                    .with_size(0, 30)
-                    .with_items(&items)
-                    .with_selected({
+            efltk::Box::new(prt)
+                .with_homogeneous(true)
+                .with_horizontal(true)
+                .inside(|prt| {
+                    self.sel = efltk::HoverSel::new(prt);
+                    for (idx, item) in items.iter().enumerate() {
+                        self.sel.add_item(item, item, {
+                            let sender = sender.clone();
+                            move |_| {
+                                sender.send(Msg::Set(idx as u32)).unwrap();
+                            }
+                        });
+                    }
+                    self.flip = efltk::FlipSelector::new(prt)
+                        .with_items(&items)
+                        .with_selected({
+                            let sender = sender.clone();
+                            move |wgt| {
+                                if wgt.focus() {
+                                    sender.send(Msg::Set(wgt.value())).unwrap();
+                                }
+                            }
+                        });
+                });
+            efltk::Box::new(prt)
+                .with_homogeneous(true)
+                .with_horizontal(true)
+                .inside(|prt| {
+                    self.list = efltk::List::new(prt).with_items(&items).with_selected({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
@@ -66,27 +83,25 @@ impl Component for Selector {
                             }
                         }
                     });
-            });
-            efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                self.list = efltk::List::new(prt).with_items(&items).with_selected({
+                    efltk::Box::new(prt).inside(|prt| {
+                        self.radio = efltk::Radio::new(prt, &items, {
+                            let sender = sender.clone();
+                            move |wgt| {
+                                if wgt.focus() {
+                                    sender.send(Msg::Set(wgt.value() as u32)).unwrap();
+                                }
+                            }
+                        })
+                    });
+                });
+            self.seg = efltk::SegmentControl::new(prt)
+                .with_items(&items)
+                .with_changed({
                     let sender = sender.clone();
                     move |wgt| {
-                        if wgt.focus() {
-                            sender.send(Msg::Set(wgt.value())).unwrap();
-                        }
+                        sender.send(Msg::Set(wgt.value())).unwrap();
                     }
                 });
-                efltk::Box::new(prt).inside(|prt| {
-                    self.radio = efltk::Radio::new(prt, &items, {
-                        let sender = sender.clone();
-                        move |wgt| {
-                            if wgt.focus() {
-                                sender.send(Msg::Set(wgt.value() as u32)).unwrap();
-                            }
-                        }
-                    })
-                });
-            });
         });
     }
 }

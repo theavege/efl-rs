@@ -131,14 +131,15 @@ impl Component for Sudoku {
         }
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        efltk::Box::new(prt).inside(|prt| {
+        efltk::Box::new(prt).with_homogeneous(true).inside(|prt| {
+            efltk::Label::new(prt);
             for row in 0..9 {
                 efltk::Box::new(prt)
                     .with_horizontal(true)
                     .with_homogeneous(true)
                     .inside(|prt| {
                         for col in 0..9 {
-                            self.0[row][col] = efltk::HoverSel::new(prt).with_size(60, 60);
+                            self.0[row][col] = efltk::HoverSel::new(prt);
                             for item in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] {
                                 self.0[row][col].add_item(&item.to_string(), &item.to_string(), {
                                     let sender = sender.clone();
@@ -154,25 +155,20 @@ impl Component for Sudoku {
                 .with_horizontal(true)
                 .with_homogeneous(true)
                 .inside(|prt| {
-                    efltk::Button::new(prt)
-                        .with_text("Answer")
-                        .with_size(0, 60)
-                        .on_clicked({
-                            let sender = sender.clone();
-                            move |_wgt| {
-                                sender.send(Msg::Solve).unwrap();
-                            }
-                        });
-                    efltk::Button::new(prt)
-                        .with_text("Clear")
-                        .with_size(0, 60)
-                        .on_clicked({
-                            let sender = sender.clone();
-                            move |_wgt| {
-                                sender.send(Msg::Clear).unwrap();
-                            }
-                        });
+                    efltk::Button::new(prt).with_text("Answer").on_clicked({
+                        let sender = sender.clone();
+                        move |_wgt| {
+                            sender.send(Msg::Solve).unwrap();
+                        }
+                    });
+                    efltk::Button::new(prt).with_text("Clear").on_clicked({
+                        let sender = sender.clone();
+                        move |_wgt| {
+                            sender.send(Msg::Clear).unwrap();
+                        }
+                    });
                 });
+            efltk::Label::new(prt);
         });
     }
 }

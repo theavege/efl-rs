@@ -29,7 +29,7 @@ impl Component for View {
         true
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        let items = ["Simple", "NicCalc", "Calc", "Sudoku", "Dialect"];
+        let items = ["Simple", "Calc", "Sudoku", "Dialect", "NicCalc"];
         efltk::Menu::main_menu(prt).with_appends(&items, {
             let sender = sender.clone();
             move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
@@ -37,7 +37,7 @@ impl Component for View {
         self.1 = efltk::Naviframe::new(prt);
         self.1.inside(|prt| {
             efltk::Box::new(prt).inside(|prt| {
-                for (idx, item) in ["Rangers", "Selectors", "Booker", "Converter"]
+                for (idx, item) in ["Inputs", "Rangers", "Selectors", "Booker"]
                     .iter()
                     .enumerate()
                 {
@@ -51,19 +51,20 @@ impl Component for View {
                             });
                         self.0[idx].inside(move |prt| {
                             match idx {
-                                0 => components::Ranger::mount(prt),
-                                1 => components::Selector::mount(prt),
-                                2 => components::Booker::mount(prt),
-                                _ => components::Converter::mount(prt),
+                                0 => components::Converter::mount(prt),
+                                1 => components::Ranger::mount(prt),
+                                2 => components::Selector::mount(prt),
+                                _ => components::Booker::mount(prt),
                             };
                         });
                     })
                 }
+                efltk::Label::new(prt);
             });
-            components::NicCalc::mount(prt);
             components::Calc::mount(prt);
             components::Sudoku::mount(prt);
             components::Dialect::mount(prt);
+            components::NicCalc::mount(prt);
         });
         self.1.promote();
     }

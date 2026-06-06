@@ -511,7 +511,12 @@ pub struct Label(Option<NonNull<Evas_Object>>);
 
 impl Label {
     pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_label_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe {
+            let ptr = elm_label_add(prt.as_raw());
+            elm_label_line_wrap_set(ptr, Elm_Wrap_Type_ELM_WRAP_WORD);
+            ptr
+        })
+        .with_conf();
         prt.add(&elm);
         elm
     }
@@ -640,6 +645,15 @@ impl Naviframe {
             self.to_top(&self.lst.borrow()[value]);
         };
     }
+    pub fn promote(&self) {
+        self.to_top(&self.bottom())
+    }
+    fn bottom(&self) -> WidgetItem {
+        WidgetItem::from_raw(unsafe { elm_naviframe_bottom_item_get(self.as_raw()) })
+    }
+    fn to_top(&self, item: &WidgetItem) {
+        unsafe { elm_naviframe_item_promote(item.as_raw()) };
+    }
 }
 
 impl EvasObject for Naviframe {
@@ -655,8 +669,7 @@ impl EvasObject for Naviframe {
 }
 impl ContainerExt for Naviframe {
     fn add(&self, child: &impl ElmObject) {
-        let item = self.push(child);
-        self.lst.borrow_mut().push(item);
+        self.lst.borrow_mut().push(self.push(child));
         child.show();
     }
 }
@@ -756,8 +769,6 @@ impl EvasObject for ProgressBar {
     }
 }
 impl ElmObject for ProgressBar {}
-impl OnClicked for ProgressBar {}
-impl OnChanged for ProgressBar {}
 impl ProgressBarExt for ProgressBar {}
 
 #[derive(Default)]
@@ -897,18 +908,6 @@ impl SelectorExt for SegmentControl {
 #[derive(Default)]
 pub struct Slider(Option<NonNull<Evas_Object>>);
 
-impl Slider {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_slider_add(prt.as_raw()) });
-        elm.conf();
-        prt.add(&elm);
-        elm
-    }
-    pub fn set_horizontal(&self, value: bool) {
-        unsafe { elm_slider_horizontal_set(self.as_raw(), value as Eina_Bool) };
-    }
-}
-
 impl EvasObject for Slider {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -918,6 +917,7 @@ impl EvasObject for Slider {
     }
 }
 impl ElmObject for Slider {}
+impl SliderExt for Slider {}
 impl OnChanged for Slider {}
 impl OnChangedDelay for Slider {}
 impl RangerExt for Slider {
@@ -1093,7 +1093,6 @@ impl ElmObject for Box {}
 impl ContainerExt for Box {
     fn add(&self, child: &impl ElmObject) {
         self.pack_end(child);
-        self.recalculate();
         child.show();
     }
 }
@@ -1154,6 +1153,13 @@ impl Bubble {
     }
     pub fn set_pos(&self, value: i32) {
         unsafe { elm_bubble_pos_set(self.as_raw(), value) };
+    }
+    pub fn set_info(&self, info: &str) {
+        self.set_part("info", info);
+    }
+    pub fn with_info(self, info: &str) -> Self {
+        self.set_part("info", info);
+        self
     }
     pub fn with_pos(self, value: i32) -> Self {
         self.set_pos(value);

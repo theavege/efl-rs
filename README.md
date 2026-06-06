@@ -30,20 +30,22 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
     - [x] [Frame](docs/elm_containers.md#Frame) - Framed container with title
     - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
     - [x] [Popup](docs/elm_containers.md#Popup) - Overlays and dialogs
-  - [x] [Triggers](docs/elm_triggers.md)
-    - [x] [Button](docs/elm_triggers.md#Button) - Standart push button
-    - [x] [Menu](docs/elm_triggers.md#Menu)
-  - [x] [Inputs](docs/elm_inputs.md)
-    - [x] [Entry](docs/elm_inputs.md#Entry) - Basic text input
   - [x] [Outputs](docs/elm_outputs.md)
     - [x] [Label](docs/elm_outputs.md#Label) - Text and icon display
     - [x] [Separator](docs/elm_outputs.md#Separator)
     - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar)
-  - [x] [Rangers](docs/elm_outputs.md)
+  - [x] [Inputs: String](docs/elm_inputs.md)
+    - [x] [Entry](docs/elm_inputs.md#Entry) - Basic text input
+  - [x] [Triggers](docs/elm_triggers.md)
+    - [x] [Button](docs/elm_triggers.md#Button) - Standart push button
+    - [x] [Check](docs/elm_triggers.md#Check) - Check box
+    - [x] [HoverSel](docs/elm_selectors.md#HoverSel)
+    - [x] [Menu](docs/elm_selectors.md#Menu)
+  - [x] [Rangers: f64](docs/elm_outputs.md)
     - [x] [Spinner](docs/elm_ranges.md#Spinner) - Numeric input with arrows
     - [x] [Slider](docs/elm_ranges.md#Slider) - Value slider
-  - [x] [Selectors](docs/elm_selectors.md)
-    - [x] [List](docs/elm_selectors.md#List) - Simple vertical item list
+  - [x] [Selectors: Vec<String>](docs/elm_selectors.md)
+    - [x] [Radio](docs/elm_selectors.md#Radio) - Radio button
     - [x] [FlipSelector](docs/elm_selectors.md#FlipSelector)
-    - [x] [HoverSelector](docs/elm_selectors.md#HoverSelector)
+    - [x] [List](docs/elm_selectors.md#List) - Simple vertical item list
     - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Simple horizontal item list

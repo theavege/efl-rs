@@ -16,9 +16,11 @@ exclude = ["examples"]
 efltk-sys = { path = "../efltk-sys", version = "=0.0.2" }
 reqwest = { version = "0.13", features = ["json", "native-tls", "blocking"], optional = true }
 xlsxwriter = { version = "0", optional = true }
+chrono = { version = "0.4", optional = true }
 
 [features]
 default = []
 reqwest = [ "dep:reqwest" ]
+chrono = [ "dep:chrono" ]
 xlsxwriter = [ "dep:xlsxwriter" ]
-all = ["reqwest"]
+all = ["reqwest", "chrono"]
