@@ -20,13 +20,6 @@ pub enum ListMode {
     Expand,
 }
 
-pub enum PanelOrient {
-    Top = 0,
-    Bottom,
-    Left,
-    Right,
-}
-
 pub enum ScrollerPolicy {
     Auto = 0,
     On,
@@ -595,7 +588,7 @@ impl EvasObject for List {
 }
 impl SelectorExt for List {
     fn add(&self, label: &str) -> WidgetItem {
-        self.append(label, label, |_| {})
+        self.add_item(label, label, |_| {})
     }
     fn set_value(&self, value: u32) {
         let mut temp = self.first().as_raw();

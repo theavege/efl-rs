@@ -17,6 +17,15 @@ pub enum Align {
 }
 
 #[derive(Default)]
+pub enum PanelOrient {
+    #[default]
+    Top = 0,
+    Bottom,
+    Left,
+    Right,
+}
+
+#[derive(Default)]
 pub enum Cursor {
     #[default]
     Hand2,
@@ -1035,6 +1044,7 @@ pub trait SelectorExt: ElmObject {
         for item in items {
             self.add(item);
         }
+        self.set_value(0);
     }
     fn with_value(self, value: u32) -> Self {
         self.set_value(value);
@@ -1621,13 +1631,13 @@ pub trait TableExt: ContainerExt {
 
 pub trait ListExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_list_add(prt.as_raw()) });
-        elm.conf();
-        elm.set_mode(super::ListMode::Expand);
+        let elm = Self::from_raw(unsafe { elm_list_add(prt.as_raw()) })
+            .with_mode(super::ListMode::Expand)
+            .with_conf();
         prt.add(&elm);
         elm
     }
-    fn append<F: FnMut(Self) + 'static>(
+    fn add_item<F: FnMut(Self) + 'static>(
         &self,
         icon_: &str,
         label_: &str,
@@ -1645,25 +1655,20 @@ pub trait ListExt: SelectorExt {
             )
         })
     }
-    fn go(&self) {
-        unsafe { elm_list_go(self.as_raw()) };
+    fn set_mode(&self, mode: super::ListMode) {
+        unsafe { elm_list_mode_set(self.as_raw(), mode as Elm_List_Mode) };
     }
-    fn set_bounce(&self, h_bounce: bool, v_bounce: bool) {
-        unsafe { elm_list_bounce_set(self.as_raw(), h_bounce as Eina_Bool, v_bounce as Eina_Bool) };
-    }
-    fn set_multi(&self, value: bool) {
-        unsafe { elm_list_multi_select_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn set_mode(&self, value: super::ListMode) {
-        unsafe { elm_list_mode_set(self.as_raw(), value as Elm_List_Mode) };
+    fn with_mode(self, mode: super::ListMode) -> Self {
+        self.set_mode(mode);
+        self
     }
 }
 
 pub trait FrameExt: ElmObject {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_frame_add(parent.as_raw()) });
-        elm.conf();
-        elm.set_autocollapse(true);
+        let elm = Self::from_raw(unsafe { elm_frame_add(parent.as_raw()) })
+            .with_autocollapse(true)
+            .with_conf();
         parent.add(&elm);
         elm
     }
@@ -1721,28 +1726,36 @@ pub trait NaviframeExt: ElmObject {
 }
 
 pub trait PanelExt: ElmObject {
+    #[deprecated = "rse refl::Popup::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_panel_add(prt.as_raw()) });
-        elm.conf();
-        elm.set_orient(super::PanelOrient::Bottom);
-        elm.set_hidden(true);
+        let elm = Self::from_raw(unsafe { elm_panel_add(prt.window().as_raw()) })
+            .with_orient(PanelOrient::Bottom)
+            .with_scrollable(true)
+            .with_hidden(true)
+            .with_conf();
         prt.add(&elm);
         elm
     }
-    fn set_hidden(&self, value: bool) {
-        unsafe { elm_panel_hidden_set(self.as_raw(), value as Eina_Bool) };
+    fn with_orient(self, orient: PanelOrient) -> Self {
+        self.set_orient(orient);
+        self
     }
-    fn set_scrollable(&self, value: bool) {
-        unsafe { elm_panel_scrollable_set(self.as_raw(), value as Eina_Bool) };
+    fn with_hidden(self, hidden: bool) -> Self {
+        self.set_hidden(hidden);
+        self
     }
-    fn set_orient(&self, value: super::PanelOrient) {
-        unsafe { elm_panel_orient_set(self.as_raw(), value as u32) };
+    fn with_scrollable(self, scrollable: bool) -> Self {
+        self.set_scrollable(scrollable);
+        self
     }
-    fn set_scrollable_content(&self, value: f64) {
-        unsafe { elm_panel_scrollable_content_size_set(self.as_raw(), value) };
+    fn set_hidden(&self, hidden: bool) {
+        unsafe { elm_panel_hidden_set(self.as_raw(), hidden as Eina_Bool) };
     }
-    fn hidden(&self) -> bool {
-        unsafe { elm_panel_hidden_get(self.as_raw()) != 0 }
+    fn set_scrollable(&self, scrollable: bool) {
+        unsafe { elm_panel_scrollable_set(self.as_raw(), scrollable as Eina_Bool) };
+    }
+    fn set_orient(&self, orient: PanelOrient) {
+        unsafe { elm_panel_orient_set(self.as_raw(), orient as u32) };
     }
 }
 
@@ -1790,8 +1803,7 @@ where
     Self: 'static,
 {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_popup_add(prt.window().as_raw()) });
-        elm.conf();
+        let elm = Self::from_raw(unsafe { elm_popup_add(prt.window().as_raw()) }).with_conf();
         prt.add(&elm);
         elm
     }
@@ -1814,14 +1826,24 @@ where
         });
         self.set_content(&but, "button3");
     }
-    fn set_ok<F: FnMut(super::Button) + 'static>(&self, func: F) {
-        let but = super::Button::new(self).with_text("Ok").with_clicked(func);
+    fn set_ok<F: FnMut(super::Button) + 'static>(&self, mut func: F) {
+        let but = super::Button::new(self).with_text("Ok").with_clicked({
+            let elm = self.clone();
+            move |wgt| {
+                func(wgt);
+                elm.dismiss();
+            }
+        });
         self.set_content(&but, "button1");
     }
-    fn set_cancel<F: FnMut(super::Button) + 'static>(&self, func: F) {
-        let but = super::Button::new(self)
-            .with_text("Cancel")
-            .with_clicked(func);
+    fn set_cancel<F: FnMut(super::Button) + 'static>(&self, mut func: F) {
+        let but = super::Button::new(self).with_text("Cancel").with_clicked({
+            let elm = self.clone();
+            move |wgt| {
+                func(wgt);
+                elm.dismiss();
+            }
+        });
         self.set_content(&but, "button2");
     }
     fn with_timeout(self, timeout: f64) -> Self {
@@ -2458,14 +2480,6 @@ impl Update<&String> for super::Entry {
     }
 }
 
-impl<T: SelectorExt + 'static> Update<u32> for T {
-    fn update(&self, value: u32) {
-        if self.value() != value {
-            self.set_value(value);
-        };
-    }
-}
-
 impl<T: RangerExt + 'static> Update<f64> for T {
     fn update(&self, value: f64) {
         if self.value() != value {
@@ -2474,19 +2488,23 @@ impl<T: RangerExt + 'static> Update<f64> for T {
     }
 }
 
+impl<T: SelectorExt + 'static> Update<u32> for T {
+    fn update(&self, value: u32) {
+        if ! self.focus() && (0..self.lenght()).contains(&value) {
+            self.set_value(value);
+        };
+    }
+}
+
 impl<T: SelectorExt + 'static> Update<(Vec<String>, u32)> for T {
     fn update(&self, value: (Vec<String>, u32)) {
-        if self.lenght() != (value.0.len() as u32) {
+        if ! self.focus() && self.lenght() != (value.0.len() as u32) {
             self.clear();
-            if !value.0.is_empty() {
-                for item in &value.0 {
-                    self.add(item);
-                }
+            for item in &value.0 {
+                self.add(item);
             }
-        };
-        if self.lenght() > value.1 && self.value() != value.1 {
-            self.set_value(value.1);
-        };
+            self.update(value.1);
+        }
     }
 }
 

@@ -32,13 +32,13 @@ mod models {
         pub fn set_aromavol(&mut self, value: f64) {
             self.aromavol = value;
         }
-        pub fn output(&self) -> [(&str, f64); 4] {
+        pub fn output(&self) -> [f64; 4] {
             let shots = self.calculate_nic();
             [
-                ("Nicotine Base", shots),
-                ("Base", self.targvol - (shots + self.aromavol)),
-                ("Flavour", self.aromavol),
-                ("Total", self.targvol),
+                shots,
+                self.targvol - (shots + self.aromavol),
+                self.aromavol,
+                self.targvol,
             ]
         }
     }
@@ -58,7 +58,7 @@ pub struct NicCalc {
     base: efltk::ProgressBar,
     nicotine_base: efltk::ProgressBar,
     flavour: efltk::ProgressBar,
-    list: efltk::List,
+    list: efltk::Entry,
 }
 
 impl Component for NicCalc {
@@ -66,16 +66,16 @@ impl Component for NicCalc {
     type State = models::Model;
     fn update(&self, model: &Self::State) {
         let [nb, b, f, t] = model.output();
-        self.base.set_value((t.1 / 100.0 * b.1) / 100.0);
-        self.flavour.set_value((t.1 / 100.0 * f.1) / 100.0);
-        self.nicotine_base.set_value((t.1 / 100.0 * nb.1) / 100.0);
-        self.list.clear();
-        self.list.add("Ingredient: Amount(ml)");
-        for (x, y) in model.output() {
-            self.list.add(&format!("{x}: {y}"));
-        }
-        self.list.go();
-        self.list.show();
+        self.base.set_value((t / 100.0 * b) / 100.0);
+        self.flavour.set_value((t / 100.0 * f) / 100.0);
+        self.nicotine_base.set_value((t / 100.0 * nb) / 100.0);
+        self.list.update(&format!(
+"Ingredient:   Amount(ml)<br>
+Nicotine Base: {nb}<br>
+Base:          {b}<br>
+Flavour:       {f}<br>
+Total:         {t}<br>"
+        ));
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
         match msg {
@@ -178,7 +178,7 @@ impl Component for NicCalc {
                 efltk::ProgressBar::new(prt).set_value(1.0);
             });
             efltk::Separator::new(prt).set_horizontal(true);
-            self.list = efltk::List::new(prt);
+            self.list = efltk::Entry::new(prt).with_editable(false).with_single_line(false);
         });
     }
 }
