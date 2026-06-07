@@ -160,23 +160,25 @@ impl Component for Dialect {
                 .with_homogeneous(true)
                 .with_horizontal(true)
                 .inside(|prt| {
-                    self.from = efltk::FlipSelector::new(prt).with_selected({
-                        let sender = sender.clone();
-                        move |wgt| {
-                            sender.send(Msg::From(wgt.value() as i32)).unwrap();
-                        }
-                    });
-                    self.to = efltk::FlipSelector::new(prt).with_selected({
-                        let sender = sender.clone();
-                        move |wgt| {
-                            sender.send(Msg::To(wgt.value() as i32)).unwrap();
-                        }
-                    });
+                    self.from =
+                        efltk::FlipSelector::new(prt).with_callback(SelectorSignal::Selected, {
+                            let sender = sender.clone();
+                            move |wgt| {
+                                sender.send(Msg::From(wgt.value() as i32)).unwrap();
+                            }
+                        });
+                    self.to =
+                        efltk::FlipSelector::new(prt).with_callback(SelectorSignal::Selected, {
+                            let sender = sender.clone();
+                            move |wgt| {
+                                sender.send(Msg::To(wgt.value() as i32)).unwrap();
+                            }
+                        });
                 });
             efltk::Panes::new(prt).inside(|prt| {
                 self.source = efltk::Entry::new(prt)
                     .with_single_line(false)
-                    .with_changed({
+                    .with_callback(EntrySignal::Changed, {
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
@@ -192,18 +194,23 @@ impl Component for Dialect {
                 .with_homogeneous(true)
                 .with_horizontal(true)
                 .inside(|prt| {
-                    efltk::Button::new(prt).with_text("Switch").on_clicked({
-                        let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Switch).unwrap();
-                        }
-                    });
-                    efltk::Button::new(prt).with_text("Translate").on_clicked({
-                        let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Run).unwrap();
-                        }
-                    });
+                    efltk::Button::new(prt).with_text("Switch").with_callback(
+                        ButtonSignal::Clicked,
+                        {
+                            let sender = sender.clone();
+                            move |_| {
+                                sender.send(Msg::Switch).unwrap();
+                            }
+                        },
+                    );
+                    efltk::Button::new(prt)
+                        .with_text("Translate")
+                        .with_callback(ButtonSignal::Clicked, {
+                            let sender = sender.clone();
+                            move |_| {
+                                sender.send(Msg::Run).unwrap();
+                            }
+                        });
                 });
         });
         std::thread::spawn(move || {

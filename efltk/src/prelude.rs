@@ -7,6 +7,212 @@ use {
     },
 };
 
+pub trait SignalExt {
+    fn to_str(&self) -> &str;
+}
+
+#[derive(Default)]
+pub enum ButtonSignal {
+    #[default]
+    Clicked,
+    Repeated,
+    Pressed,
+    Unpressed,
+    Focused,
+    Unfocused,
+}
+
+impl SignalExt for ButtonSignal {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Clicked => "clicked",
+            Self::Repeated => "repeated",
+            Self::Pressed => "pressed",
+            Self::Unpressed => "unpressed",
+            Self::Focused => "focused",
+            Self::Unfocused => "unfocused",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum SelectorSignal {
+    #[default]
+    Selected,
+    Changed,
+}
+
+impl SignalExt for SelectorSignal {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Selected => "selected",
+            Self::Changed => "changed",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum FrameSignal {
+    #[default]
+    Clicked,
+    Focused,
+    Unfocused,
+}
+
+impl SignalExt for FrameSignal {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Clicked => "clicked",
+            Self::Focused => "focused",
+            Self::Unfocused => "unfocused",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum CheckSignal {
+    #[default]
+    Changed,
+    LanguageChanged,
+    Focused,
+    Unfocused,
+}
+impl SignalExt for CheckSignal {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Changed => "changed",
+            Self::LanguageChanged => "language,changed",
+            Self::Focused => "focused",
+            Self::Unfocused => "unfocused",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum SliderSignal {
+    #[default]
+    Changed,
+    LanguageChanged,
+    Focused,
+    Unfocused,
+}
+impl SignalExt for SliderSignal {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Changed => "changed",
+            Self::LanguageChanged => "language,changed",
+            Self::Focused => "focused",
+            Self::Unfocused => "unfocused",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum SpinnerSignal {
+    #[default]
+    Changed,
+    LanguageChanged,
+    Focused,
+    Unfocused,
+}
+impl SignalExt for SpinnerSignal {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Changed => "changed",
+            Self::LanguageChanged => "language,changed",
+            Self::Focused => "focused",
+            Self::Unfocused => "unfocused",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum EntrySignal {
+    #[default]
+    Changed,
+    LanguageChanged,
+    Focused,
+    Unfocused,
+}
+impl SignalExt for EntrySignal {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Changed => "changed",
+            Self::LanguageChanged => "language,changed",
+            Self::Focused => "focused",
+            Self::Unfocused => "unfocused",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum RadioSignal {
+    #[default]
+    Changed,
+    LanguageChanged,
+    Focused,
+    Unfocused,
+}
+impl SignalExt for RadioSignal {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Changed => "changed",
+            Self::LanguageChanged => "language,changed",
+            Self::Focused => "focused",
+            Self::Unfocused => "unfocused",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum ProgressBarSignal {
+    #[default]
+    Changed,
+    LanguageChanged,
+    Focused,
+    Unfocused,
+}
+impl SignalExt for ProgressBarSignal {
+    fn to_str(&self) -> &str {
+        match self {
+            Self::Changed => "changed",
+            Self::LanguageChanged => "language,changed",
+            Self::Focused => "focused",
+            Self::Unfocused => "unfocused",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum CheckStyle {
+    #[default]
+    Toggle,
+    Deafult,
+}
+impl CheckStyle {
+    pub fn to_str(&self) -> &str {
+        match self {
+            Self::Deafult => "default",
+            Self::Toggle => "toggle",
+        }
+    }
+}
+
+#[derive(Default)]
+pub enum ButtonStyle {
+    #[default]
+    Deafult,
+    Anchor,
+}
+impl ButtonStyle {
+    pub fn to_str(&self) -> &str {
+        match self {
+            Self::Deafult => "default",
+            Self::Anchor => "anchor",
+        }
+    }
+}
+
 #[derive(Default)]
 pub enum Align {
     #[default]
@@ -14,6 +220,16 @@ pub enum Align {
     Left,
     Center,
     Right,
+}
+impl Align {
+    fn to_f64(&self) -> f64 {
+        match self {
+            Self::Fill => -1.0,
+            Self::Left => 0.0,
+            Self::Center => 0.5,
+            Self::Right => 1.0,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -42,17 +258,6 @@ impl Cursor {
             Self::Hand3 => "hand3",
             Self::Bogocity => "bogocity",
             Self::Xterm => "xterm",
-        }
-    }
-}
-
-impl Align {
-    fn to_f64(&self) -> f64 {
-        match self {
-            Align::Fill => -1.0,
-            Align::Left => 0.0,
-            Align::Center => 0.5,
-            Align::Right => 1.0,
         }
     }
 }
@@ -184,17 +389,6 @@ pub trait EvasObject: Sized {
     fn parent(&self) -> Self {
         Self::from_raw(unsafe { efl_parent_get(self.as_raw()) })
     }
-    fn smart_callback_add<T: ElmObject, F: FnMut(T) + 'static>(&self, name: &str, func: F) {
-        let raw_ptr: *mut Box<dyn FnMut(T)> = Box::into_raw(Box::new(Box::new(func)));
-        unsafe {
-            evas_object_smart_callback_add(
-                self.as_raw(),
-                CString::new(name).unwrap().as_ptr(),
-                Some(smart_cb::<T>),
-                raw_ptr as *mut c_void,
-            );
-        }
-    }
     fn set_weight(&self, x: bool, y: bool) {
         unsafe {
             evas_object_size_hint_weight_set(self.as_raw(), x as u8 as f64, y as u8 as f64);
@@ -296,8 +490,12 @@ pub trait ElmObject: EvasObject {
     fn focus(&self) -> bool {
         unsafe { elm_object_focus_get(self.as_raw()) != 0 }
     }
-    fn set_disabled(&self, value: bool) {
-        unsafe { elm_object_disabled_set(self.as_raw(), value as Eina_Bool) }
+    fn with_disabled(self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+    fn set_disabled(&self, disabled: bool) {
+        unsafe { elm_object_disabled_set(self.as_raw(), disabled as Eina_Bool) }
     }
     fn set_focus(&self, value: bool) {
         unsafe { elm_object_focus_set(self.as_raw(), value as Eina_Bool) }
@@ -337,6 +535,17 @@ pub trait ElmObject: EvasObject {
         unsafe {
             let ptr = elm_object_style_get(self.as_raw());
             CStr::from_ptr(ptr).to_string_lossy().into_owned()
+        }
+    }
+    fn set_callback<F: FnMut(Self) + 'static>(&self, sign: impl SignalExt, func: F) {
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        unsafe {
+            evas_object_smart_callback_add(
+                self.as_raw(),
+                CString::new(sign.to_str()).unwrap().as_ptr(),
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            );
         }
     }
 }
@@ -1011,6 +1220,10 @@ pub trait CheckExt: ElmObject {
     fn value(&self) -> bool {
         unsafe { elm_check_state_get(self.as_raw()) != 0 }
     }
+    fn with_callback<F: FnMut(Self) + 'static>(self, sign: CheckSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
 }
 
 pub trait RangerExt: ElmObject {
@@ -1040,6 +1253,10 @@ pub trait SelectorExt: ElmObject {
     fn value(&self) -> u32;
     fn clear(&self);
     fn set_value(&self, value: u32);
+    fn with_callback<F: FnMut(Self) + 'static>(self, sign: SelectorSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
     fn add_items(&self, items: &[&str]) {
         for item in items {
             self.add(item);
@@ -1073,6 +1290,10 @@ pub trait SliderExt: RangerExt {
     }
     fn with_horizontal(self, value: bool) -> Self {
         self.set_horizontal(value);
+        self
+    }
+    fn with_callback<F: FnMut(Self) + 'static>(self, sign: SliderSignal, func: F) -> Self {
+        self.set_callback(sign, func);
         self
     }
 }
@@ -1278,6 +1499,10 @@ pub trait EntryExt: ElmObject {
         prt.add(&elm);
         elm
     }
+    fn with_callback<F: FnMut(Self) + 'static>(self, sign: EntrySignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
     fn with_editable(self, value: bool) -> Self {
         self.set_editable(value);
         self
@@ -1357,8 +1582,7 @@ pub trait IconExt: ElmObject {
         self
     }
     fn set_standard(&self, value: &str) {
-        let ctext = CString::new(value).unwrap();
-        unsafe { elm_icon_standard_set(self.as_raw(), ctext.as_ptr()) };
+        unsafe { elm_icon_standard_set(self.as_raw(), CString::new(value).unwrap().as_ptr()) };
     }
 }
 
@@ -1672,6 +1896,10 @@ pub trait FrameExt: ElmObject {
         parent.add(&elm);
         elm
     }
+    fn with_callback<F: FnMut(Self) + 'static>(self, sign: FrameSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
     fn with_collapse(self, value: bool) -> Self {
         self.set_collapse(value);
         self
@@ -1728,7 +1956,7 @@ pub trait NaviframeExt: ElmObject {
 pub trait PanelExt: ElmObject {
     #[deprecated = "rse refl::Popup::new(&parent) instead"]
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_panel_add(prt.window().as_raw()) })
+        let elm = Self::from_raw(unsafe { elm_panel_add(prt.as_raw()) })
             .with_orient(PanelOrient::Bottom)
             .with_scrollable(true)
             .with_hidden(true)
@@ -1810,7 +2038,7 @@ where
     fn set_message(&self, icon: &str, title: &str, text: &str) {
         self.set_content(&super::Icon::new(self).with_standard(icon), "title,icon");
         self.set_part("title,text", title);
-        self.set_text(text);
+        self.set_part("default", text);
     }
     fn with_message(self, icon: &str, title: &str, text: &str) -> Self {
         self.set_message(icon, title, text);
@@ -1820,30 +2048,38 @@ where
         unsafe { elm_popup_timeout_set(self.as_raw(), timeout) };
     }
     fn set_close(&self) {
-        let but = super::Button::new(self).with_text("Close").with_clicked({
-            let elm = self.clone();
-            move |_| elm.dismiss()
-        });
+        let but =
+            super::Button::new(self)
+                .with_text("Close")
+                .with_callback(ButtonSignal::Clicked, {
+                    let elm = self.clone();
+                    move |_| elm.dismiss()
+                });
         self.set_content(&but, "button3");
     }
     fn set_ok<F: FnMut(super::Button) + 'static>(&self, mut func: F) {
-        let but = super::Button::new(self).with_text("Ok").with_clicked({
-            let elm = self.clone();
-            move |wgt| {
-                func(wgt);
-                elm.dismiss();
-            }
-        });
+        let but = super::Button::new(self)
+            .with_text("Ok")
+            .with_callback(ButtonSignal::Clicked, {
+                let elm = self.clone();
+                move |wgt| {
+                    func(wgt);
+                    elm.dismiss();
+                }
+            });
         self.set_content(&but, "button1");
     }
     fn set_cancel<F: FnMut(super::Button) + 'static>(&self, mut func: F) {
-        let but = super::Button::new(self).with_text("Cancel").with_clicked({
-            let elm = self.clone();
-            move |wgt| {
-                func(wgt);
-                elm.dismiss();
-            }
-        });
+        let but =
+            super::Button::new(self)
+                .with_text("Cancel")
+                .with_callback(ButtonSignal::Clicked, {
+                    let elm = self.clone();
+                    move |wgt| {
+                        func(wgt);
+                        elm.dismiss();
+                    }
+                });
         self.set_content(&but, "button2");
     }
     fn with_timeout(self, timeout: f64) -> Self {
@@ -1900,9 +2136,13 @@ pub trait ProgressBarExt: ElmObject {
         self.set_unit_format(value);
         self
     }
+    fn with_callback<F: FnMut(Self) + 'static>(self, sign: ProgressBarSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
 }
 
-pub trait RadioExt: OnChanged {
+pub trait RadioExt: ElmObject {
     fn new<F: FnMut(Self) + 'static + Clone>(
         parent: &impl ContainerExt,
         items: &[&str],
@@ -1913,10 +2153,12 @@ pub trait RadioExt: OnChanged {
             if idx == 0 {
                 elm.set_text(item);
                 elm.set_icon(item);
-                elm.on_changed(func.clone());
+                elm.set_callback(RadioSignal::Changed, func.clone());
             } else {
-                let child = Self::item(parent).with_text(item).with_icon(item);
-                child.on_changed(func.clone());
+                let child = Self::item(parent)
+                    .with_text(item)
+                    .with_icon(item)
+                    .with_callback(RadioSignal::Changed, func.clone());
                 elm.add_group(&child);
             }
         }
@@ -1928,6 +2170,10 @@ pub trait RadioExt: OnChanged {
         elm.set_state_value(0);
         prt.add(&elm);
         elm
+    }
+    fn with_callback<F: FnMut(Self) + 'static>(self, sign: RadioSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
     }
     fn with_add(self, parent: &impl ContainerExt, child: &str) -> Self {
         self.add(parent, child);
@@ -2212,7 +2458,7 @@ pub trait ToolBarExt: SelectorExt {
     }
 }
 
-pub trait WindowExt: OnDeleteRequest {
+pub trait WindowExt: ElmObject {
     fn new(id: &str, title: &str) -> Self {
         Self::from_raw(unsafe {
             elm_win_util_standard_add(
@@ -2244,216 +2490,6 @@ pub trait WindowExt: OnDeleteRequest {
         unsafe {
             elm_win_type_set(self.as_raw(), value as Elm_Win_Type);
         }
-    }
-}
-
-pub trait OnChanged: ElmObject {
-    fn on_changed<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("changed", func);
-    }
-    fn with_changed<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_changed(func);
-        self
-    }
-}
-
-pub trait OnActivated: ElmObject {
-    fn on_activated<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("activated", func);
-    }
-    fn with_activated<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_activated(func);
-        self
-    }
-}
-
-pub trait OnDone: ElmObject {
-    fn on_done<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("done", func);
-    }
-    fn with_done<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_done(func);
-        self
-    }
-}
-
-pub trait OnClicked: ElmObject {
-    fn on_clicked<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("clicked", func);
-    }
-    fn with_clicked<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_clicked(func);
-        self
-    }
-}
-
-pub trait OnClickedDouble: ElmObject {
-    fn on_clicked_double<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("clicked,double", func);
-    }
-    fn with_clicked_double<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_clicked_double(func);
-        self
-    }
-}
-
-pub trait OnSelected: ElmObject {
-    fn on_selected<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("selected", func);
-    }
-    fn with_selected<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_selected(func);
-        self
-    }
-}
-
-pub trait OnUnselected: ElmObject {
-    fn on_unselected<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("unselected", func);
-    }
-    fn with_toggled<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_unselected(func);
-        self
-    }
-}
-
-pub trait OnToggled: ElmObject {
-    fn on_toggled<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("toggled", func);
-    }
-    fn with_toggled<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_toggled(func);
-        self
-    }
-}
-
-pub trait OnPosChanged: ElmObject {
-    fn on_pos_changed<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("pos_changed", func);
-    }
-    fn with_pos_changed<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_pos_changed(func);
-        self
-    }
-}
-
-pub trait OnTimeout: ElmObject {
-    fn on_timeout<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("timeout", func);
-    }
-    fn with_timeout<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_timeout(func);
-        self
-    }
-}
-
-pub trait OnClickedBlock: ElmObject {
-    fn on_clicked_block<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("block,clicked", func);
-    }
-    fn with_clicked_block<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_clicked_block(func);
-        self
-    }
-}
-
-pub trait OnDismissed: ElmObject {
-    fn on_dismissed<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("dismissed", func);
-    }
-    fn with_dismissed<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_dismissed(func);
-        self
-    }
-}
-
-pub trait OnExpanded: ElmObject {
-    fn on_expanded<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("expanded", func);
-    }
-    fn with_expanded<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_expanded(func);
-        self
-    }
-}
-
-pub trait OnItemSelected: ElmObject {
-    fn on_item_selected<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("item,selected", func);
-    }
-    fn with_item_selected<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_item_selected(func);
-        self
-    }
-}
-
-pub trait OnItemPressed: ElmObject {
-    fn on_item_pressed<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("item,pressed", func);
-    }
-    fn with_item_pressed<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_item_pressed(func);
-        self
-    }
-}
-
-pub trait OnFilterDone: ElmObject {
-    fn on_filter_done<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("filter,done", func);
-    }
-    fn with_filter_done<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_filter_done(func);
-        self
-    }
-}
-
-pub trait OnDeleteRequest: ElmObject {
-    fn on_delete_request<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("delete,request", func);
-    }
-    fn with_delete_request<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_delete_request(func);
-        self
-    }
-}
-
-pub trait OnChangedDelay: ElmObject {
-    fn on_changed_delay<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("delay,changed", func);
-    }
-    fn with_changed_delay<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_changed_delay(func);
-        self
-    }
-}
-
-pub trait OnClickedRight: ElmObject {
-    fn on_clicked_right<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("clicked,right", func);
-    }
-    fn with_clicked_right<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_clicked_right(func);
-        self
-    }
-}
-
-pub trait OnPressed: ElmObject {
-    fn on_pressed<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("press", func);
-    }
-    fn with_pressed<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_pressed(func);
-        self
-    }
-}
-
-pub trait OnPressedLong: ElmObject {
-    fn on_pressed_long<F: FnMut(Self) + 'static>(&self, func: F) {
-        self.smart_callback_add("longpressed", func);
-    }
-    fn with_pressed_long<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.on_pressed_long(func);
-        self
     }
 }
 

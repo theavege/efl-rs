@@ -51,7 +51,7 @@ impl Component for Selector {
         efltk::Box::new(prt).inside(|prt| {
             self.seg = efltk::SegmentControl::new(prt)
                 .with_items(&items)
-                .with_changed({
+                .with_callback(SelectorSignal::Changed, {
                     let sender = sender.clone();
                     move |wgt| {
                         sender.send(Msg::Set(wgt.value())).unwrap();
@@ -72,7 +72,7 @@ impl Component for Selector {
                     }
                     self.flip = efltk::FlipSelector::new(prt)
                         .with_items(&items)
-                        .with_selected({
+                        .with_callback(SelectorSignal::Selected, {
                             let sender = sender.clone();
                             move |wgt| {
                                 if wgt.focus() {
@@ -85,14 +85,17 @@ impl Component for Selector {
                 .with_homogeneous(true)
                 .with_horizontal(true)
                 .inside(|prt| {
-                    self.list = efltk::List::new(prt).with_items(&items).with_selected({
-                        let sender = sender.clone();
-                        move |wgt| {
-                            if wgt.focus() {
-                                sender.send(Msg::Set(wgt.value())).unwrap();
+                    self.list = efltk::List::new(prt).with_items(&items).with_callback(
+                        SelectorSignal::Selected,
+                        {
+                            let sender = sender.clone();
+                            move |wgt| {
+                                if wgt.focus() {
+                                    sender.send(Msg::Set(wgt.value())).unwrap();
+                                }
                             }
-                        }
-                    });
+                        },
+                    );
                     efltk::Box::new(prt).inside(|prt| {
                         self.radio = efltk::Radio::new(prt, &items, {
                             let sender = sender.clone();

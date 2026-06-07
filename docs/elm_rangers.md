@@ -1,7 +1,12 @@
-![Slider](https://www.enlightenment.org/_legacy_embed/img/widget/slider/preview-00.png)
+# [Slider](https://www.enlightenment.org/develop/legacy/program_guide/widgets/slider)
 
-# [Spinner](https://docs.enlightenment.org/python-efl/current/elementary/spinner.html)
+The slider widget is a draggable bar that is used to select a value within a certain range.
 
-# [Slider](https://docs.enlightenment.org/python-efl/current/elementary/slider.html)
+![Slider](https://www.enlightenment.org/_media/widgets_slider.png)
 
-![Spinner](https://www.enlightenment.org/_legacy_embed/img/widget/spinner/preview-00.png)
+```rust
+    efltk::Slider::new(parent)
+        .with_tooltip("Slider")
+        .with_format("%1.2f")
+        .with_callback(SliderSignal::Changed, move |wgt| println!("{} is Changed", wgt.value()));
+```

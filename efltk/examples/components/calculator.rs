@@ -138,7 +138,7 @@ impl Component for Calc {
                                 .with_text(cell)
                                 .with_tooltip(cell)
                                 .with_cursor(Cursor::Hand1)
-                                .on_clicked({
+                                .with_callback(ButtonSignal::Clicked, {
                                     let sender = sender.clone();
                                     move |wgt| {
                                         sender.send(Msg::Push(wgt.text())).unwrap();

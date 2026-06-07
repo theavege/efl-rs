@@ -155,18 +155,24 @@ impl Component for Sudoku {
                 .with_horizontal(true)
                 .with_homogeneous(true)
                 .inside(|prt| {
-                    efltk::Button::new(prt).with_text("Answer").on_clicked({
-                        let sender = sender.clone();
-                        move |_wgt| {
-                            sender.send(Msg::Solve).unwrap();
-                        }
-                    });
-                    efltk::Button::new(prt).with_text("Clear").on_clicked({
-                        let sender = sender.clone();
-                        move |_wgt| {
-                            sender.send(Msg::Clear).unwrap();
-                        }
-                    });
+                    efltk::Button::new(prt).with_text("Answer").with_callback(
+                        ButtonSignal::Clicked,
+                        {
+                            let sender = sender.clone();
+                            move |_wgt| {
+                                sender.send(Msg::Solve).unwrap();
+                            }
+                        },
+                    );
+                    efltk::Button::new(prt).with_text("Clear").with_callback(
+                        ButtonSignal::Clicked,
+                        {
+                            let sender = sender.clone();
+                            move |_wgt| {
+                                sender.send(Msg::Clear).unwrap();
+                            }
+                        },
+                    );
                 });
             efltk::Label::new(prt);
         });

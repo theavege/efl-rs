@@ -45,7 +45,7 @@ impl Component for View {
                         self.0[idx] = efltk::Frame::new(prt)
                             .with_autocollapse(false)
                             .with_text(item)
-                            .with_clicked({
+                            .with_callback(FrameSignal::Clicked, {
                                 let sender = sender.clone();
                                 move |_| sender.send(Msg::Set(idx)).unwrap()
                             });

@@ -58,7 +58,7 @@ impl Component for Converter {
                     self.cel = efltk::Entry::new(prt)
                         .with_value("0")
                         .with_editable(true)
-                        .with_changed({
+                        .with_callback(EntrySignal::Changed, {
                             let sender = sender.clone();
                             move |wgt| {
                                 if wgt.focus() {
@@ -74,7 +74,7 @@ impl Component for Converter {
                         self.far = efltk::Entry::new(prt)
                             .with_value("0")
                             .with_editable(true)
-                            .with_changed({
+                            .with_callback(EntrySignal::Changed, {
                                 let sender = sender.clone();
                                 move |wgt| {
                                     if wgt.focus() {

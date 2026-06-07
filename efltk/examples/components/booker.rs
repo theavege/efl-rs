@@ -68,15 +68,19 @@ impl Component for Booker {
         efltk::Box::new(prt).with_homogeneous(true).inside(|prt| {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt).with_size(150, 0).set_text("Flight");
-                self.flight = efltk::Check::new(prt).with_text("Return").with_changed({
-                    let sender = sender.clone();
-                    move |wgt| sender.send(Msg::Flight(wgt.value())).unwrap()
-                });
+                self.flight = efltk::Check::new(prt).with_text("Return").with_callback(
+                    CheckSignal::Changed,
+                    {
+                        let sender = sender.clone();
+                        move |wgt| sender.send(Msg::Flight(wgt.value())).unwrap()
+                    },
+                );
                 self.book = efltk::Button::new(prt)
                     .with_icon("home")
                     .with_size(45, 0)
                     .with_tooltip("Book")
-                    .with_clicked({
+                    .with_style("anchor")
+                    .with_callback(ButtonSignal::Clicked, {
                         let sender = sender.clone();
                         move |_wgt| sender.send(Msg::Book).unwrap()
                     });
@@ -85,7 +89,7 @@ impl Component for Booker {
                 efltk::Button::new(prt)
                     .with_size(150, 0)
                     .set_text("Departure data");
-                self.start = efltk::Entry::new(prt).with_changed({
+                self.start = efltk::Entry::new(prt).with_callback(EntrySignal::Changed, {
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -104,7 +108,7 @@ impl Component for Booker {
                 efltk::Button::new(prt)
                     .with_size(150, 0)
                     .set_text("Return data");
-                self.back = efltk::Entry::new(prt).with_changed({
+                self.back = efltk::Entry::new(prt).with_callback(EntrySignal::Changed, {
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {

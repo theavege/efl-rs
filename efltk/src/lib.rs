@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 pub mod prelude;
 
 use {
@@ -250,7 +252,6 @@ impl EvasObject for Calendar {
     }
 }
 impl ElmObject for Calendar {}
-impl OnChanged for Calendar {}
 impl CalendarExt for Calendar {}
 
 #[derive(Default)]
@@ -308,7 +309,6 @@ impl EvasObject for Ctxpopup {
     }
 }
 impl ElmObject for Ctxpopup {}
-impl OnDismissed for Ctxpopup {}
 impl CtxpopupExt for Ctxpopup {}
 impl SelectorExt for Ctxpopup {
     fn add(&self, label: &str) -> WidgetItem {
@@ -359,8 +359,6 @@ impl EvasObject for Entry {
 }
 impl ElmObject for Entry {}
 impl ContainerExt for Entry {}
-impl OnClicked for Entry {}
-impl OnChanged for Entry {}
 impl EntryExt for Entry {}
 
 #[derive(Default)]
@@ -384,7 +382,6 @@ impl EvasObject for FlipSelector {
     }
 }
 impl ElmObject for FlipSelector {}
-impl OnChanged for FlipSelector {}
 impl SelectorExt for FlipSelector {
     fn add(&self, label: &str) -> WidgetItem {
         self.append(label, |_| {})
@@ -428,7 +425,6 @@ impl SelectorExt for FlipSelector {
     }
 }
 impl FlipSelExt for FlipSelector {}
-impl OnSelected for FlipSelector {}
 
 #[derive(Default)]
 pub struct Frame(Option<NonNull<Evas_Object>>);
@@ -448,7 +444,6 @@ impl ContainerExt for Frame {
         child.show();
     }
 }
-impl OnClicked for Frame {}
 impl FrameExt for Frame {}
 
 #[derive(Default)]
@@ -477,7 +472,6 @@ impl EvasObject for Image {
     }
 }
 impl ElmObject for Image {}
-impl OnClicked for Image {}
 impl ImageExt for Image {}
 
 #[derive(Default)]
@@ -494,9 +488,6 @@ impl EvasObject for Index {
 impl ElmObject for Index {}
 impl ContainerExt for Index {}
 impl LayoutExt for Index {}
-impl OnChanged for Index {}
-impl OnChangedDelay for Index {}
-impl OnSelected for Index {}
 impl IndexExt for Index {}
 
 #[derive(Default)]
@@ -624,7 +615,6 @@ impl SelectorExt for List {
 }
 impl ElmObject for List {}
 impl ListExt for List {}
-impl OnSelected for List {}
 
 #[derive(Default)]
 pub struct Naviframe {
@@ -707,7 +697,6 @@ impl ContainerExt for Panel {
         child.show();
     }
 }
-impl OnToggled for Panel {}
 impl PanelExt for Panel {}
 
 #[derive(Default)]
@@ -731,8 +720,6 @@ impl ContainerExt for Panes {
         child.show();
     }
 }
-impl OnClickedDouble for Panes {}
-impl OnPressed for Panes {}
 impl PanesExt for Panes {}
 
 #[derive(Default, Clone)]
@@ -776,7 +763,6 @@ impl EvasObject for Radio {
     }
 }
 impl ElmObject for Radio {}
-impl OnChanged for Radio {}
 impl RadioExt for Radio {}
 
 #[derive(Default)]
@@ -791,7 +777,6 @@ impl EvasObject for Prefs {
     }
 }
 impl ElmObject for Prefs {}
-impl OnChanged for Prefs {}
 impl PrefsExt for Prefs {}
 
 #[derive(Default)]
@@ -843,7 +828,6 @@ impl EvasObject for Scroller {
     }
 }
 impl ElmObject for Scroller {}
-impl OnChanged for Scroller {}
 impl ScrollerExt for Scroller {}
 
 #[derive(Default)]
@@ -864,7 +848,6 @@ impl EvasObject for SegmentControl {
     }
 }
 impl ElmObject for SegmentControl {}
-impl OnChanged for SegmentControl {}
 impl SegmentControlExt for SegmentControl {}
 impl SelectorExt for SegmentControl {
     fn add(&self, label: &str) -> WidgetItem {
@@ -911,8 +894,6 @@ impl EvasObject for Slider {
 }
 impl ElmObject for Slider {}
 impl SliderExt for Slider {}
-impl OnChanged for Slider {}
-impl OnChangedDelay for Slider {}
 impl RangerExt for Slider {
     fn value(&self) -> f64 {
         unsafe { elm_slider_value_get(self.as_raw()) }
@@ -941,6 +922,10 @@ impl Spinner {
         prt.add(&elm);
         elm
     }
+    pub fn with_callback<F: FnMut(Self) + 'static>(self, sign: SpinnerSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
 }
 impl EvasObject for Spinner {
     fn as_raw(&self) -> *mut Evas_Object {
@@ -951,7 +936,6 @@ impl EvasObject for Spinner {
     }
 }
 impl ElmObject for Spinner {}
-impl OnChanged for Spinner {}
 impl RangerExt for Spinner {
     fn set_format(&self, format: &str) {
         let cformat = std::ffi::CString::new(format).unwrap();
@@ -1031,7 +1015,6 @@ impl SelectorExt for ToolBar {
     }
 }
 impl ElmObject for ToolBar {}
-impl OnClicked for ToolBar {}
 impl ToolBarExt for ToolBar {}
 
 #[derive(Default)]
@@ -1052,7 +1035,6 @@ impl ContainerExt for Window {
     }
 }
 impl ElmObject for Window {}
-impl OnDeleteRequest for Window {}
 impl WindowExt for Window {}
 
 #[derive(Default)]
@@ -1068,8 +1050,6 @@ impl EvasObject for ActionSlider {
 }
 impl ElmObject for ActionSlider {}
 impl ActionSliderExt for ActionSlider {}
-impl OnSelected for ActionSlider {}
-impl OnPosChanged for ActionSlider {}
 
 #[derive(Default)]
 pub struct Box(Option<NonNull<Evas_Object>>);
@@ -1184,6 +1164,10 @@ impl Button {
         prt.add(&elm);
         elm
     }
+    pub fn with_callback<F: FnMut(Self) + 'static>(self, sign: ButtonSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
 }
 
 impl EvasObject for Button {
@@ -1195,8 +1179,6 @@ impl EvasObject for Button {
     }
 }
 impl ElmObject for Button {}
-impl ContainerExt for Button {}
-impl OnClicked for Button {}
 
 #[derive(Default)]
 pub struct Combobox(Option<NonNull<Evas_Object>>);
@@ -1210,9 +1192,6 @@ impl EvasObject for Combobox {
     }
 }
 impl ElmObject for Combobox {}
-impl OnChanged for Combobox {}
-impl OnSelected for Combobox {}
-impl OnExpanded for Combobox {}
 impl ComboboxExt for Combobox {}
 
 #[derive(Default)]
@@ -1227,7 +1206,6 @@ impl EvasObject for Check {
     }
 }
 impl ElmObject for Check {}
-impl OnChanged for Check {}
 impl CheckExt for Check {}
 
 #[derive(Default)]
@@ -1318,7 +1296,6 @@ impl SelectorExt for Diskselector {
         unsafe { elm_diskselector_clear(self.as_raw()) };
     }
 }
-impl OnChanged for Diskselector {}
 impl DiskselectorExt for Diskselector {}
 
 #[derive(Default)]
@@ -1333,7 +1310,6 @@ impl EvasObject for Colorselector {
     }
 }
 impl ElmObject for Colorselector {}
-impl OnChanged for Colorselector {}
 impl ColorselectorExt for Colorselector {}
 
 #[derive(Default)]
@@ -1348,7 +1324,6 @@ impl EvasObject for Dayselector {
     }
 }
 impl ElmObject for Dayselector {}
-impl OnChanged for Dayselector {}
 impl DayselectorExt for Dayselector {}
 
 #[derive(Default)]
@@ -1364,9 +1339,6 @@ impl EvasObject for FileSelector {
 }
 impl ElmObject for FileSelector {}
 impl ContainerExt for FileSelector {}
-impl OnActivated for FileSelector {}
-impl OnSelected for FileSelector {}
-impl OnDone for FileSelector {}
 impl FileSelExt for FileSelector {}
 
 #[derive(Default)]
@@ -1381,10 +1353,6 @@ impl EvasObject for Gengrid {
     }
 }
 impl ElmObject for Gengrid {}
-impl OnSelected for Gengrid {}
-impl OnUnselected for Gengrid {}
-impl OnActivated for Gengrid {}
-impl OnClickedDouble for Gengrid {}
 impl GengridExt for Gengrid {}
 
 #[derive(Default)]
@@ -1399,8 +1367,4 @@ impl EvasObject for GenList {
     }
 }
 impl ElmObject for GenList {}
-impl OnSelected for GenList {}
-impl OnUnselected for GenList {}
-impl OnActivated for GenList {}
-impl OnClickedDouble for GenList {}
 impl GenlistExt for GenList {}
