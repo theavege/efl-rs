@@ -43,7 +43,7 @@ impl Component for Booker {
     fn update(&self, model: &Self::State) {
         self.flight.set_value(model.flight);
         self.start.set_value(&model.start);
-        //~ self.back.set_enable(model.flight);
+        self.back.set_disabled(model.flight);
         self.back.set_value(&model.back);
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
@@ -67,7 +67,9 @@ impl Component for Booker {
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         efltk::Box::new(prt).with_homogeneous(true).inside(|prt| {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(150, 0).set_text("Flight");
+                efltk::Button::new(prt)
+                    .with_size(150, -1)
+                    .set_text("Flight");
                 self.flight = efltk::Check::new(prt).with_text("Return").with_callback(
                     CheckSignal::Changed,
                     {
@@ -77,28 +79,29 @@ impl Component for Booker {
                 );
                 self.book = efltk::Button::new(prt)
                     .with_icon("home")
-                    .with_size(45, 0)
+                    .with_size(45, -1)
                     .with_tooltip("Book")
-                    .with_style("anchor")
-                    .with_callback(ButtonSignal::Clicked, {
+                    .with_callback({
                         let sender = sender.clone();
                         move |_wgt| sender.send(Msg::Book).unwrap()
                     });
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)
-                    .with_size(150, 0)
+                    .with_size(150, -1)
                     .set_text("Departure data");
-                self.start = efltk::Entry::new(prt).with_callback(EntrySignal::Changed, {
+                self.start = efltk::Entry::new(prt).with_callback({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
                             match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d").is_ok()
                             {
                                 true => sender.send(Msg::Start(wgt.text())).unwrap(),
-                                false => efltk::Popup::new(&wgt)
-                                    .with_timeout(0.0)
-                                    .set_message("home", "ERROR", "ERROR"),
+                                false => efltk::Popup::new(&wgt).with_timeout(0.0).set_message(
+                                    "dialog-info",
+                                    "ERROR",
+                                    "ERROR",
+                                ),
                             }
                         }
                     }
@@ -106,9 +109,9 @@ impl Component for Booker {
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)
-                    .with_size(150, 0)
+                    .with_size(150, -1)
                     .set_text("Return data");
-                self.back = efltk::Entry::new(prt).with_callback(EntrySignal::Changed, {
+                self.back = efltk::Entry::new(prt).with_callback({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {

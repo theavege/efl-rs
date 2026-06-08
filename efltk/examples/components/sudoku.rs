@@ -126,7 +126,11 @@ impl Component for Sudoku {
     fn update(&self, model: &Self::State) {
         for row in 0..self.0.len() {
             for col in 0..self.0[row].len() {
-                self.0[row][col].set_text(&model.0[row][col].to_string());
+                if model.0[row][col] > 0 {
+                    self.0[row][col].set_text(&model.0[row][col].to_string());
+                } else {
+                    self.0[row][col].set_text("");
+                }
             }
         }
     }
@@ -140,7 +144,7 @@ impl Component for Sudoku {
                     .inside(|prt| {
                         for col in 0..9 {
                             self.0[row][col] = efltk::HoverSel::new(prt);
-                            for item in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] {
+                            for item in 0..=9 {
                                 self.0[row][col].add_item(&item.to_string(), &item.to_string(), {
                                     let sender = sender.clone();
                                     move |_| {
@@ -155,24 +159,18 @@ impl Component for Sudoku {
                 .with_horizontal(true)
                 .with_homogeneous(true)
                 .inside(|prt| {
-                    efltk::Button::new(prt).with_text("Answer").with_callback(
-                        ButtonSignal::Clicked,
-                        {
-                            let sender = sender.clone();
-                            move |_wgt| {
-                                sender.send(Msg::Solve).unwrap();
-                            }
-                        },
-                    );
-                    efltk::Button::new(prt).with_text("Clear").with_callback(
-                        ButtonSignal::Clicked,
-                        {
-                            let sender = sender.clone();
-                            move |_wgt| {
-                                sender.send(Msg::Clear).unwrap();
-                            }
-                        },
-                    );
+                    efltk::Button::new(prt).with_text("Answer").with_callback({
+                        let sender = sender.clone();
+                        move |_wgt| {
+                            sender.send(Msg::Solve).unwrap();
+                        }
+                    });
+                    efltk::Button::new(prt).with_text("Clear").with_callback({
+                        let sender = sender.clone();
+                        move |_wgt| {
+                            sender.send(Msg::Clear).unwrap();
+                        }
+                    });
                 });
             efltk::Label::new(prt);
         });

@@ -1,4 +1,4 @@
-# [SegmentControl](https://www.enlightenment.org/develop/legacy/program_guide/widgets/radio)
+# [SegmentControl](https://www.enlightenment.org/develop/legacy/program_guide/widgets/segmentcontrol)
 
 This widget consists of several segment items. A segment item is similar to a discrete two state button. Any time, only one segment item can be selected. A segment item is composed of a label (text) and an icon. This widget inherits from the layout widget, so all the layout widgets API can be used on segmentcontrol objects.
 
@@ -8,8 +8,7 @@ This widget consists of several segment items. A segment item is similar to a di
     efltk::SegmentControl::new(parent)
         .with_items(&["home", "close"])
         .with_size(90, 45)
-        .with_callback(SegmentControlSignal::Changed, move |wgt| println!("{} is Changed", wgt.value()));
-        .with_callback(SegmentControlSignal::LanguageChanged, move |wgt| println!("{} is LanguageChanged", wgt.value()));
+        .with_callback(move |wgt| println!("{} is Changed", wgt.value()));
 ```
 
 # [List](https://www.enlightenment.org/develop/legacy/program_guide/widgets/list)
@@ -21,6 +20,6 @@ This widget is a very simple type of a list widget. It is not to be used to mana
 ```rust
     efltk::List::new(parent)
         .with_items(&["home", "close"])
-        .with_callback(ListSignal::Selected, move |wgt| println!("{} is Selected", wgt.value()));
+        .with_callback(move |wgt| println!("{} is Selected", wgt.value()));
 ```
 

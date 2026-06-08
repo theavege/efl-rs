@@ -12,7 +12,7 @@ The Elementary button widget is a simple push button. It is composed of a label 
         .with_cursor(Cursor::Hand1)
         .with_size(45, 45)
         .with_disabled(true)
-        .with_callback(ButtonSignal::Clicked, move |wgt| println!("{} is Clicked", wgt.text()));
+        .with_callback(move |wgt| println!("{} is Clicked", wgt.text()));
 ```
 
 # [Check](https://www.enlightenment.org/develop/legacy/program_guide/widgets/check)
@@ -28,8 +28,5 @@ The check widget is similar to the radio widget, except that it does not work as
         .with_tooltip("HOME")
         .with_cursor(Cursor::Hand1)
         .with_size(90, 45)
-        .with_callback(CheckSignal::Focused, move |wgt| println!("{} is Focused", wgt.text()))
-        .with_callback(CheckSignal::Unfocused, move |wgt| println!("{} is Unfocused", wgt.text()))
-        .with_callback(CheckSignal::Changed, move |wgt| println!("{} is Changed", wgt.text()))
-        .with_callback(CheckSignal::LanguageChanged, move |wgt| println!("{} is LanguageChanged", wgt.text()));
+        .with_callback(CheckSignal::Changed, move |wgt| println!("{} is Changed", wgt.text()));
 ```

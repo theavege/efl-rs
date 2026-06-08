@@ -134,11 +134,11 @@ impl Component for Calc {
                     .inside(|prt| {
                         for cell in row {
                             efltk::Button::new(prt)
-                                .with_size(0, 45)
+                                .with_size(-1, 45)
                                 .with_text(cell)
                                 .with_tooltip(cell)
                                 .with_cursor(Cursor::Hand1)
-                                .with_callback(ButtonSignal::Clicked, {
+                                .with_callback({
                                     let sender = sender.clone();
                                     move |wgt| {
                                         sender.send(Msg::Push(wgt.text())).unwrap();

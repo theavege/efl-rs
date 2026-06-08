@@ -9,5 +9,5 @@
         .with_tooltip("HOME")
         .with_cursor(Cursor::Hand1)
         .with_size(90, 45)
-        .with_callback(ProgressBarSignal::Changed, move |wgt| println!("{} is Changed", wgt.text()));
+        .with_callback(move |wgt| println!("{} is Changed", wgt.text()));
 ```

@@ -8,5 +8,5 @@ The slider widget is a draggable bar that is used to select a value within a cer
     efltk::Slider::new(parent)
         .with_tooltip("Slider")
         .with_format("%1.2f")
-        .with_callback(SliderSignal::Changed, move |wgt| println!("{} is Changed", wgt.value()));
+        .with_callback(move |wgt| println!("{} is Changed", wgt.value()));
 ```

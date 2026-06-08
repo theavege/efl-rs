@@ -116,7 +116,7 @@ impl EvasObjectItemExt for WidgetItem {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Menu(Option<NonNull<Evas_Object>>);
 
 impl Menu {
@@ -141,7 +141,9 @@ impl ElmObject for Menu {}
 
 impl SelectorExt for Menu {
     fn add(&self, label: &str) -> WidgetItem {
-        self.append(label, label, |_| {})
+        self.append(label, label, |wgt| {
+            wgt.do_callback(SelectorSignal::Selected)
+        })
     }
     fn set_value(&self, value: u32) {
         let mut temp = self.first().as_raw();
@@ -257,24 +259,6 @@ impl CalendarExt for Calendar {}
 #[derive(Default)]
 pub struct Clock(Option<NonNull<Evas_Object>>);
 
-impl Clock {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_clock_add(prt.as_raw()) }).with_conf();
-        prt.add(&elm);
-        elm
-    }
-    pub fn time(&self) -> (i32, i32, i32) {
-        let mut hrs: i32 = 0;
-        let mut min: i32 = 0;
-        let mut sec: i32 = 0;
-        unsafe { elm_clock_time_get(self.as_raw(), &mut hrs, &mut min, &mut sec) };
-        (hrs, min, sec)
-    }
-    pub fn set_time(&self, hrs: i32, min: i32, sec: i32) {
-        unsafe { elm_clock_time_set(self.as_raw(), hrs, min, sec) };
-    }
-}
-
 impl EvasObject for Clock {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -284,6 +268,7 @@ impl EvasObject for Clock {
     }
 }
 impl ElmObject for Clock {}
+impl ClockExt for Clock {}
 
 #[derive(Default)]
 pub struct Ctxpopup(Option<NonNull<Evas_Object>>);
@@ -493,19 +478,6 @@ impl IndexExt for Index {}
 #[derive(Default)]
 pub struct Label(Option<NonNull<Evas_Object>>);
 
-impl Label {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe {
-            let ptr = elm_label_add(prt.as_raw());
-            elm_label_line_wrap_set(ptr, Elm_Wrap_Type_ELM_WRAP_WORD);
-            ptr
-        })
-        .with_conf();
-        prt.add(&elm);
-        elm
-    }
-}
-
 impl EvasObject for Label {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -515,34 +487,7 @@ impl EvasObject for Label {
     }
 }
 impl ElmObject for Label {}
-
-#[derive(Default)]
-pub struct Layout(Option<NonNull<Evas_Object>>);
-
-impl Layout {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_layout_add(prt.as_raw()) }).with_conf();
-        prt.add(&elm);
-        elm
-    }
-}
-
-impl EvasObject for Layout {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ElmObject for Layout {}
-impl ContainerExt for Layout {
-    fn add(&self, child: &impl ElmObject) {
-        self.set_content(child, "default");
-        child.show();
-    }
-}
-impl LayoutExt for Layout {}
+impl LabelExt for Label {}
 
 #[derive(Default)]
 pub struct Separator(Option<NonNull<Evas_Object>>);
@@ -561,7 +506,7 @@ impl SeparatorExt for Separator {}
 #[derive(Default)]
 pub struct List(Option<NonNull<Evas_Object>>);
 impl List {
-    fn selected(&self) -> WidgetItem {
+    pub fn selected(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { elm_list_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
@@ -827,6 +772,12 @@ impl EvasObject for Scroller {
         Self(NonNull::new(obj))
     }
 }
+impl ContainerExt for Scroller {
+    fn add(&self, child: &impl ElmObject) {
+        self.set_content(child, "default");
+        child.show();
+    }
+}
 impl ElmObject for Scroller {}
 impl ScrollerExt for Scroller {}
 
@@ -915,18 +866,7 @@ impl RangerExt for Slider {
 
 #[derive(Default)]
 pub struct Spinner(Option<NonNull<Evas_Object>>);
-impl Spinner {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_spinner_add(prt.as_raw()) });
-        elm.conf();
-        prt.add(&elm);
-        elm
-    }
-    pub fn with_callback<F: FnMut(Self) + 'static>(self, sign: SpinnerSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
-    }
-}
+
 impl EvasObject for Spinner {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -936,6 +876,7 @@ impl EvasObject for Spinner {
     }
 }
 impl ElmObject for Spinner {}
+impl SpinnerExt for Spinner {}
 impl RangerExt for Spinner {
     fn set_format(&self, format: &str) {
         let cformat = std::ffi::CString::new(format).unwrap();
@@ -962,9 +903,6 @@ impl ToolBar {
     fn first(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { elm_toolbar_first_item_get(self.as_raw()) })
     }
-    fn last(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_toolbar_last_item_get(self.as_raw()) })
-    }
     fn selected(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { elm_toolbar_selected_item_get(self.as_raw()) })
     }
@@ -981,7 +919,7 @@ impl EvasObject for ToolBar {
 
 impl SelectorExt for ToolBar {
     fn add(&self, label: &str) -> WidgetItem {
-        self.append(label, label, |_| {})
+        self.add_item(label, label, |_| {})
     }
     fn set_value(&self, value: u32) {
         let mut temp = self.first().as_raw();
@@ -994,7 +932,13 @@ impl SelectorExt for ToolBar {
         self.find(self.selected())
     }
     fn lenght(&self) -> u32 {
-        self.find(self.last())
+        let mut count = 0;
+        let mut temp = self.first();
+        while temp.0.is_some() {
+            count += 1;
+            temp = WidgetItem::from_raw(unsafe { elm_toolbar_item_next_get(temp.as_raw()) });
+        }
+        count
     }
     fn find(&self, item: WidgetItem) -> u32 {
         let mut count = 0;
@@ -1006,12 +950,12 @@ impl SelectorExt for ToolBar {
         count
     }
     fn clear(&self) {
-        let mut temp = self.first().as_raw();
-        while temp != self.last().as_raw() {
-            WidgetItem::from_raw(temp).del();
-            temp = unsafe { elm_toolbar_item_next_get(temp) };
+        let mut temp = self.first();
+        while temp.0.is_some() {
+            let next = WidgetItem::from_raw(unsafe { elm_toolbar_item_next_get(temp.as_raw()) });
+            temp.del();
+            temp = next;
         }
-        self.last().del();
     }
 }
 impl ElmObject for ToolBar {}
@@ -1065,7 +1009,7 @@ impl EvasObject for Box {
 impl ElmObject for Box {}
 impl ContainerExt for Box {
     fn add(&self, child: &impl ElmObject) {
-        self.pack_end(child);
+        self.add_item(child);
         child.show();
     }
 }
@@ -1089,14 +1033,6 @@ impl GridExt for Grid {}
 #[derive(Default)]
 pub struct Table(Option<NonNull<Evas_Object>>);
 
-impl Table {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_table_add(prt.as_raw()) }).with_conf();
-        prt.add(&elm);
-        elm
-    }
-}
-
 impl EvasObject for Table {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -1108,7 +1044,7 @@ impl EvasObject for Table {
 impl ElmObject for Table {}
 impl ContainerExt for Table {
     fn add(&self, child: &impl ElmObject) {
-        self.pack(child, 0, 0, 1, 1);
+        //~ self.pack(child, 0, 0, 1, 1);
         child.show();
     }
 }
@@ -1116,29 +1052,7 @@ impl TableExt for Table {}
 
 #[derive(Default)]
 pub struct Bubble(Option<NonNull<Evas_Object>>);
-impl Bubble {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_bubble_add(prt.as_raw()) })
-            .with_conf()
-            .with_pos(1);
-        prt.add(&elm);
-        elm
-    }
-    pub fn set_pos(&self, value: i32) {
-        unsafe { elm_bubble_pos_set(self.as_raw(), value) };
-    }
-    pub fn set_info(&self, info: &str) {
-        self.set_part("info", info);
-    }
-    pub fn with_info(self, info: &str) -> Self {
-        self.set_part("info", info);
-        self
-    }
-    pub fn with_pos(self, value: i32) -> Self {
-        self.set_pos(value);
-        self
-    }
-}
+
 impl EvasObject for Bubble {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -1148,6 +1062,7 @@ impl EvasObject for Bubble {
     }
 }
 impl ElmObject for Bubble {}
+impl BubbleExt for Bubble {}
 impl ContainerExt for Bubble {
     fn add(&self, child: &impl prelude::ElmObject) {
         self.set_content(child, "default");
@@ -1158,18 +1073,6 @@ impl ContainerExt for Bubble {
 #[derive(Default)]
 pub struct Button(Option<NonNull<Evas_Object>>);
 
-impl Button {
-    pub fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_button_add(prt.as_raw()) }).with_conf();
-        prt.add(&elm);
-        elm
-    }
-    pub fn with_callback<F: FnMut(Self) + 'static>(self, sign: ButtonSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
-    }
-}
-
 impl EvasObject for Button {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
@@ -1179,6 +1082,7 @@ impl EvasObject for Button {
     }
 }
 impl ElmObject for Button {}
+impl ButtonExt for Button {}
 
 #[derive(Default)]
 pub struct Combobox(Option<NonNull<Evas_Object>>);

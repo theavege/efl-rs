@@ -25,10 +25,10 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
 - [x] [Widgets](https://www.enlightenment.org/_legacy_embed/widgetslist.html)
   - [x] [Containers](docs/elm_containers.md)
     - [x] [Window](docs/elm_containers.md#Window) - Primari application window
+    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
     - [x] [Box](docs/elm_containers.md#Box) - Basic horizontal/vertical packing
     - [x] [Bubble](docs/elm_containers.md#Bubble) - Basic container with title
     - [x] [Frame](docs/elm_containers.md#Frame) - Framed container with title
-    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
     - [x] [Popup](docs/elm_containers.md#Popup) - Overlays and dialogs
   - [x] [Outputs](docs/elm_outputs.md)
     - [x] [Label](docs/elm_outputs.md#Label) - Text and icon display
@@ -38,14 +38,9 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
     - [x] [Entry](docs/elm_inputs.md#Entry) - Basic text input
   - [x] [Triggers](docs/elm_triggers.md)
     - [x] [Button](docs/elm_triggers.md#Button) - Standart push button
-    - [x] [Check](docs/elm_triggers.md#Check) - Check box
-    - [x] [HoverSel](docs/elm_selectors.md#HoverSel)
-    - [x] [Menu](docs/elm_selectors.md#Menu)
   - [x] [Rangers: f64](docs/elm_outputs.md)
     - [x] [Spinner](docs/elm_ranges.md#Spinner) - Numeric input with arrows
     - [x] [Slider](docs/elm_ranges.md#Slider) - Value slider
   - [x] [Selectors: Vec<String>](docs/elm_selectors.md)
-    - [x] [Radio](docs/elm_selectors.md#Radio) - Radio button
-    - [x] [FlipSelector](docs/elm_selectors.md#FlipSelector)
+    - [x] [Menu](docs/elm_selectors.md#Menu)
     - [x] [List](docs/elm_selectors.md#List) - Simple vertical item list
-    - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Simple horizontal item list

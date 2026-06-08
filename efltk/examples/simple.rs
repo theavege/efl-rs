@@ -29,8 +29,8 @@ impl Component for View {
         true
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        let items = ["Simple", "Calc", "Sudoku", "Dialect", "NicCalc"];
-        efltk::Menu::main_menu(prt).with_appends(&items, {
+        let items = ["home", "Calc", "Sudoku", "NicCalc"];
+        efltk::Menu::main(prt).with_appends(&items, {
             let sender = sender.clone();
             move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
         });
@@ -63,10 +63,9 @@ impl Component for View {
             });
             components::Calc::mount(prt);
             components::Sudoku::mount(prt);
-            components::Dialect::mount(prt);
             components::NicCalc::mount(prt);
+            prt.promote();
         });
-        self.1.promote();
     }
 }
 
