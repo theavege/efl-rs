@@ -1,4 +1,4 @@
-[NaviFrame](https://www.enlightenment.org/develop/legacy/program_guide/containers/naviframe)
+# [NaviFrame](https://www.enlightenment.org/develop/legacy/program_guide/containers/naviframe)
 
 A naviframe widget consists of a stack of views. New views are pushed on top of previous ones, and only the top-most view on the stack is displayed. The previous views are not deleted. A previous view is displayed when the view on top of it is popped. Transitions can be animated on a push or a pop, depending on the theme applied to the widget.
 
@@ -10,6 +10,8 @@ A naviframe widget consists of a stack of views. New views are pushed on top of 
             parent.promote();
         });
 ```
+
+# [Box](https://www.enlightenment.org/develop/legacy/program_guide/containers/box)
 
 ![Box](https://www.enlightenment.org/_media/container_box.png)
 

@@ -70,11 +70,13 @@ impl Component for NicCalc {
         self.flavour.set_value((t / 100.0 * f) / 100.0);
         self.nicotine_base.set_value((t / 100.0 * nb) / 100.0);
         self.list.update(&format!(
-            "Ingredient:   Amount(ml)<br>
-Nicotine Base: {nb}<br>
-Base:          {b}<br>
-Flavour:       {f}<br>
-Total:         {t}<br>"
+            "<bigger><code>
+Ingredient:    Amount(ml)<br>
+Nicotine Base: <number>{nb}</number><br>
+Base:          <number>{b}</number><br>
+Flavour:       <number>{f}</number><br>
+Total:         <number>{t}</number><br>
+</code></bigger>"
         ));
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {

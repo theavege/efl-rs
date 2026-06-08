@@ -1,4 +1,4 @@
-#[Entry](https://www.enlightenment.org/develop/legacy/program_guide/widgets/entry)
+# [Entry](https://www.enlightenment.org/develop/legacy/program_guide/widgets/entry)
 
 ![Entry](https://www.enlightenment.org/_media/widgets_entry.png)
 

@@ -42,15 +42,12 @@ impl Component for Selector {
             "dialog-info",
         ];
         efltk::Box::new(prt).inside(|prt| {
-            self.list = efltk::Menu::popup(prt).with_items(&items).with_callback(
-                SelectorSignal::Selected,
-                {
-                    let sender = sender.clone();
-                    move |wgt| {
-                        sender.send(Msg::Set(wgt.value())).unwrap();
-                    }
-                },
-            );
+            self.list = efltk::Menu::popup(prt).with_items(&items).with_callback({
+                let sender = sender.clone();
+                move |wgt| {
+                    sender.send(Msg::Set(wgt.value())).unwrap();
+                }
+            });
             self.butt = efltk::Button::new(prt).with_icon("home").with_callback({
                 let menu = self.list.clone();
                 move |wgt| {

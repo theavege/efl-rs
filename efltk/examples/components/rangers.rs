@@ -35,7 +35,7 @@ impl Component for Ranger {
                     .with_range(0.0, 1.0)
                     .with_step(0.1)
                     .with_format("%1.2f")
-                    .with_callback(SpinnerSignal::Changed, {
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
@@ -47,7 +47,7 @@ impl Component for Ranger {
                 self.slider = efltk::Slider::new(prt)
                     .with_tooltip("Slider")
                     .with_format("%1.2f")
-                    .with_callback(SliderSignal::Changed, {
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {

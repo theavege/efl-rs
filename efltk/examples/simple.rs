@@ -30,7 +30,7 @@ impl Component for View {
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         let items = ["home", "Calc", "Sudoku", "NicCalc"];
-        efltk::Menu::main(prt).with_appends(&items, {
+        efltk::Menu::main(prt).with_items(&items).with_callback({
             let sender = sender.clone();
             move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
         });
@@ -45,7 +45,7 @@ impl Component for View {
                         self.0[idx] = efltk::Frame::new(prt)
                             .with_autocollapse(false)
                             .with_text(item)
-                            .with_callback(FrameSignal::Clicked, {
+                            .with_callback({
                                 let sender = sender.clone();
                                 move |_| sender.send(Msg::Set(idx)).unwrap()
                             });

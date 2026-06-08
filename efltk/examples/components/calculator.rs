@@ -96,7 +96,7 @@ impl Component for Calc {
         true
     }
     fn update(&self, model: &Self::State) {
-        self.outp.update(&model.output.clone());
+        self.outp.update(&format!("<bigger><code>{}</bigger></code>", model.output));
         self.prev.update(&model.prev.to_string());
         self.oper.set_text(&model.operation.clone());
         self.curr.update(&model.current.clone());

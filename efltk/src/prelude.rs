@@ -12,25 +12,15 @@ pub trait SignalExt {
 }
 
 #[derive(Default)]
-pub enum ButtonSignal {
+pub enum TriggerSignal {
     #[default]
     Clicked,
-    Repeated,
-    Pressed,
-    Unpressed,
-    Focused,
-    Unfocused,
 }
 
-impl SignalExt for ButtonSignal {
+impl SignalExt for TriggerSignal {
     fn to_str(&self) -> &str {
         match self {
             Self::Clicked => "clicked",
-            Self::Repeated => "repeated",
-            Self::Pressed => "pressed",
-            Self::Unpressed => "unpressed",
-            Self::Focused => "focused",
-            Self::Unfocused => "unfocused",
         }
     }
 }
@@ -40,7 +30,6 @@ pub enum SelectorSignal {
     #[default]
     Selected,
     Changed,
-    Clicked,
 }
 
 impl SignalExt for SelectorSignal {
@@ -48,25 +37,6 @@ impl SignalExt for SelectorSignal {
         match self {
             Self::Selected => "selected",
             Self::Changed => "changed",
-            Self::Clicked => "item,selected",
-        }
-    }
-}
-
-#[derive(Default)]
-pub enum FrameSignal {
-    #[default]
-    Clicked,
-    Focused,
-    Unfocused,
-}
-
-impl SignalExt for FrameSignal {
-    fn to_str(&self) -> &str {
-        match self {
-            Self::Clicked => "clicked",
-            Self::Focused => "focused",
-            Self::Unfocused => "unfocused",
         }
     }
 }
@@ -75,53 +45,24 @@ impl SignalExt for FrameSignal {
 pub enum CheckSignal {
     #[default]
     Changed,
-    Focused,
-    Unfocused,
 }
 impl SignalExt for CheckSignal {
     fn to_str(&self) -> &str {
         match self {
             Self::Changed => "changed",
-            Self::Focused => "focused",
-            Self::Unfocused => "unfocused",
         }
     }
 }
 
 #[derive(Default)]
-pub enum SliderSignal {
+pub enum RangerSignal {
     #[default]
     Changed,
-    LanguageChanged,
-    Focused,
-    Unfocused,
 }
-impl SignalExt for SliderSignal {
+impl SignalExt for RangerSignal {
     fn to_str(&self) -> &str {
         match self {
             Self::Changed => "changed",
-            Self::LanguageChanged => "language,changed",
-            Self::Focused => "focused",
-            Self::Unfocused => "unfocused",
-        }
-    }
-}
-
-#[derive(Default)]
-pub enum SpinnerSignal {
-    #[default]
-    Changed,
-    LanguageChanged,
-    Focused,
-    Unfocused,
-}
-impl SignalExt for SpinnerSignal {
-    fn to_str(&self) -> &str {
-        match self {
-            Self::Changed => "changed",
-            Self::LanguageChanged => "language,changed",
-            Self::Focused => "focused",
-            Self::Unfocused => "unfocused",
         }
     }
 }
@@ -130,17 +71,11 @@ impl SignalExt for SpinnerSignal {
 pub enum EntrySignal {
     #[default]
     Changed,
-    LanguageChanged,
-    Focused,
-    Unfocused,
 }
 impl SignalExt for EntrySignal {
     fn to_str(&self) -> &str {
         match self {
             Self::Changed => "changed",
-            Self::LanguageChanged => "language,changed",
-            Self::Focused => "focused",
-            Self::Unfocused => "unfocused",
         }
     }
 }
@@ -149,17 +84,11 @@ impl SignalExt for EntrySignal {
 pub enum RadioSignal {
     #[default]
     Changed,
-    LanguageChanged,
-    Focused,
-    Unfocused,
 }
 impl SignalExt for RadioSignal {
     fn to_str(&self) -> &str {
         match self {
             Self::Changed => "changed",
-            Self::LanguageChanged => "language,changed",
-            Self::Focused => "focused",
-            Self::Unfocused => "unfocused",
         }
     }
 }
@@ -168,47 +97,11 @@ impl SignalExt for RadioSignal {
 pub enum ProgressBarSignal {
     #[default]
     Changed,
-    LanguageChanged,
-    Focused,
-    Unfocused,
 }
 impl SignalExt for ProgressBarSignal {
     fn to_str(&self) -> &str {
         match self {
             Self::Changed => "changed",
-            Self::LanguageChanged => "language,changed",
-            Self::Focused => "focused",
-            Self::Unfocused => "unfocused",
-        }
-    }
-}
-
-#[derive(Default)]
-pub enum CheckStyle {
-    #[default]
-    Toggle,
-    Deafult,
-}
-impl CheckStyle {
-    pub fn to_str(&self) -> &str {
-        match self {
-            Self::Deafult => "default",
-            Self::Toggle => "toggle",
-        }
-    }
-}
-
-#[derive(Default)]
-pub enum ButtonStyle {
-    #[default]
-    Deafult,
-    Anchor,
-}
-impl ButtonStyle {
-    pub fn to_str(&self) -> &str {
-        match self {
-            Self::Deafult => "default",
-            Self::Anchor => "anchor",
         }
     }
 }
@@ -602,10 +495,6 @@ pub trait SpinnerExt: ElmObject {
         prt.add(&elm);
         elm
     }
-    fn with_callback<F: FnMut(Self) + 'static>(self, sign: SpinnerSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
-    }
 }
 pub trait ClockExt: ElmObject {
     fn new(prt: &impl ContainerExt) -> Self {
@@ -630,10 +519,10 @@ pub trait ButtonExt: ElmObject {
         elm
     }
     fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(ButtonSignal::Clicked, func);
+        self.set_callback(TriggerSignal::Clicked, func);
         self
     }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: ButtonSignal, func: F) -> Self {
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: TriggerSignal, func: F) -> Self {
         self.set_callback(sign, func);
         self
     }
@@ -1312,6 +1201,14 @@ pub trait RangerExt: ElmObject {
     fn set_step(&self, step: f64);
     fn set_range(&self, min: f64, max: f64);
     fn set_value(&self, value: f64);
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(RangerSignal::Changed, func);
+        self
+    }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: RangerSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
     fn with_range(self, min: f64, max: f64) -> Self {
         self.set_range(min, max);
         self
@@ -1333,7 +1230,11 @@ pub trait SelectorExt: ElmObject {
     fn value(&self) -> u32;
     fn clear(&self);
     fn set_value(&self, value: u32);
-    fn with_callback<F: FnMut(Self) + 'static>(self, sign: SelectorSignal, func: F) -> Self {
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(SelectorSignal::Selected, func);
+        self
+    }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: SelectorSignal, func: F) -> Self {
         self.set_callback(sign, func);
         self
     }
@@ -1370,10 +1271,6 @@ pub trait SliderExt: RangerExt {
     }
     fn with_horizontal(self, value: bool) -> Self {
         self.set_horizontal(value);
-        self
-    }
-    fn with_callback<F: FnMut(Self) + 'static>(self, sign: SliderSignal, func: F) -> Self {
-        self.set_callback(sign, func);
         self
     }
 }
@@ -1606,9 +1503,6 @@ pub trait EntryExt: ElmObject {
         self
     }
     fn set_value(&self, value: &str) {
-        self.set_entry(value);
-    }
-    fn set_entry(&self, value: &str) {
         let ctext = CString::new(value).unwrap();
         unsafe { elm_entry_entry_set(self.as_raw(), ctext.as_ptr()) };
     }
@@ -1644,16 +1538,13 @@ pub trait EntryExt: ElmObject {
         unsafe { elm_entry_context_menu_clear(self.as_raw()) };
     }
     fn value(&self) -> String {
-        self.entry()
-    }
-    fn editable(&self) -> bool {
-        unsafe { elm_entry_editable_get(self.as_raw()) != 0 }
-    }
-    fn entry(&self) -> String {
         unsafe {
             let ptr = elm_entry_entry_get(self.as_raw());
             CStr::from_ptr(ptr).to_string_lossy().into_owned()
         }
+    }
+    fn editable(&self) -> bool {
+        unsafe { elm_entry_editable_get(self.as_raw()) != 0 }
     }
 }
 
@@ -1995,7 +1886,11 @@ pub trait FrameExt: ElmObject {
         parent.add(&elm);
         elm
     }
-    fn with_callback<F: FnMut(Self) + 'static>(self, sign: FrameSignal, func: F) -> Self {
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(TriggerSignal::Clicked, func);
+        self
+    }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: TriggerSignal, func: F) -> Self {
         self.set_callback(sign, func);
         self
     }
@@ -2235,7 +2130,7 @@ pub trait RadioExt: ElmObject {
                 let child = Self::item(parent)
                     .with_text(item)
                     .with_icon(item)
-                    .with_callback(RadioSignal::Changed, func.clone());
+                    .with_callback(func.clone());
                 elm.add_group(&child);
             }
         }
@@ -2247,7 +2142,11 @@ pub trait RadioExt: ElmObject {
         prt.add(&elm);
         elm
     }
-    fn with_callback<F: FnMut(Self) + 'static>(self, sign: RadioSignal, func: F) -> Self {
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(RadioSignal::Changed, func);
+        self
+    }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: RadioSignal, func: F) -> Self {
         self.set_callback(sign, func);
         self
     }
