@@ -104,7 +104,7 @@ mod models {
 use efltk::prelude::*;
 
 #[derive(Default)]
-pub struct Sudoku([[efltk::HoverSel; 9]; 9]);
+pub struct Sudoku([[efltk::Button; 9]; 9]);
 
 pub enum Msg {
     Push(usize, usize, u32),
@@ -143,15 +143,18 @@ impl Component for Sudoku {
                     .with_homogeneous(true)
                     .inside(|prt| {
                         for col in 0..9 {
-                            self.0[row][col] = efltk::HoverSel::new(prt);
-                            for item in 0..=9 {
-                                self.0[row][col].add_item(&item.to_string(), &item.to_string(), {
-                                    let sender = sender.clone();
-                                    move |_| {
-                                        sender.send(Msg::Push(row, col, item)).unwrap();
-                                    }
-                                });
-                            }
+                            self.0[row][col] = efltk::Button::with_menu(
+                                prt,
+                                efltk::Menu::popup(prt)
+                                    .with_items(&["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])
+                                    .with_callback({
+                                        let sender = sender.clone();
+                                        move |wgt| {
+                                            sender.send(Msg::Push(row, col, wgt.value())).unwrap();
+                                        }
+                                    }),
+                            )
+                            .with_cursor(Cursor::Hand1);
                         }
                     });
             }

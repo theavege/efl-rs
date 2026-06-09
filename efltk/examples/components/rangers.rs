@@ -44,17 +44,14 @@ impl Component for Ranger {
                         }
                     });
                 self.progress = efltk::ProgressBar::new(prt).with_tooltip("ProgressBar");
-                self.slider = efltk::Slider::new(prt)
-                    .with_tooltip("Slider")
-                    .with_format("%1.2f")
-                    .with_callback({
-                        let sender = sender.clone();
-                        move |wgt| {
-                            if wgt.focus() {
-                                sender.send(Msg::Set(wgt.value())).unwrap();
-                            }
+                self.slider = efltk::Slider::new(prt).with_format("%1.2f").with_callback({
+                    let sender = sender.clone();
+                    move |wgt| {
+                        if wgt.focus() {
+                            sender.send(Msg::Set(wgt.value())).unwrap();
                         }
-                    });
+                    }
+                });
             });
     }
 }

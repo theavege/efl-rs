@@ -56,6 +56,7 @@ impl Component for Converter {
             .inside(|prt| {
                 efltk::Bubble::new(prt).with_info("Celsius").inside(|prt| {
                     self.cel = efltk::Entry::new(prt)
+                        .with_tooltip("Entry")
                         .with_value("0")
                         .with_editable(true)
                         .with_callback({
@@ -72,6 +73,7 @@ impl Component for Converter {
                     .with_info("Fahrenheit")
                     .inside(|prt| {
                         self.far = efltk::Entry::new(prt)
+                            .with_tooltip("Entry")
                             .with_value("0")
                             .with_editable(true)
                             .with_callback({

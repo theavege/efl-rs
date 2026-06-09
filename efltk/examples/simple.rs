@@ -29,46 +29,52 @@ impl Component for View {
         true
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        let items = ["home", "Calc", "Sudoku", "NicCalc"];
-        efltk::Menu::main(prt).with_items(&items).with_callback({
-            let sender = sender.clone();
-            move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
-        });
-        self.1 = efltk::Naviframe::new(prt);
-        self.1.inside(|prt| {
-            efltk::Box::new(prt).inside(|prt| {
-                for (idx, item) in ["Inputs", "Rangers", "Selectors", "Booker"]
-                    .iter()
-                    .enumerate()
-                {
-                    efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                        self.0[idx] = efltk::Frame::new(prt)
-                            .with_autocollapse(false)
-                            .with_text(item)
-                            .with_callback({
-                                let sender = sender.clone();
-                                move |_| sender.send(Msg::Set(idx)).unwrap()
+        efltk::Box::new(prt).inside(|prt| {
+            let items = ["home", "Calc", "Sudoku", "NicCalc", "Siege", "Search"];
+            efltk::SegmentControl::new(prt)
+                .with_items(&items)
+                .with_callback({
+                    let sender = sender.clone();
+                    move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
+                });
+            self.1 = efltk::Naviframe::new(prt);
+            self.1.inside(|prt| {
+                efltk::Box::new(prt).inside(|prt| {
+                    for (idx, item) in ["Inputs", "Rangers", "Selectors", "Booker"]
+                        .iter()
+                        .enumerate()
+                    {
+                        efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
+                            self.0[idx] = efltk::Frame::new(prt)
+                                .with_autocollapse(false)
+                                .with_text(item)
+                                .with_callback({
+                                    let sender = sender.clone();
+                                    move |_| sender.send(Msg::Set(idx)).unwrap()
+                                });
+                            self.0[idx].inside(move |prt| {
+                                match idx {
+                                    0 => components::Converter::mount(prt),
+                                    1 => components::Ranger::mount(prt),
+                                    2 => components::Selector::mount(prt),
+                                    _ => components::Booker::mount(prt),
+                                };
                             });
-                        self.0[idx].inside(move |prt| {
-                            match idx {
-                                0 => components::Converter::mount(prt),
-                                1 => components::Ranger::mount(prt),
-                                2 => components::Selector::mount(prt),
-                                _ => components::Booker::mount(prt),
-                            };
-                        });
-                    })
-                }
-                efltk::Label::new(prt);
+                        })
+                    }
+                    efltk::Label::new(prt);
+                });
+                components::Calc::mount(prt);
+                components::Sudoku::mount(prt);
+                components::NicCalc::mount(prt);
+                components::Siege::mount(prt);
+                components::Search::mount(prt);
+                prt.promote();
             });
-            components::Calc::mount(prt);
-            components::Sudoku::mount(prt);
-            components::NicCalc::mount(prt);
-            prt.promote();
         });
     }
 }
 
 fn main() {
-    View::run("Simple");
+    View::run("Simple", 400, 640);
 }

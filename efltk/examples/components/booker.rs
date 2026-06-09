@@ -70,13 +70,13 @@ impl Component for Booker {
                 efltk::Button::new(prt)
                     .with_size(150, -1)
                     .set_text("Flight");
-                self.flight = efltk::Check::new(prt).with_text("Return").with_callback(
-                    CheckSignal::Changed,
-                    {
+                self.flight = efltk::Check::new(prt)
+                    .with_tooltip("Check")
+                    .with_text("Return")
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| sender.send(Msg::Flight(wgt.value())).unwrap()
-                    },
-                );
+                    });
                 self.book = efltk::Button::new(prt)
                     .with_icon("home")
                     .with_size(45, -1)
@@ -97,11 +97,7 @@ impl Component for Booker {
                             match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d").is_ok()
                             {
                                 true => sender.send(Msg::Start(wgt.text())).unwrap(),
-                                false => efltk::Popup::new(&wgt).with_timeout(0.0).set_message(
-                                    "dialog-info",
-                                    "ERROR",
-                                    "ERROR",
-                                ),
+                                false => efltk::Popup::warning(&wgt.window(), "ERROR"),
                             }
                         }
                     }
@@ -118,7 +114,7 @@ impl Component for Booker {
                             match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d").is_ok()
                             {
                                 true => sender.send(Msg::Back(wgt.text())).unwrap(),
-                                false => efltk::Popup::new(&wgt)
+                                false => efltk::Popup::new(&wgt.window())
                                     .with_timeout(0.0)
                                     .set_message("home", "ERROR", "ERROR"),
                             }

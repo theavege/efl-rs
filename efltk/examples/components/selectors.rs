@@ -1,21 +1,17 @@
 use efltk::prelude::*;
 
 pub enum Msg {
-    Set(u32),
+    Set(String),
 }
 
 #[derive(Default)]
-pub struct Selector {
-    list: efltk::Menu,
-    butt: efltk::Button,
-}
+pub struct Selector(efltk::Entry);
 
 impl Component for Selector {
     type Event = Msg;
-    type State = u32;
+    type State = String;
     fn update(&self, model: &Self::State) {
-        self.list.set_value(*model);
-        self.butt.set_text(&model.to_string());
+        self.0.set_value(model);
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
         match msg {
@@ -42,19 +38,20 @@ impl Component for Selector {
             "dialog-info",
         ];
         efltk::Box::new(prt).inside(|prt| {
-            self.list = efltk::Menu::popup(prt).with_items(&items).with_callback({
-                let sender = sender.clone();
-                move |wgt| {
-                    sender.send(Msg::Set(wgt.value())).unwrap();
-                }
-            });
-            self.butt = efltk::Button::new(prt).with_icon("home").with_callback({
-                let menu = self.list.clone();
-                move |wgt| {
-                    let pos = wgt.geometry();
-                    menu.open(pos.0, pos.1 + pos.3);
-                }
-            });
+            efltk::List::new(prt)
+                .with_tooltip("List")
+                .with_items(&items)
+                .with_size(-1, 90);
+            efltk::Separator::new(prt);
+            self.0 = efltk::Entry::with_menu(
+                prt,
+                efltk::Menu::popup(prt).with_items(&items).with_callback({
+                    let sender = sender.clone();
+                    move |wgt| {
+                        sender.send(Msg::Set(wgt.selected().text())).unwrap();
+                    }
+                }),
+            );
         });
     }
 }
