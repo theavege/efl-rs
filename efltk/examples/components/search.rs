@@ -196,7 +196,7 @@ impl Component for Search {
                 self.log = efltk::Entry::new(prt)
                     .with_single_line(false)
                     .with_editable(false)
-                    .with_signal(EntrySignal::Clicked, {
+                    .with_signal(InputSignal::Clicked, {
                         let sender = sender.clone();
                         move |wgt| sender.send(Msg::SetLog(wgt.value())).unwrap()
                     });

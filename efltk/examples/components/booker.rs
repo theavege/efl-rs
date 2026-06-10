@@ -90,16 +90,13 @@ impl Component for Booker {
                 efltk::Button::new(prt)
                     .with_size(150, -1)
                     .set_text("Departure data");
-                self.start = efltk::Entry::new(prt).with_callback({
+                self.start = efltk::Entry::new(prt).with_signal(InputSignal::Unfocused, {
                     let sender = sender.clone();
-                    move |wgt| {
-                        if wgt.focus() {
-                            match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d").is_ok()
-                            {
-                                true => sender.send(Msg::Start(wgt.text())).unwrap(),
-                                false => efltk::Popup::warning(&wgt.window(), "ERROR"),
-                            }
-                        }
+                    move |wgt| match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d")
+                        .is_ok()
+                    {
+                        true => sender.send(Msg::Start(wgt.text())).unwrap(),
+                        false => efltk::Popup::warning(&wgt.window(), "ERROR"),
                     }
                 });
             });
@@ -107,18 +104,15 @@ impl Component for Booker {
                 efltk::Button::new(prt)
                     .with_size(150, -1)
                     .set_text("Return data");
-                self.back = efltk::Entry::new(prt).with_callback({
+                self.back = efltk::Entry::new(prt).with_signal(InputSignal::Unfocused, {
                     let sender = sender.clone();
-                    move |wgt| {
-                        if wgt.focus() {
-                            match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d").is_ok()
-                            {
-                                true => sender.send(Msg::Back(wgt.text())).unwrap(),
-                                false => efltk::Popup::new(&wgt.window())
-                                    .with_timeout(0.0)
-                                    .set_message("home", "ERROR", "ERROR"),
-                            }
-                        }
+                    move |wgt| match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d")
+                        .is_ok()
+                    {
+                        true => sender.send(Msg::Back(wgt.text())).unwrap(),
+                        false => efltk::Popup::new(&wgt.window())
+                            .with_timeout(0.0)
+                            .set_message("home", "ERROR", "ERROR"),
                     }
                 });
             });

@@ -226,7 +226,7 @@ impl Component for Siege {
                 efltk::Entry::new(prt)
                     .with_single_line(false)
                     .with_editable(false)
-                    .with_signal(EntrySignal::Clicked, {
+                    .with_signal(InputSignal::Clicked, {
                         let sender = sender.clone();
                         move |_| sender.send(Msg::Push).unwrap()
                     });
