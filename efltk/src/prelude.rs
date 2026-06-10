@@ -8,6 +8,13 @@ use {
     },
 };
 
+pub enum WinType {
+    Basic = 0,
+    Dialog,
+    Desktop,
+    Dock,
+}
+
 pub trait SignalExt {
     fn to_str(&self) -> &str;
 }
@@ -809,9 +816,42 @@ unsafe extern "C" fn combobox_item_del(data: *mut c_void, _obj: *mut Evas_Object
     }
 }
 
+pub trait FileEntryExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_fileselector_entry_add(prt.as_raw()) });
+        elm.set_inwin(true);
+        elm.set_expandable(false);
+        elm.set_folder_only(false);
+        elm.set_path(
+            &std::env::var(match cfg!(target_os = "windows") {
+                true => "%HOMEPATH%",
+                false => "HOME",
+            })
+            .unwrap(),
+        );
+        prt.add(&elm);
+        elm
+    }
+    fn set_inwin(&self, mode: bool) {
+        unsafe { elm_fileselector_entry_inwin_mode_set(self.as_raw(), mode as Eina_Bool) };
+    }
+    fn set_expandable(&self, mode: bool) {
+        unsafe { elm_fileselector_entry_expandable_set(self.as_raw(), mode as Eina_Bool) };
+    }
+    fn set_folder_only(&self, mode: bool) {
+        unsafe { elm_fileselector_entry_folder_only_set(self.as_raw(), mode as Eina_Bool) };
+    }
+    fn set_path(&self, path: &str) {
+        let c = CString::new(path).unwrap();
+        unsafe { elm_fileselector_current_name_set(self.as_raw(), c.as_ptr()) };
+    }
+}
+
 pub trait FileSelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_fileselector_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_fileselector_add(prt.as_raw()) });
+        elm.set_folder_only(true);
+        elm.set_expandable(false);
         prt.add(&elm);
         elm
     }
@@ -859,10 +899,6 @@ pub trait FileSelExt: WidgetExt {
         self.set_folder_only(value);
         self
     }
-    fn folder_only(&self) -> bool {
-        unsafe { elm_fileselector_folder_only_get(self.as_raw()) != 0 }
-    }
-    /// Enable save-dialog mode (shows a filename entry field).
     fn set_is_save(&self, value: bool) {
         unsafe { elm_fileselector_is_save_set(self.as_raw(), value as Eina_Bool) };
     }
@@ -870,10 +906,6 @@ pub trait FileSelExt: WidgetExt {
         self.set_is_save(value);
         self
     }
-    fn is_save(&self) -> bool {
-        unsafe { elm_fileselector_is_save_get(self.as_raw()) != 0 }
-    }
-    /// Allow multiple file selection.
     fn set_multi_select(&self, value: bool) {
         unsafe { elm_fileselector_multi_select_set(self.as_raw(), value as Eina_Bool) };
     }
@@ -881,10 +913,6 @@ pub trait FileSelExt: WidgetExt {
         self.set_multi_select(value);
         self
     }
-    fn multi_select(&self) -> bool {
-        unsafe { elm_fileselector_multi_select_get(self.as_raw()) != 0 }
-    }
-    /// Show hidden files and directories.
     fn set_hidden_visible(&self, value: bool) {
         unsafe { elm_fileselector_hidden_visible_set(self.as_raw(), value as Eina_Bool) };
     }
@@ -2500,11 +2528,6 @@ pub trait WindowExt: WidgetExt {
     fn set_autodel(&self, value: bool) {
         unsafe {
             elm_win_autodel_set(self.as_raw(), value as Eina_Bool);
-        }
-    }
-    fn set_type(&self, value: super::WinType) {
-        unsafe {
-            elm_win_type_set(self.as_raw(), value as Elm_Win_Type);
         }
     }
 }

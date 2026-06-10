@@ -37,13 +37,6 @@ pub enum FileSelectorMode {
     Last,
 }
 
-pub enum WinType {
-    Basic = 0,
-    Dialog,
-    Desktop,
-    Dock,
-}
-
 #[derive(Default)]
 pub enum ImageOrient {
     #[default]
@@ -198,32 +191,6 @@ impl Tm {
 }
 
 #[derive(Default)]
-pub struct Calendar(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Calendar {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl CalendarExt for Calendar {}
-
-#[derive(Default)]
-pub struct Clock(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Clock {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ClockExt for Clock {}
-
-#[derive(Default)]
 pub struct Ctxpopup(Option<NonNull<Evas_Object>>);
 
 impl Ctxpopup {
@@ -297,70 +264,6 @@ impl WidgetExt for Entry {
 impl EntryExt for Entry {}
 
 #[derive(Default)]
-pub struct FlipSelector(Option<NonNull<Evas_Object>>);
-
-impl FlipSelector {
-    fn first(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_flipselector_first_item_get(self.as_raw()) })
-    }
-    fn selected(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_flipselector_selected_item_get(self.as_raw()) })
-    }
-}
-
-impl WidgetExt for FlipSelector {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl SelectorExt for FlipSelector {
-    fn add(&self, label: &str) -> WidgetItem {
-        self.append(label, |_| {})
-    }
-    fn lenght(&self) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first();
-        while temp.0.is_some() {
-            count += 1;
-            temp = WidgetItem::from_raw(unsafe { elm_flipselector_item_next_get(temp.as_raw()) });
-        }
-        count
-    }
-    fn value(&self) -> u32 {
-        self.find(self.selected())
-    }
-    fn set_value(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _ in 0..value {
-            temp = unsafe { elm_flipselector_item_next_get(temp) };
-        }
-        unsafe { elm_flipselector_item_selected_set(temp, true as Eina_Bool) }
-    }
-    fn find(&self, item: WidgetItem) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first().as_raw();
-        while temp != item.as_raw() {
-            count += 1;
-            temp = unsafe { elm_flipselector_item_next_get(temp) };
-        }
-        count
-    }
-    fn clear(&self) {
-        let mut temp = self.first();
-        while temp.0.is_some() {
-            let next =
-                WidgetItem::from_raw(unsafe { elm_flipselector_item_next_get(temp.as_raw()) });
-            temp.del();
-            temp = next;
-        }
-    }
-}
-impl FlipSelExt for FlipSelector {}
-
-#[derive(Default)]
 pub struct Frame(Option<NonNull<Evas_Object>>);
 
 impl WidgetExt for Frame {
@@ -386,33 +289,6 @@ impl WidgetExt for Icon {
     }
 }
 impl IconExt for Icon {}
-
-#[derive(Default)]
-pub struct Image(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Image {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ImageExt for Image {}
-
-#[derive(Default)]
-pub struct Index(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Index {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl LayoutExt for Index {}
-impl IndexExt for Index {}
 
 #[derive(Default)]
 pub struct Label(Option<NonNull<Evas_Object>>);
@@ -540,39 +416,6 @@ impl ContainerExt for Naviframe {
 impl NaviframeExt for Naviframe {}
 
 #[derive(Default)]
-pub struct Notify(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Notify {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl NotifyExt for Notify {}
-
-#[derive(Default)]
-pub struct Panel(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Panel {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-// impl EvasObject for Panel {}
-impl ContainerExt for Panel {
-    fn add(&self, child: &impl WidgetExt) {
-        self.set_content(child, "default");
-        child.show();
-    }
-}
-impl PanelExt for Panel {}
-
-#[derive(Default)]
 pub struct Panes(Option<NonNull<Evas_Object>>);
 
 impl WidgetExt for Panes {
@@ -619,7 +462,6 @@ impl WidgetExt for ProgressBar {
         Self(NonNull::new(obj))
     }
 }
-// impl EvasObject for ProgressBar {}
 impl ProgressBarExt for ProgressBar {}
 
 #[derive(Default)]
@@ -633,7 +475,6 @@ impl WidgetExt for Radio {
         Self(NonNull::new(obj))
     }
 }
-// impl EvasObject for Radio {}
 impl RadioExt for Radio {}
 
 #[derive(Default)]
@@ -647,7 +488,6 @@ impl WidgetExt for Prefs {
         Self(NonNull::new(obj))
     }
 }
-// impl EvasObject for Prefs {}
 impl PrefsExt for Prefs {}
 
 #[derive(Default)]
@@ -683,19 +523,6 @@ impl ContainerExt for Player {
 }
 impl LayoutExt for Player {}
 impl PlayerExt for Player {}
-
-#[derive(Default)]
-pub struct Scroller(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Scroller {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ScrollerExt for Scroller {}
 
 #[derive(Default)]
 pub struct SegmentControl(Option<NonNull<Evas_Object>>);
@@ -759,7 +586,6 @@ impl WidgetExt for Slider {
         Self(NonNull::new(obj))
     }
 }
-// impl EvasObject for Slider {}
 impl SliderExt for Slider {}
 impl RangerExt for Slider {
     fn value(&self) -> f64 {
@@ -791,7 +617,6 @@ impl WidgetExt for Spinner {
         Self(NonNull::new(obj))
     }
 }
-// impl EvasObject for Spinner {}
 impl SpinnerExt for Spinner {}
 impl RangerExt for Spinner {
     fn set_format(&self, format: &str) {
@@ -813,71 +638,6 @@ impl RangerExt for Spinner {
 }
 
 #[derive(Default)]
-pub struct ToolBar(Option<NonNull<Evas_Object>>);
-
-impl ToolBar {
-    fn first(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_toolbar_first_item_get(self.as_raw()) })
-    }
-    fn selected(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_toolbar_selected_item_get(self.as_raw()) })
-    }
-}
-
-impl WidgetExt for ToolBar {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-
-impl SelectorExt for ToolBar {
-    fn add(&self, label: &str) -> WidgetItem {
-        self.add_item(label, label, |_| {})
-    }
-    fn set_value(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _idx in 0..value {
-            temp = unsafe { elm_toolbar_item_next_get(temp) }
-        }
-        unsafe { elm_toolbar_item_selected_set(temp, true as Eina_Bool) };
-    }
-    fn value(&self) -> u32 {
-        self.find(self.selected())
-    }
-    fn lenght(&self) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first();
-        while temp.0.is_some() {
-            count += 1;
-            temp = WidgetItem::from_raw(unsafe { elm_toolbar_item_next_get(temp.as_raw()) });
-        }
-        count
-    }
-    fn find(&self, item: WidgetItem) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first().as_raw();
-        while temp != item.as_raw() {
-            temp = unsafe { elm_toolbar_item_next_get(temp) };
-            count += 1;
-        }
-        count
-    }
-    fn clear(&self) {
-        let mut temp = self.first();
-        while temp.0.is_some() {
-            let next = WidgetItem::from_raw(unsafe { elm_toolbar_item_next_get(temp.as_raw()) });
-            temp.del();
-            temp = next;
-        }
-    }
-}
-// impl EvasObject for ToolBar {}
-impl ToolBarExt for ToolBar {}
-
-#[derive(Default)]
 pub struct Window(Option<NonNull<Evas_Object>>);
 
 impl WidgetExt for Window {
@@ -897,20 +657,6 @@ impl ContainerExt for Window {
 impl WindowExt for Window {}
 
 #[derive(Default)]
-pub struct ActionSlider(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for ActionSlider {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-// impl EvasObject for ActionSlider {}
-impl ActionSliderExt for ActionSlider {}
-
-#[derive(Default)]
 pub struct Box(Option<NonNull<Evas_Object>>);
 
 impl WidgetExt for Box {
@@ -928,34 +674,6 @@ impl ContainerExt for Box {
     }
 }
 impl BoxExt for Box {}
-
-#[derive(Default)]
-pub struct Grid(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Grid {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ContainerExt for Grid {}
-impl GridExt for Grid {}
-
-#[derive(Default)]
-pub struct Table(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Table {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl TableExt for Table {}
-impl ContainerExt for Table {}
 
 #[derive(Default)]
 pub struct Bubble(Option<NonNull<Evas_Object>>);
@@ -982,22 +700,7 @@ impl WidgetExt for Button {
         Self(NonNull::new(obj))
     }
 }
-// impl EvasObject for Button {}
 impl ButtonExt for Button {}
-
-#[derive(Default)]
-pub struct Combobox(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Combobox {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-// impl EvasObject for Combobox {}
-impl ComboboxExt for Combobox {}
 
 #[derive(Default)]
 pub struct Check(Option<NonNull<Evas_Object>>);
@@ -1010,13 +713,12 @@ impl WidgetExt for Check {
         Self(NonNull::new(obj))
     }
 }
-// impl EvasObject for Check {}
 impl CheckExt for Check {}
 
 #[derive(Default)]
-pub struct HoverSel(Option<NonNull<Evas_Object>>);
+pub struct FileEntry(Option<NonNull<Evas_Object>>);
 
-impl WidgetExt for HoverSel {
+impl WidgetExt for FileEntry {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
     }
@@ -1024,144 +726,4 @@ impl WidgetExt for HoverSel {
         Self(NonNull::new(obj))
     }
 }
-// impl EvasObject for HoverSel {}
-impl HoverSelExt for HoverSel {}
-
-#[derive(Default)]
-pub struct Conformant(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Conformant {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ContainerExt for Conformant {}
-impl ConformantExt for Conformant {}
-
-#[derive(Default)]
-pub struct Diskselector(Option<NonNull<Evas_Object>>);
-
-impl Diskselector {
-    fn selected(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_diskselector_selected_item_get(self.as_raw()) })
-    }
-    fn first(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_diskselector_first_item_get(self.as_raw()) })
-    }
-    fn last(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_diskselector_last_item_get(self.as_raw()) })
-    }
-}
-
-impl WidgetExt for Diskselector {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-// impl EvasObject for Diskselector {}
-impl SelectorExt for Diskselector {
-    fn add(&self, label: &str) -> WidgetItem {
-        self.append(label, |_| {})
-    }
-    fn find(&self, item: WidgetItem) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first().as_raw();
-        while temp != item.as_raw() {
-            temp = unsafe { elm_diskselector_item_next_get(temp) };
-            count += 1;
-        }
-        count
-    }
-    fn value(&self) -> u32 {
-        self.find(self.selected())
-    }
-    fn lenght(&self) -> u32 {
-        self.find(self.last())
-    }
-    fn set_value(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _idx in 0..value {
-            temp = unsafe { elm_diskselector_item_next_get(temp) }
-        }
-        unsafe { elm_diskselector_item_selected_set(temp, true as Eina_Bool) };
-    }
-    fn clear(&self) {
-        unsafe { elm_diskselector_clear(self.as_raw()) };
-    }
-}
-impl DiskselectorExt for Diskselector {}
-
-#[derive(Default)]
-pub struct Colorselector(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Colorselector {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-// impl EvasObject for Colorselector {}
-impl ColorselectorExt for Colorselector {}
-
-#[derive(Default)]
-pub struct Dayselector(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Dayselector {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-// impl EvasObject for Dayselector {}
-impl DayselectorExt for Dayselector {}
-
-#[derive(Default)]
-pub struct FileSelector(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for FileSelector {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl FileSelExt for FileSelector {}
-
-#[derive(Default)]
-pub struct Gengrid(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Gengrid {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-// impl EvasObject for Gengrid {}
-impl GengridExt for Gengrid {}
-
-#[derive(Default)]
-pub struct GenList(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for GenList {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-// impl EvasObject for GenList {}
-impl GenlistExt for GenList {}
+impl FileEntryExt for FileEntry {}
