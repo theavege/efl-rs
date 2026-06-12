@@ -29,18 +29,18 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
     - [x] [Box](docs/elm_containers.md#Box) - Basic horizontal/vertical packing
     - [x] [Bubble](docs/elm_containers.md#Bubble) - Basic container with title
     - [x] [Frame](docs/elm_containers.md#Frame) - Framed container with title
-    - [x] [Popup](docs/elm_containers.md#Popup) - Overlays and dialogs
     - [x] [Panes](docs/elm_containers.md#Panes)
+    - [x] [Popup](docs/elm_containers.md#Popup) - Overlays and dialogs
   - [x] [Outputs](docs/elm_outputs.md)
     - [x] [Label](docs/elm_outputs.md#Label) - Text and icon display
     - [x] [Separator](docs/elm_outputs.md#Separator)
     - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar)
   - [x] [Inputs](docs/elm_inputs.md)
-    - [x] [Entry](docs/elm_inputs.md#Entry) - Basic text input
-    - [x] [Check](docs/elm_triggers.md#Check) - Checkbox
-  - [x] [Triggers](docs/elm_triggers.md)
-    - [x] [Button](docs/elm_triggers.md#Button) - Standart push button
-  - [x] [Rangers (f64, f64)](docs/elm_outputs.md) -> f64
+    - [x] [Entry (String)](docs/elm_inputs.md#Entry) - Basic text input
+    - [x] [Check (bool)](docs/elm_triggers.md#Check) - Checkbox
+    - [x] [Calendar (Date)](docs/elm_triggers.md#Calendar) - Widget for get date
+    - [x] [Clock (Time)](docs/elm_triggers.md#Clock) - Standart push button
+  - [x] [Rangers ((f64..=f64), f64)](docs/elm_outputs.md) -> f64
     - [x] [Spinner](docs/elm_ranges.md#Spinner) - Numeric input with arrows
     - [x] [Slider](docs/elm_ranges.md#Slider) - Value slider
   - [x] [Selectors (Vec<String>, u32)](docs/elm_selectors.md) -> (u32, String)
@@ -48,3 +48,5 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
     - [x] [Menu](docs/elm_selectors.md#Menu)
     - [x] [List](docs/elm_selectors.md#List) - Simple vertical item list
     - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl)
+  - [x] [Triggers](docs/elm_triggers.md)
+    - [x] [Button](docs/elm_triggers.md#Button) - Standart push button

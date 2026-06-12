@@ -455,6 +455,7 @@ pub trait LabelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe {
             let ptr = elm_label_add(prt.as_raw());
+            elm_object_style_set(ptr, CString::new("marker").unwrap().as_ptr());
             elm_label_line_wrap_set(ptr, Elm_Wrap_Type_ELM_WRAP_WORD);
             ptr
         })
@@ -694,7 +695,6 @@ pub trait SelectorExt: WidgetExt {
         for item in items {
             self.add(item);
         }
-        self.set_value(0);
     }
     fn with_value(self, value: u32) -> Self {
         self.set_value(value);
@@ -741,6 +741,14 @@ pub trait CalendarExt: WidgetExt {
         let mut tm_ = super::Tm::default().to_tm();
         unsafe { elm_calendar_selected_time_get(self.as_raw(), &mut tm_) };
         super::Tm::from_tm(tm_)
+    }
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(InputSignal::Changed, func);
+        self
+    }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: InputSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
     }
 }
 
@@ -1017,28 +1025,69 @@ where
         prt.add(&elm);
         elm
     }
-    fn warning(prt: &impl ContainerExt, message: &str) {
-        Self::new(prt)
-            .with_timeout(0.0)
-            .set_message("dialog-info", "WARNING", message)
-    }
-    fn set_message(&self, icon: &str, title: &str, text: &str) {
-        self.set_content(&super::Icon::new(self).with_standard(icon), "title,icon");
+    fn with_list<F: FnMut(super::List) + 'static>(&self, title: &str, mut func: F) -> super::List {
+        self.set_content(&super::Icon::new(self).with_standard("home"), "title,icon");
         self.set_part("title,text", title);
-        self.set_part("default", text);
+        let wgt = super::List::new(self).with_callback({
+            let elm = self.clone();
+            move |wgt| {
+                func(wgt);
+                elm.dismiss();
+            }
+        });
+        self.add(&wgt);
+        wgt
     }
-    fn set_timeout(&self, timeout: f64) {
-        unsafe { elm_popup_timeout_set(self.as_raw(), timeout) };
+    fn with_calendar<F: FnMut(super::Calendar) + 'static>(
+        &self,
+        title: &str,
+        mut func: F,
+    ) -> super::Calendar {
+        self.set_content(&super::Icon::new(self).with_standard("home"), "title,icon");
+        self.set_part("title,text", title);
+        let wgt = super::Calendar::new(self).with_callback({
+            let elm = self.clone();
+            move |wgt| {
+                func(wgt);
+                elm.dismiss();
+            }
+        });
+        self.add(&wgt);
+        wgt
     }
-    fn set_close(&self) {
-        let but = super::Button::new(self)
-            .with_text("Close")
-            .with_icon("close")
-            .with_callback({
-                let elm = self.clone();
-                move |_| elm.dismiss()
-            });
-        self.set_content(&but, "button3");
+    fn with_file<F: FnMut(super::FileSel) + 'static>(
+        &self,
+        title: &str,
+        mut func: F,
+    ) -> super::FileSel {
+        self.set_content(&super::Icon::new(self).with_standard("home"), "title,icon");
+        self.set_part("title,text", title);
+        let wgt = super::FileSel::new(self).with_callback({
+            let elm = self.clone();
+            move |wgt| {
+                func(wgt);
+                elm.dismiss();
+            }
+        });
+        self.add(&wgt);
+        wgt
+    }
+    fn with_color<F: FnMut(super::ColorSel) + 'static>(
+        &self,
+        title: &str,
+        mut func: F,
+    ) -> super::ColorSel {
+        self.set_content(&super::Icon::new(self).with_standard("home"), "title,icon");
+        self.set_part("title,text", title);
+        let wgt = super::ColorSel::new(self).with_callback({
+            let elm = self.clone();
+            move |wgt| {
+                func(wgt);
+                elm.dismiss();
+            }
+        });
+        self.add(&wgt);
+        wgt
     }
     fn with_cancel<F: FnMut(super::Button) + 'static>(self, mut func: F) -> Self {
         let but = super::Button::new(&self)
@@ -1074,6 +1123,29 @@ where
         });
         self.set_content(&but, "button1");
         self
+    }
+    fn warning(prt: &impl ContainerExt, message: &str) {
+        Self::new(prt)
+            .with_timeout(0.0)
+            .set_message("dialog-info", "WARNING", message)
+    }
+    fn set_message(&self, icon: &str, title: &str, text: &str) {
+        self.set_content(&super::Icon::new(self).with_standard(icon), "title,icon");
+        self.set_part("title,text", title);
+        self.set_part("default", text);
+    }
+    fn set_timeout(&self, timeout: f64) {
+        unsafe { elm_popup_timeout_set(self.as_raw(), timeout) };
+    }
+    fn set_close(&self) {
+        let but = super::Button::new(self)
+            .with_text("Close")
+            .with_icon("close")
+            .with_callback({
+                let elm = self.clone();
+                move |_| elm.dismiss()
+            });
+        self.set_content(&but, "button3");
     }
     fn dismiss(&self) {
         unsafe { elm_popup_dismiss(self.as_raw()) };
@@ -1254,6 +1326,119 @@ impl<T: SelectorExt + 'static> Update<(Vec<String>, u32)> for T {
             }
             self.update(value.1);
         }
+    }
+}
+
+pub trait FileSelExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_fileselector_add(prt.as_raw()) })
+            .with_folder_only(true)
+            .with_expandable(false)
+            .with_buttons_ok_cancel(false);
+        prt.add(&elm);
+        elm
+    }
+    fn set_path(&self, path: &str) {
+        let c = CString::new(path).unwrap();
+        unsafe { elm_fileselector_path_set(self.as_raw(), c.as_ptr()) };
+    }
+    fn with_path(self, path: &str) -> Self {
+        self.set_path(path);
+        self
+    }
+    fn path(&self) -> String {
+        unsafe {
+            let ptr = elm_fileselector_path_get(self.as_raw());
+            match ptr.is_null() {
+                true => String::new(),
+                false => CStr::from_ptr(ptr).to_string_lossy().into_owned(),
+            }
+        }
+    }
+    fn selected(&self) -> String {
+        unsafe {
+            let ptr = elm_fileselector_selected_get(self.as_raw());
+            match ptr.is_null() {
+                true => String::new(),
+                false => CStr::from_ptr(ptr).to_string_lossy().into_owned(),
+            }
+        }
+    }
+    fn set_selected(&self, path: &str) -> bool {
+        let c = CString::new(path).unwrap();
+        unsafe { elm_fileselector_selected_set(self.as_raw(), c.as_ptr()) != 0 }
+    }
+    fn with_folder_only(self, value: bool) -> Self {
+        unsafe { elm_fileselector_folder_only_set(self.as_raw(), value as Eina_Bool) };
+        self
+    }
+    fn with_is_save(self, value: bool) -> Self {
+        unsafe { elm_fileselector_is_save_set(self.as_raw(), value as Eina_Bool) };
+        self
+    }
+    fn with_multi_select(self, value: bool) -> Self {
+        unsafe { elm_fileselector_multi_select_set(self.as_raw(), value as Eina_Bool) };
+        self
+    }
+    fn with_hidden_visible(self, value: bool) -> Self {
+        unsafe { elm_fileselector_hidden_visible_set(self.as_raw(), value as Eina_Bool) };
+        self
+    }
+    fn with_expandable(self, value: bool) -> Self {
+        unsafe { elm_fileselector_expandable_set(self.as_raw(), value as Eina_Bool) };
+        self
+    }
+    fn with_buttons_ok_cancel(self, value: bool) -> Self {
+        unsafe { elm_fileselector_buttons_ok_cancel_set(self.as_raw(), value as Eina_Bool) };
+        self
+    }
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(SelectorSignal::Selected, func);
+        self
+    }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: SelectorSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
+}
+
+pub trait ClockExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_clock_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn time(&self) -> (i32, i32, i32) {
+        let (mut hrs, mut min, mut sec) = (0, 0, 0);
+        unsafe { elm_clock_time_get(self.as_raw(), &mut hrs, &mut min, &mut sec) };
+        (hrs, min, sec)
+    }
+    fn set_time(&self, hrs: i32, min: i32, sec: i32) {
+        unsafe { elm_clock_time_set(self.as_raw(), hrs, min, sec) };
+    }
+}
+
+pub trait ColorSelExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) }).with_conf();
+        prt.add(&elm);
+        elm
+    }
+    fn color(&self) -> (i32, i32, i32, i32) {
+        let (mut r, mut g, mut b, mut a) = (0, 0, 0, 0);
+        unsafe { elm_colorselector_color_get(self.as_raw(), &mut r, &mut g, &mut b, &mut a) };
+        (r, g, b, a)
+    }
+    fn set_color(&self, r: i32, g: i32, b: i32, a: i32) {
+        unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
+    }
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(InputSignal::Changed, func);
+        self
+    }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: InputSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
     }
 }
 

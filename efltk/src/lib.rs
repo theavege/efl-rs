@@ -83,7 +83,7 @@ impl SelectorExt for Menu {
 }
 impl MenuExt for Menu {}
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Tm {
     pub sec: i32,
     pub min: i32,
@@ -570,6 +570,45 @@ impl WidgetExt for Check {
     }
 }
 impl CheckExt for Check {}
+
+#[derive(Default)]
+pub struct ColorSel(Option<NonNull<Evas_Object>>);
+
+impl WidgetExt for ColorSel {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl ColorSelExt for ColorSel {}
+
+#[derive(Default)]
+pub struct FileSel(Option<NonNull<Evas_Object>>);
+
+impl WidgetExt for FileSel {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl FileSelExt for FileSel {}
+
+#[derive(Default)]
+pub struct Clock(Option<NonNull<Evas_Object>>);
+
+impl WidgetExt for Clock {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl ClockExt for Clock {}
 
 #[derive(Default)]
 pub struct FileEntry(Option<NonNull<Evas_Object>>);

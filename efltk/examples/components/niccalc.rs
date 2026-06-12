@@ -107,7 +107,14 @@ Total:         <number>{t}</number><br>
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         efltk::Box::new(prt).inside(|prt| {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, -1).set_text("Nicotine base strength (mg/ml):");
+                efltk::Button::new(prt).with_size(250, -1)
+                .with_callback(|wgt| {
+                    efltk::Popup::new(&wgt.window())
+                        .with_calendar("Make your choice", |wgt| {
+                            println!("{:#?}", wgt.selected());
+                        });
+                })
+                .set_text("Nicotine base strength (mg/ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("Nicotine base strength must be between 0.0 und 999.9mg/ml")
                     .with_callback({
@@ -121,7 +128,15 @@ Total:         <number>{t}</number><br>
                     });
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, -1).set_text("Nicotine strength wanted (mg/ml):");
+                efltk::Button::new(prt).with_size(250, -1)
+                .with_callback(|wgt| {
+                    efltk::Popup::new(&wgt.window())
+                        .with_list("Make your choice", |wgt| {
+                            println!("{:#?}", wgt.value());
+                        })
+                        .with_items(&["One", "Two"]);
+                })
+                .set_text("Nicotine strength wanted (mg/ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
                     .with_callback({
@@ -135,7 +150,14 @@ Total:         <number>{t}</number><br>
                     });
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, -1).set_text("Amount wanted (ml):");
+                efltk::Button::new(prt).with_size(250, -1)
+                .with_callback(|wgt| {
+                    efltk::Popup::new(&wgt.window())
+                        .with_file("Make your choice", |wgt| {
+                            println!("{}", wgt.selected());
+                        });
+                })
+                .set_text("Amount wanted (ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
                     .with_callback({
@@ -149,7 +171,14 @@ Total:         <number>{t}</number><br>
                     });
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, -1).set_text("Flavour amount (ml):");
+                efltk::Button::new(prt).with_size(250, -1)
+                .with_callback(|wgt| {
+                    efltk::Popup::new(&wgt.window())
+                        .with_color("Make your choice", |wgt| {
+                            println!("{:#?}", wgt.color());
+                        });
+                })
+                .set_text("Flavour amount (ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("The flavour amount must be between 0 and the base amount minus nicotine base amount!")
                     .with_callback({
