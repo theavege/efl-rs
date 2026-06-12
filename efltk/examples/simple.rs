@@ -44,23 +44,19 @@ impl Component for View {
                         .iter()
                         .enumerate()
                     {
-                        efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                            self.0[idx] = efltk::Frame::new(prt)
-                                .with_autocollapse(false)
-                                .with_text(item)
-                                .with_callback({
-                                    let sender = sender.clone();
-                                    move |_| sender.send(Msg::Set(idx)).unwrap()
-                                });
-                            self.0[idx].inside(move |prt| {
-                                match idx {
-                                    0 => components::Converter::mount(prt),
-                                    1 => components::Ranger::mount(prt),
-                                    2 => components::Selector::mount(prt),
-                                    _ => components::Booker::mount(prt),
-                                };
+                        self.0[idx] = efltk::Frame::new(prt)
+                            .with_autocollapse(false)
+                            .with_text(item)
+                            .with_callback({
+                                let sender = sender.clone();
+                                move |_| sender.send(Msg::Set(idx)).unwrap()
                             });
-                        })
+                        match idx {
+                            0 => components::Converter::mount(&self.0[idx]),
+                            1 => components::Ranger::mount(&self.0[idx]),
+                            2 => components::Selector::mount(&self.0[idx]),
+                            _ => components::Booker::mount(&self.0[idx]),
+                        };
                     }
                     efltk::Label::new(prt);
                 });

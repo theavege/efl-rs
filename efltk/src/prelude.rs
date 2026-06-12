@@ -901,10 +901,11 @@ pub trait ListExt: SelectorExt {
 
 pub trait FrameExt: ContainerExt {
     fn new(parent: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_frame_add(parent.as_raw()) })
+        let prt = super::Box::new(parent).with_horizontal(true);
+        let elm = Self::from_raw(unsafe { elm_frame_add(prt.as_raw()) })
             .with_autocollapse(true)
             .with_conf();
-        parent.add(&elm);
+        prt.add(&elm);
         elm
     }
     fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
