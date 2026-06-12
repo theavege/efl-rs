@@ -50,17 +50,14 @@ impl Component for Booker {
         match msg {
             Msg::Start(value) => {
                 model.start = value;
-                false
+                return false;
             }
             Msg::Back(value) => {
                 model.back = value;
-                false
+                return false;
             }
-            Msg::Flight(value) => {
-                model.flight = value;
-                true
-            }
-            Msg::Book => true,
+            Msg::Flight(value) => model.flight = value,
+            Msg::Book => {}
         };
         true
     }
