@@ -65,66 +65,69 @@ impl Component for Booker {
         true
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        efltk::Box::new(prt).with_homogeneous(true).inside(|prt| {
-            efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt)
-                    .with_size(150, -1)
-                    .set_text("Flight");
-                self.flight = efltk::Check::new(prt)
-                    .with_tooltip("Check")
-                    .with_text("Return")
-                    .with_callback({
-                        let sender = sender.clone();
-                        move |wgt| sender.send(Msg::Flight(wgt.value())).unwrap()
-                    });
-                self.book = efltk::Button::new(prt)
-                    .with_icon("home")
-                    .with_size(45, -1)
-                    .with_tooltip("Book")
-                    .with_callback({
-                        let sender = sender.clone();
-                        move |_wgt| sender.send(Msg::Book).unwrap()
-                    });
-            });
-            efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt)
-                    .with_size(150, -1)
-                    .set_text("Departure data");
-                self.start = efltk::Entry::new(prt)
-                    .with_signal(InputSignal::Clicked, |wgt| {
-                        efltk::Popup::new(&wgt.window()).with_child::<efltk::Calendar>(
-                            "Make your choice",
-                            |wgt| {
-                                println!("{:#?}", wgt.selected());
-                            },
-                        );
-                    })
-                    .with_signal(InputSignal::Unfocused, {
-                        let sender = sender.clone();
-                        move |wgt| match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d")
-                            .is_ok()
-                        {
-                            true => sender.send(Msg::Start(wgt.text())).unwrap(),
-                            false => efltk::Popup::warning(&wgt.window(), "ERROR"),
-                        }
-                    });
-            });
-            efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt)
-                    .with_size(150, -1)
-                    .set_text("Return data");
-                self.back = efltk::Entry::new(prt).with_signal(InputSignal::Unfocused, {
-                    let sender = sender.clone();
-                    move |wgt| match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d")
-                        .is_ok()
-                    {
-                        true => sender.send(Msg::Back(wgt.text())).unwrap(),
-                        false => efltk::Popup::new(&wgt.window())
-                            .with_timeout(0.0)
-                            .set_message("home", "ERROR", "ERROR"),
-                    }
+        efltk::Box::new(prt).inside(|prt| {
+            efltk::Box::new(prt)
+                .with_homogeneous(true)
+                .with_horizontal(true)
+                .inside(|prt| {
+                    self.start =
+                        efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Departure data"))
+                            .with_signal(InputSignal::Clicked, |wgt| {
+                                efltk::Popup::new(&wgt.window()).with_child::<efltk::Calendar>(
+                                    "Make your choice",
+                                    |wgt| {
+                                        println!("{:#?}", wgt.selected());
+                                    },
+                                );
+                            })
+                            .with_signal(InputSignal::Unfocused, {
+                                let sender = sender.clone();
+                                move |wgt| match chrono::NaiveDate::parse_from_str(
+                                    &wgt.text(),
+                                    "%Y-%m-%d",
+                                )
+                                .is_ok()
+                                {
+                                    true => sender.send(Msg::Start(wgt.text())).unwrap(),
+                                    false => efltk::Popup::warning(&wgt.window(), "ERROR"),
+                                }
+                            });
+                    self.back =
+                        efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Return data"))
+                            .with_signal(InputSignal::Unfocused, {
+                                let sender = sender.clone();
+                                move |wgt| match chrono::NaiveDate::parse_from_str(
+                                    &wgt.text(),
+                                    "%Y-%m-%d",
+                                )
+                                .is_ok()
+                                {
+                                    true => sender.send(Msg::Back(wgt.text())).unwrap(),
+                                    false => efltk::Popup::new(&wgt.window())
+                                        .with_timeout(0.0)
+                                        .set_message("home", "ERROR", "ERROR"),
+                                }
+                            });
                 });
-            });
+            efltk::Box::new(prt)
+                .with_homogeneous(true)
+                .with_horizontal(true)
+                .inside(|prt| {
+                    self.flight = efltk::Check::new(&efltk::Bubble::new(prt).with_info("Flight"))
+                        .with_tooltip("Check")
+                        .with_text("Return")
+                        .with_callback({
+                            let sender = sender.clone();
+                            move |wgt| sender.send(Msg::Flight(wgt.value())).unwrap()
+                        });
+                    self.book = efltk::Button::new(prt)
+                        .with_icon("home")
+                        .with_tooltip("Book")
+                        .with_callback({
+                            let sender = sender.clone();
+                            move |_wgt| sender.send(Msg::Book).unwrap()
+                        });
+                });
         });
     }
 }

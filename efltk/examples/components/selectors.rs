@@ -38,11 +38,9 @@ impl Component for Selector {
             "dialog-info",
         ];
         efltk::Box::new(prt).inside(|prt| {
-            efltk::Box::new(prt).with_size(-1, 90).inside(|prt| {
-                efltk::List::new(prt)
-                    .with_tooltip("List")
-                    .with_items(&items);
-            });
+            efltk::List::new(&efltk::Box::new(prt).with_size(-1, 90))
+                .with_tooltip("List")
+                .with_items(&items);
             efltk::Separator::new(prt);
             self.0 = efltk::Entry::with_menu(
                 prt,
