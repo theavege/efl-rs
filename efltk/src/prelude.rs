@@ -8,20 +8,6 @@ use {
     },
 };
 
-pub enum ListMode {
-    Compress = 0,
-    Scroll,
-    Limit,
-    Expand,
-}
-
-pub enum WinType {
-    Basic = 0,
-    Dialog,
-    Desktop,
-    Dock,
-}
-
 pub trait SignalExt {
     fn to_str(&self) -> &str;
 }
@@ -393,10 +379,9 @@ pub trait WidgetExt: Sized {
     fn content(&self, value: &str) -> Option<super::WidgetItem> {
         let ctext = CString::new(value).unwrap();
         let ptr = unsafe { elm_object_part_content_get(self.as_raw(), ctext.as_ptr()) };
-        if ptr.is_null() {
-            None
-        } else {
-            Some(super::WidgetItem::from_raw(ptr))
+        match ptr.is_null() {
+            true => None,
+            false => Some(super::WidgetItem::from_raw(ptr)),
         }
     }
     fn text(&self) -> String {
@@ -729,7 +714,12 @@ pub trait SliderExt: RangerExt {
 
 pub trait CalendarExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_calendar_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe {
+            let prt = elm_calendar_add(prt.as_raw());
+            elm_calendar_selectable_set(prt, Elm_Calendar_Selectable_ELM_CALENDAR_SELECTABLE_DAY);
+            prt
+        })
+        .with_conf();
         prt.add(&elm);
         elm
     }
@@ -741,14 +731,6 @@ pub trait CalendarExt: WidgetExt {
         let mut tm_ = super::Tm::default().to_tm();
         unsafe { elm_calendar_selected_time_get(self.as_raw(), &mut tm_) };
         super::Tm::from_tm(tm_)
-    }
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(InputSignal::Changed, func);
-        self
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: InputSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
     }
 }
 
@@ -792,7 +774,8 @@ pub trait EntryExt: WidgetExt {
         self
     }
     fn with_single_line(self, value: bool) -> Self {
-        self.set_single_line(value);
+        unsafe { elm_entry_single_line_set(self.as_raw(), value as Eina_Bool) };
+        self.set_weight(true, !value);
         self
     }
     fn with_value(self, value: &str) -> Self {
@@ -818,10 +801,6 @@ pub trait EntryExt: WidgetExt {
     }
     fn set_editable(&self, value: bool) {
         unsafe { elm_entry_editable_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn set_single_line(&self, value: bool) {
-        unsafe { elm_entry_single_line_set(self.as_raw(), value as Eina_Bool) };
-        self.set_weight(true, !value);
     }
     fn set_context_menu_disabled(&self, value: bool) {
         unsafe { elm_entry_context_menu_disabled_set(self.as_raw(), value as Eina_Bool) };
@@ -896,7 +875,6 @@ pub trait ListExt: SelectorExt {
             elm_list_go(ptr);
             ptr
         })
-        .with_mode(ListMode::Expand)
         .with_conf();
         prt.add(&elm);
         elm
@@ -918,10 +896,6 @@ pub trait ListExt: SelectorExt {
                 raw_ptr as *mut c_void,
             )
         })
-    }
-    fn with_mode(self, mode: ListMode) -> Self {
-        unsafe { elm_list_mode_set(self.as_raw(), mode as Elm_List_Mode) };
-        self
     }
 }
 
@@ -1016,6 +990,38 @@ pub trait PanesExt: WidgetExt {
     }
 }
 
+pub trait ChildExt: WidgetExt {
+    fn child(prt: &impl ContainerExt) -> Self;
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(SelectorSignal::Selected, func);
+        self
+    }
+}
+
+impl ChildExt for super::Calendar {
+    fn child(prt: &impl ContainerExt) -> Self {
+        Self::new(prt)
+    }
+}
+
+impl ChildExt for super::List {
+    fn child(prt: &impl ContainerExt) -> Self {
+        Self::new(prt)
+    }
+}
+
+impl ChildExt for super::ColorSel {
+    fn child(prt: &impl ContainerExt) -> Self {
+        Self::new(prt)
+    }
+}
+
+impl ChildExt for super::FileSel {
+    fn child(prt: &impl ContainerExt) -> Self {
+        Self::new(prt)
+    }
+}
+
 pub trait PopupExt: ContainerExt + Clone
 where
     Self: 'static,
@@ -1025,69 +1031,16 @@ where
         prt.add(&elm);
         elm
     }
-    fn with_list<F: FnMut(super::List) + 'static>(&self, title: &str, mut func: F) -> super::List {
+    fn with_child<T: ChildExt>(&self, title: &str, mut func: impl FnMut(T) + 'static) -> T {
         self.set_content(&super::Icon::new(self).with_standard("home"), "title,icon");
         self.set_part("title,text", title);
-        let wgt = super::List::new(self).with_callback({
+        T::child(&super::Box::new(self).with_size(-1, 90)).with_callback({
             let elm = self.clone();
             move |wgt| {
                 func(wgt);
                 elm.dismiss();
             }
-        });
-        self.add(&wgt);
-        wgt
-    }
-    fn with_calendar<F: FnMut(super::Calendar) + 'static>(
-        &self,
-        title: &str,
-        mut func: F,
-    ) -> super::Calendar {
-        self.set_content(&super::Icon::new(self).with_standard("home"), "title,icon");
-        self.set_part("title,text", title);
-        let wgt = super::Calendar::new(self).with_callback({
-            let elm = self.clone();
-            move |wgt| {
-                func(wgt);
-                elm.dismiss();
-            }
-        });
-        self.add(&wgt);
-        wgt
-    }
-    fn with_file<F: FnMut(super::FileSel) + 'static>(
-        &self,
-        title: &str,
-        mut func: F,
-    ) -> super::FileSel {
-        self.set_content(&super::Icon::new(self).with_standard("home"), "title,icon");
-        self.set_part("title,text", title);
-        let wgt = super::FileSel::new(self).with_callback({
-            let elm = self.clone();
-            move |wgt| {
-                func(wgt);
-                elm.dismiss();
-            }
-        });
-        self.add(&wgt);
-        wgt
-    }
-    fn with_color<F: FnMut(super::ColorSel) + 'static>(
-        &self,
-        title: &str,
-        mut func: F,
-    ) -> super::ColorSel {
-        self.set_content(&super::Icon::new(self).with_standard("home"), "title,icon");
-        self.set_part("title,text", title);
-        let wgt = super::ColorSel::new(self).with_callback({
-            let elm = self.clone();
-            move |wgt| {
-                func(wgt);
-                elm.dismiss();
-            }
-        });
-        self.add(&wgt);
-        wgt
+        })
     }
     fn with_cancel<F: FnMut(super::Button) + 'static>(self, mut func: F) -> Self {
         let but = super::Button::new(&self)
@@ -1392,14 +1345,6 @@ pub trait FileSelExt: WidgetExt {
         unsafe { elm_fileselector_buttons_ok_cancel_set(self.as_raw(), value as Eina_Bool) };
         self
     }
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(SelectorSignal::Selected, func);
-        self
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: SelectorSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
-    }
 }
 
 pub trait ClockExt: WidgetExt {
@@ -1420,9 +1365,17 @@ pub trait ClockExt: WidgetExt {
 
 pub trait ColorSelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) })
+            .with_conf()
+            .with_signal(SelectorSignal::Changed, |wgt| {
+                wgt.call_signal(SelectorSignal::Selected)
+            });
         prt.add(&elm);
         elm
+    }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: SelectorSignal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
     }
     fn color(&self) -> (i32, i32, i32, i32) {
         let (mut r, mut g, mut b, mut a) = (0, 0, 0, 0);
@@ -1431,14 +1384,6 @@ pub trait ColorSelExt: WidgetExt {
     }
     fn set_color(&self, r: i32, g: i32, b: i32, a: i32) {
         unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
-    }
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(InputSignal::Changed, func);
-        self
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: InputSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
     }
 }
 

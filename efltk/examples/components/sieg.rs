@@ -196,7 +196,7 @@ impl Component for Siege {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
-                    .set_text("TARGET: ");
+                    .set_text("TARGETS: ");
                 efltk::Entry::new(prt)
                     .with_single_line(false)
                     .with_value("127.0.0.1")

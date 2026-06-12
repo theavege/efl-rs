@@ -90,15 +90,24 @@ impl Component for Booker {
                 efltk::Button::new(prt)
                     .with_size(150, -1)
                     .set_text("Departure data");
-                self.start = efltk::Entry::new(prt).with_signal(InputSignal::Unfocused, {
-                    let sender = sender.clone();
-                    move |wgt| match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d")
-                        .is_ok()
-                    {
-                        true => sender.send(Msg::Start(wgt.text())).unwrap(),
-                        false => efltk::Popup::warning(&wgt.window(), "ERROR"),
-                    }
-                });
+                self.start = efltk::Entry::new(prt)
+                    .with_signal(InputSignal::Clicked, |wgt| {
+                        efltk::Popup::new(&wgt.window()).with_child::<efltk::Calendar>(
+                            "Make your choice",
+                            |wgt| {
+                                println!("{:#?}", wgt.selected());
+                            },
+                        );
+                    })
+                    .with_signal(InputSignal::Unfocused, {
+                        let sender = sender.clone();
+                        move |wgt| match chrono::NaiveDate::parse_from_str(&wgt.text(), "%Y-%m-%d")
+                            .is_ok()
+                        {
+                            true => sender.send(Msg::Start(wgt.text())).unwrap(),
+                            false => efltk::Popup::warning(&wgt.window(), "ERROR"),
+                        }
+                    });
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)

@@ -24,29 +24,27 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
 - [x] [Application](docs/elm_app.md)
 - [x] [Widgets](https://www.enlightenment.org/_legacy_embed/widgetslist.html)
   - [x] [Containers](docs/elm_containers.md)
-    - [x] [Window](docs/elm_containers.md#Window) - Primari application window
-    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
     - [x] [Box](docs/elm_containers.md#Box) - Basic horizontal/vertical packing
-    - [x] [Bubble](docs/elm_containers.md#Bubble) - Basic container with title
-    - [x] [Frame](docs/elm_containers.md#Frame) - Framed container with title
-    - [x] [Panes](docs/elm_containers.md#Panes)
-    - [x] [Popup](docs/elm_containers.md#Popup) - Overlays and dialogs
+    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame) - Slided container
+    - [x] [Bubble](docs/elm_containers.md#Bubble) - Container with title
+    - [x] [Frame](docs/elm_containers.md#Frame) - Collapsed container
+    - [x] [Popup](docs/elm_containers.md#Popup) - Dialogs
   - [x] [Outputs](docs/elm_outputs.md)
-    - [x] [Label](docs/elm_outputs.md#Label) - Text and icon display
-    - [x] [Separator](docs/elm_outputs.md#Separator)
-    - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar)
+    - [x] [Label](docs/elm_outputs.md#Label) - Display text and icon
+    - [x] [Separator](docs/elm_outputs.md#Separator) - Display horizontal/vertical line
+    - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar) - Display progress
+    - [x] [Clock](docs/elm_triggers.md#Clock) - Display clock
   - [x] [Inputs](docs/elm_inputs.md)
-    - [x] [Entry (String)](docs/elm_inputs.md#Entry) - Basic text input
-    - [x] [Check (bool)](docs/elm_triggers.md#Check) - Checkbox
-    - [x] [Calendar (Date)](docs/elm_triggers.md#Calendar) - Widget for get date
-    - [x] [Clock (Time)](docs/elm_triggers.md#Clock) - Standart push button
-  - [x] [Rangers ((f64..=f64), f64)](docs/elm_outputs.md) -> f64
-    - [x] [Spinner](docs/elm_ranges.md#Spinner) - Numeric input with arrows
-    - [x] [Slider](docs/elm_ranges.md#Slider) - Value slider
-  - [x] [Selectors (Vec<String>, u32)](docs/elm_selectors.md) -> (u32, String)
-    - [x] [Radio](docs/elm_selectors.md#Radio) - Radio button
-    - [x] [Menu](docs/elm_selectors.md#Menu)
-    - [x] [List](docs/elm_selectors.md#List) - Simple vertical item list
-    - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl)
+    - [x] [Entry (String)](docs/elm_inputs.md#Entry) - Change text
+    - [x] [Check (bool)](docs/elm_triggers.md#Check) - Change option
+    - [x] [Calendar (Date)](docs/elm_triggers.md#Calendar) - Change date
+    - [x] [Rangers ((f64..=f64), f64)](docs/elm_outputs.md) - Change float
+      - [x] [Spinner](docs/elm_ranges.md#Spinner)
+      - [x] [Slider](docs/elm_ranges.md#Slider)
+  - [x] [Selectors (Vec<String>, u32)](docs/elm_selectors.md)  - Select variant
+    - [x] [Radio](docs/elm_selectors.md#Radio) - Classic selector
+    - [x] [Menu](docs/elm_selectors.md#Menu) - Popup selector
+    - [x] [List](docs/elm_selectors.md#List) - Vertical selector
+    - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Horizontal selector
   - [x] [Triggers](docs/elm_triggers.md)
-    - [x] [Button](docs/elm_triggers.md#Button) - Standart push button
+    - [x] [Button](docs/elm_triggers.md#Button)

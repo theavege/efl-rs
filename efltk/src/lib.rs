@@ -385,7 +385,6 @@ impl WidgetExt for SegmentControl {
         Self(NonNull::new(obj))
     }
 }
-// impl EvasObject for SegmentControl {}
 impl SegmentControlExt for SegmentControl {}
 impl SelectorExt for SegmentControl {
     fn add(&self, label: &str) -> WidgetItem {
