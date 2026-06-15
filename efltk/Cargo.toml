@@ -1,6 +1,6 @@
 [package]
 name = "efltk"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Artem V. Ageev <artem.v.ageev@gmail.com>"]
 license = "LGPL-2.1-only"
 repository = "https://github.com/theavege/efl-rs"
@@ -8,12 +8,11 @@ homepage = "https://github.com/theavege/efl-rs"
 description = "Enlightenment Foundation Libraries bindings in Rust"
 keywords = ["EFL", "enlightenment"]
 categories = ["api-bindings", "gui"]
-readme = "README.md"
 edition = "2024"
 exclude = ["examples"]
 
 [dependencies]
-efltk-sys = { path = "../efltk-sys", version = "=0.0.2" }
+efltk-sys = { path = "../efltk-sys", version = "=0.0.3" }
 reqwest = { version = "0.13", features = ["json", "native-tls", "blocking"], optional = true }
 xlsxwriter = { version = "0", optional = true }
 chrono = { version = "0.4", optional = true }
