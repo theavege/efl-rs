@@ -621,3 +621,17 @@ impl WidgetExt for FileEntry {
     }
 }
 impl FileEntryExt for FileEntry {}
+
+
+#[derive(Default)]
+pub struct Photo(Option<NonNull<Evas_Object>>);
+
+impl WidgetExt for Photo {
+    fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
+impl PhotoExt for Photo {}
