@@ -635,3 +635,76 @@ impl WidgetExt for Photo {
     }
 }
 impl PhotoExt for Photo {}
+
+
+#[derive(Default)]
+pub struct Evas(Option<NonNull<Evas>>);
+
+impl Evas {
+    pub fn new() -> Self {
+        Self(NonNull::new(unsafe { evas_new() }))
+    }
+    
+    pub fn as_raw(&self) -> *mut Evas {
+        self.0.expect("Empty Evas!").as_ptr()
+    }
+    
+    pub fn free(&self) {
+        unsafe { evas_free(self.as_raw()) };
+    }
+    
+    pub fn object_rectangle_add(&self, x: i32, y: i32, w: i32, h: i32) -> EvasObject {
+        EvasObject::from_raw(unsafe { evas_object_rectangle_add(self.as_raw()) })
+            .with_pos(x, y)
+            .with_size(w, h)
+    }
+    
+    pub fn object_circle_add(&self, x: i32, y: i32, radius: i32) -> EvasObject {
+        // In EFL, circles are drawn using rectangles or using the map API
+        // For simplicity, we'll use a rectangle with equal width/height
+        let diameter = radius * 2;
+        EvasObject::from_raw(unsafe { evas_object_rectangle_add(self.as_raw()) })
+            .with_pos(x - radius, y - radius)
+            .with_size(diameter, diameter)
+    }
+}
+
+#[derive(Default)]
+pub struct EvasObject(Option<NonNull<Evas_Object>>);
+
+impl EvasObject {
+    pub fn from_raw(obj: *mut Evas_Object) -> Self {
+        Self(NonNull::new(obj))
+    }
+    
+    pub fn as_raw(&self) -> *mut Evas_Object {
+        self.0.expect("Empty Evas_Object!").as_ptr()
+    }
+    
+    pub fn with_pos(mut self, x: i32, y: i32) -> Self {
+        unsafe { evas_object_move(self.as_raw(), x, y) };
+        self
+    }
+    
+    pub fn with_size(mut self, w: i32, h: i32) -> Self {
+        unsafe { evas_object_resize(self.as_raw(), w, h) };
+        self
+    }
+    
+    pub fn with_color(mut self, r: u8, g: u8, b: u8, a: u8) -> Self {
+        unsafe { evas_object_color_set(self.as_raw(), r as i32, g as i32, b as i32, a as i32) };
+        self
+    }
+    
+    pub fn show(&self) {
+        unsafe { evas_object_show(self.as_raw()) };
+    }
+    
+    pub fn hide(&self) {
+        unsafe { evas_object_hide(self.as_raw()) };
+    }
+    
+    pub fn del(&self) {
+        unsafe { evas_object_del(self.as_raw()) };
+    }
+}
