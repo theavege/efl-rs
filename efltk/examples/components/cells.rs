@@ -159,7 +159,7 @@ impl Component for Cells {
 
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         // Create main container
-        let grid_box = efltk::Box::new(prt).with_vertical(true);
+        let grid_box = efltk::Box::new(prt).with_horizontal(false);
 
         // Create grid of cells (5x5 for demo)
         const ROWS: usize = 5;
