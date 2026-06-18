@@ -8,52 +8,16 @@ on:
     branches:
       - main
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   make:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          #~ - windows-latest
-        arch:
-          - x86_64
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          submodules: recursive
 
-      - name: Build on Unix
-        if: runner.os != 'Windows'
+      - name: Build on Ubuntu
         shell: bash
         run: |
           bash '.github/workflows/make.sh'
-
-      - name: Build on Windows
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'stop'
-          Set-PSDebug -Strict
-          & pip install meson ninja | Out-Host
-          If ($LastExitCode -ne 0) {
-            Exit $LastExitCode
-          }
-          (Get-Command 'gcc').Source | Out-Host
-          (Get-Command 'meson').Source | Out-Host
-          (Get-Command 'ninja').Source | Out-Host
-          & cargo clippy --quiet --features="all" --examples | Out-Host
-          If ($LastExitCode -ne 0) {
-            Exit $LastExitCode
-          }
-          & cargo build --release --features="all" --examples | Out-Host
-          If ($LastExitCode -ne 0) {
-            Exit $LastExitCode
-          }
