@@ -54,35 +54,31 @@ impl Component for Converter {
             .with_homogeneous(true)
             .with_horizontal(true)
             .inside(|prt| {
-                efltk::Bubble::new(prt).with_info("Celsius").inside(|prt| {
-                    self.cel = efltk::Entry::new(prt)
-                        .with_value("0")
-                        .with_editable(true)
-                        .with_changed({
-                            let sender = sender.clone();
-                            move |wgt| {
-                                if wgt.focus() {
-                                    let value = wgt.value().parse::<f64>().unwrap_or_default();
-                                    sender.send(Msg::Cel(value)).unwrap();
-                                }
+                self.cel = efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Celsius"))
+                    .with_tooltip("Entry")
+                    .with_value("0")
+                    .with_editable(true)
+                    .with_callback({
+                        let sender = sender.clone();
+                        move |wgt| {
+                            if wgt.focus() {
+                                let value = wgt.value().parse::<f64>().unwrap_or_default();
+                                sender.send(Msg::Cel(value)).unwrap();
                             }
-                        });
-                });
-                efltk::Bubble::new(prt)
-                    .with_info("Fahrenheit")
-                    .inside(|prt| {
-                        self.far = efltk::Entry::new(prt)
-                            .with_value("0")
-                            .with_editable(true)
-                            .with_changed({
-                                let sender = sender.clone();
-                                move |wgt| {
-                                    if wgt.focus() {
-                                        let value = wgt.value().parse::<f64>().unwrap_or_default();
-                                        sender.send(Msg::Far(value)).unwrap();
-                                    }
-                                }
-                            });
+                        }
+                    });
+                self.far = efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Fahrenheit"))
+                    .with_tooltip("Entry")
+                    .with_value("0")
+                    .with_editable(true)
+                    .with_callback({
+                        let sender = sender.clone();
+                        move |wgt| {
+                            if wgt.focus() {
+                                let value = wgt.value().parse::<f64>().unwrap_or_default();
+                                sender.send(Msg::Far(value)).unwrap();
+                            }
+                        }
                     });
             });
     }

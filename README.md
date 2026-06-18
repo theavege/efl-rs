@@ -21,31 +21,26 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
 
 ## Work in process
 
-- [x] [Application](docs/elm_app.md)
 - [x] [Widgets](https://www.enlightenment.org/_legacy_embed/widgetslist.html)
   - [x] [Containers](docs/elm_containers.md)
-    - [x] [Window](docs/elm_containers.md#Window) - Primari application window
     - [x] [Box](docs/elm_containers.md#Box) - Basic horizontal/vertical packing
-    - [x] [Bubble](docs/elm_containers.md#Bubble) - Basic container with title
-    - [x] [Frame](docs/elm_containers.md#Frame) - Framed container with title
-    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame)
-    - [x] [Popup](docs/elm_containers.md#Popup) - Overlays and dialogs
+    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame) - Slided container
+    - [x] [Bubble](docs/elm_containers.md#Bubble) - Container with title
+    - [x] [Frame](docs/elm_containers.md#Frame) - Collapsed container
+    - [x] [Popup](docs/elm_containers.md#Popup) - Modal container
   - [x] [Outputs](docs/elm_outputs.md)
-    - [x] [Label](docs/elm_outputs.md#Label) - Text and icon display
-    - [x] [Separator](docs/elm_outputs.md#Separator)
-    - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar)
-  - [x] [Inputs: String](docs/elm_inputs.md)
-    - [x] [Entry](docs/elm_inputs.md#Entry) - Basic text input
+    - [x] [Separator](docs/elm_outputs.md#Separator) - Display horizontal/vertical line
+    - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar) - Display progress
+  - [x] [Inputs](docs/elm_inputs.md)
+    - [x] [Entry (String)](docs/elm_inputs.md#Entry) - Change text
+    - [x] [Check (bool)](docs/elm_triggers.md#Check) - Change option
+    - [x] [Rangers ((f64..=f64), f64)](docs/elm_outputs.md) - Change float
+      - [x] [Spinner](docs/elm_ranges.md#Spinner)
+      - [x] [Slider](docs/elm_ranges.md#Slider)
+  - [x] [Selectors (Vec<String>, u32)](docs/elm_selectors.md)  - Select variant
+    - [x] [Radio](docs/elm_selectors.md#Radio) - Classic selector
+    - [x] [List](docs/elm_selectors.md#List) - Vertical scrollable selector
+    - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Horizontal selector
+    - [x] [Menu](docs/elm_selectors.md#Menu) - Popup selector
   - [x] [Triggers](docs/elm_triggers.md)
-    - [x] [Button](docs/elm_triggers.md#Button) - Standart push button
-    - [x] [Check](docs/elm_triggers.md#Check) - Check box
-    - [x] [HoverSel](docs/elm_selectors.md#HoverSel)
-    - [x] [Menu](docs/elm_selectors.md#Menu)
-  - [x] [Rangers: f64](docs/elm_outputs.md)
-    - [x] [Spinner](docs/elm_ranges.md#Spinner) - Numeric input with arrows
-    - [x] [Slider](docs/elm_ranges.md#Slider) - Value slider
-  - [x] [Selectors: Vec<String>](docs/elm_selectors.md)
-    - [x] [Radio](docs/elm_selectors.md#Radio) - Radio button
-    - [x] [FlipSelector](docs/elm_selectors.md#FlipSelector)
-    - [x] [List](docs/elm_selectors.md#List) - Simple vertical item list
-    - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Simple horizontal item list
+    - [x] [Button](docs/elm_triggers.md#Button)

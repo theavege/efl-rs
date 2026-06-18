@@ -9,7 +9,7 @@ mod models {
     }
 
     impl Model {
-        const SERVICE: &str = r#"https://lingva.ml/api/v1"#;
+        const SERVICE: &str = r#"https://translate.plausibility.cloud/api/v1"#;
         const NAME: &str = "Dialect";
         pub fn read(&mut self, value: Vec<(String, String)>) {
             self.lang = value;
@@ -81,8 +81,8 @@ pub enum Msg {
 pub struct Dialect {
     source: efltk::Entry,
     target: efltk::Entry,
-    from: efltk::FlipSelector,
-    to: efltk::FlipSelector,
+    from: efltk::List,
+    to: efltk::List,
 }
 
 impl Component for Dialect {
@@ -92,39 +92,33 @@ impl Component for Dialect {
         match msg {
             Msg::Open(value) => {
                 model.source = std::fs::read_to_string(value).unwrap();
-                true
             }
             Msg::SaveAs(value) => {
                 std::fs::write(value, model.target.as_bytes()).unwrap();
-                false
+                return false;
             }
             Msg::Target(value) => {
                 model.target = value;
-                true
             }
             Msg::Lang(value) => {
                 model.read(value);
-                true
             }
             Msg::To(value) => {
                 model.to = value;
-                false
+                return false;
             }
             Msg::From(value) => {
                 model.from = value;
-                true
             }
             Msg::Source(value) => {
                 model.source = value;
-                true
             }
             Msg::Quit => {
                 model.save();
-                false
+                return false;
             }
             Msg::Switch => {
                 model.switch();
-                true
             }
             Msg::Run => {
                 if model.from != model.to && !model.source.is_empty() {
@@ -144,9 +138,10 @@ impl Component for Dialect {
                         }
                     });
                 };
-                false
+                return false;
             }
         }
+        true
     }
     fn update(&self, state: &Self::State) {
         self.to.update((state.lang(), state.to as u32));
@@ -155,28 +150,27 @@ impl Component for Dialect {
         self.target.update(&state.target);
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        efltk::Box::new(prt).inside(|prt| {
-            efltk::Box::new(prt)
-                .with_homogeneous(true)
-                .with_horizontal(true)
-                .inside(|prt| {
-                    self.from = efltk::FlipSelector::new(prt).with_selected({
+        efltk::Box::new(prt)
+            .with_horizontal(true)
+            .with_homogeneous(true)
+            .inside(|prt| {
+                efltk::Box::new(prt).inside(|prt| {
+                    self.from = efltk::List::new(prt).with_signal(SelectorSignal::Selected, {
                         let sender = sender.clone();
                         move |wgt| {
                             sender.send(Msg::From(wgt.value() as i32)).unwrap();
                         }
                     });
-                    self.to = efltk::FlipSelector::new(prt).with_selected({
+                    efltk::Button::new(prt).with_text("Switch").with_callback({
                         let sender = sender.clone();
-                        move |wgt| {
-                            sender.send(Msg::To(wgt.value() as i32)).unwrap();
+                        move |_| {
+                            sender.send(Msg::Switch).unwrap();
                         }
                     });
                 });
-            efltk::Panes::new(prt).inside(|prt| {
                 self.source = efltk::Entry::new(prt)
                     .with_single_line(false)
-                    .with_changed({
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
@@ -187,27 +181,27 @@ impl Component for Dialect {
                 self.target = efltk::Entry::new(prt)
                     .with_single_line(false)
                     .with_editable(false);
-            });
-            efltk::Box::new(prt)
-                .with_homogeneous(true)
-                .with_horizontal(true)
-                .inside(|prt| {
-                    efltk::Button::new(prt).with_text("Switch").on_clicked({
+                efltk::Box::new(prt).inside(|prt| {
+                    self.to = efltk::List::new(prt).with_signal(SelectorSignal::Selected, {
                         let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Switch).unwrap();
+                        move |wgt| {
+                            sender.send(Msg::To(wgt.value() as i32)).unwrap();
                         }
                     });
-                    efltk::Button::new(prt).with_text("Translate").on_clicked({
-                        let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Run).unwrap();
-                        }
-                    });
+                    efltk::Button::new(prt)
+                        .with_text("Translate")
+                        .with_callback({
+                            let sender = sender.clone();
+                            move |_| {
+                                sender.send(Msg::Run).unwrap();
+                            }
+                        });
                 });
-        });
+            });
         std::thread::spawn(move || {
-            if let Ok(get) = reqwest::blocking::get("https://lingva.ml/api/v1/languages") {
+            if let Ok(get) =
+                reqwest::blocking::get("https://translate.plausibility.cloud/api/v1/languages")
+            {
                 let value = get
                     .json::<HashMap<String, Vec<HashMap<String, String>>>>()
                     .unwrap()

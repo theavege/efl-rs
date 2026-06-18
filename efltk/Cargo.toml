@@ -1,6 +1,6 @@
 [package]
 name = "efltk"
-version = "0.0.2"
+version = "0.0.4"
 authors = ["Artem V. Ageev <artem.v.ageev@gmail.com>"]
 license = "LGPL-2.1-only"
 repository = "https://github.com/theavege/efl-rs"
@@ -8,19 +8,24 @@ homepage = "https://github.com/theavege/efl-rs"
 description = "Enlightenment Foundation Libraries bindings in Rust"
 keywords = ["EFL", "enlightenment"]
 categories = ["api-bindings", "gui"]
-readme = "README.md"
 edition = "2024"
 exclude = ["examples"]
 
 [dependencies]
-efltk-sys = { path = "../efltk-sys", version = "=0.0.2" }
+efltk-sys = { path = "../efltk-sys", version = "=0.0.4" }
 reqwest = { version = "0.13", features = ["json", "native-tls", "blocking"], optional = true }
 xlsxwriter = { version = "0", optional = true }
 chrono = { version = "0.4", optional = true }
+serde = { version="1", features = ["derive"], optional = true  }
+serde_json = { version = "1", optional = true  }
+regex = { version = "1.12", optional = true  }
+walkdir = { version = "2.5", optional = true }
 
 [features]
 default = []
+search = [ "dep:regex", "dep:walkdir" ]
 reqwest = [ "dep:reqwest" ]
 chrono = [ "dep:chrono" ]
 xlsxwriter = [ "dep:xlsxwriter" ]
-all = ["reqwest", "chrono"]
+serde = [ "dep:serde", "dep:serde_json" ]
+all = ["reqwest", "chrono", "xlsxwriter", "serde", "search"]

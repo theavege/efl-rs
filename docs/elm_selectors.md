@@ -1,15 +1,25 @@
-![actionslider](https://www.enlightenment.org/_legacy_embed/img/widget/actionslider/preview-00.png)
+# [SegmentControl](https://www.enlightenment.org/develop/legacy/program_guide/widgets/segmentcontrol)
 
-![calendar](https://www.enlightenment.org/_legacy_embed/img/widget/calendar/preview-00.png)
+This widget consists of several segment items. A segment item is similar to a discrete two state button. Any time, only one segment item can be selected. A segment item is composed of a label (text) and an icon. This widget inherits from the layout widget, so all the layout widgets API can be used on segmentcontrol objects.
 
-![colorselector](https://www.enlightenment.org/_legacy_embed/img/widget/colorselector/preview-00.png)
+![segmentcontrol](https://www.enlightenment.org/_media/widgets_segmentcontrol.png)
 
-![flipselector](https://www.enlightenment.org/_legacy_embed/img/widget/flipselector/preview-00.png)
+```rust
+    efltk::SegmentControl::new(parent)
+        .with_items(&["home", "close"])
+        .with_size(90, 45)
+        .with_callback(move |wgt| println!("{} is Changed", wgt.value()));
+```
 
-![list](https://www.enlightenment.org/_legacy_embed/img/widget/list/preview-00.png)
+# [List](https://www.enlightenment.org/develop/legacy/program_guide/widgets/list)
 
-![menu](https://www.enlightenment.org/_legacy_embed/img/widget/menu/preview-00.png)
+This widget is a very simple type of a list widget. It is not to be used to manage a lot of items. For that, genlists are a better option. The list items can contain a text and two contents (“start”, and “end”).
 
-![radio](https://www.enlightenment.org/_legacy_embed/img/widget/radio/preview-00.png)
+![List](https://www.enlightenment.org/_media/widgets_list.png)
 
-![segment_control](https://www.enlightenment.org/_legacy_embed/img/widget/segment_control/preview-00.png)
+```rust
+    efltk::List::new(parent)
+        .with_items(&["home", "close"])
+        .with_callback(move |wgt| println!("{} is Selected", wgt.value()));
+```
+

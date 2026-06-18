@@ -30,12 +30,11 @@ impl Component for Ranger {
             .with_homogeneous(true)
             .with_horizontal(true)
             .inside(|prt| {
-                self.spinner = efltk::Spinner::new(prt)
-                    .with_tooltip("Spinner")
+                self.spinner = efltk::Spinner::new(&efltk::Bubble::new(prt).with_info("Spinner"))
                     .with_range(0.0, 1.0)
                     .with_step(0.1)
                     .with_format("%1.2f")
-                    .with_changed({
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
@@ -43,11 +42,11 @@ impl Component for Ranger {
                             }
                         }
                     });
-                self.progress = efltk::ProgressBar::new(prt).with_tooltip("ProgressBar");
-                self.slider = efltk::Slider::new(prt)
-                    .with_tooltip("Slider")
+                self.progress =
+                    efltk::ProgressBar::new(&efltk::Bubble::new(prt).with_info("ProgressBar"));
+                self.slider = efltk::Slider::new(&efltk::Bubble::new(prt).with_info("Slider"))
                     .with_format("%1.2f")
-                    .with_changed({
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {

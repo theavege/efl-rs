@@ -96,10 +96,16 @@ impl Component for Calc {
         true
     }
     fn update(&self, model: &Self::State) {
-        self.outp.update(&model.output.clone());
-        self.prev.update(&model.prev.to_string());
-        self.oper.set_text(&model.operation.clone());
-        self.curr.update(&model.current.clone());
+        self.outp
+            .update(&format!("<bigger><code>{}</bigger></code>", model.output));
+        self.prev
+            .update(&format!("<bigger><code>{}</bigger></code>", model.prev));
+        self.oper.set_text(&format!(
+            "<bigger><code>{}</bigger></code>",
+            model.operation
+        ));
+        self.curr
+            .update(&format!("<bigger><code>{}</bigger></code>", model.current));
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         efltk::Box::new(prt).inside(|prt| {
@@ -107,6 +113,7 @@ impl Component for Calc {
                 .with_editable(false)
                 .with_single_line(false)
                 .with_tooltip("Output");
+            efltk::Separator::new(prt);
             efltk::Box::new(prt)
                 .with_homogeneous(true)
                 .with_horizontal(true)
@@ -121,6 +128,7 @@ impl Component for Calc {
                             .with_tooltip("Current");
                     });
                 });
+            efltk::Separator::new(prt);
             for row in [
                 ["CE", "C", "%", "/"],
                 ["7", "8", "9", "x"],
@@ -134,11 +142,11 @@ impl Component for Calc {
                     .inside(|prt| {
                         for cell in row {
                             efltk::Button::new(prt)
-                                .with_size(0, 45)
+                                .with_size(-1, 45)
                                 .with_text(cell)
                                 .with_tooltip(cell)
                                 .with_cursor(Cursor::Hand1)
-                                .on_clicked({
+                                .with_callback({
                                     let sender = sender.clone();
                                     move |wgt| {
                                         sender.send(Msg::Push(wgt.text())).unwrap();

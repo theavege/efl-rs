@@ -70,11 +70,13 @@ impl Component for NicCalc {
         self.flavour.set_value((t / 100.0 * f) / 100.0);
         self.nicotine_base.set_value((t / 100.0 * nb) / 100.0);
         self.list.update(&format!(
-            "Ingredient:   Amount(ml)<br>
-Nicotine Base: {nb}<br>
-Base:          {b}<br>
-Flavour:       {f}<br>
-Total:         {t}<br>"
+            "<bigger><code>
+Ingredient:    Amount(ml)<br>
+Nicotine Base: <number>{nb}</number><br>
+Base:          <number>{b}</number><br>
+Flavour:       <number>{f}</number><br>
+Total:         <number>{t}</number><br>
+</code></bigger>"
         ));
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
@@ -105,10 +107,11 @@ Total:         {t}<br>"
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         efltk::Box::new(prt).inside(|prt| {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, 0).set_text("Nicotine base strength (mg/ml):");
+                efltk::Button::new(prt).with_size(250, -1)
+                .set_text("Nicotine base strength (mg/ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("Nicotine base strength must be between 0.0 und 999.9mg/ml")
-                    .with_changed({
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
@@ -119,10 +122,18 @@ Total:         {t}<br>"
                     });
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, 0).set_text("Nicotine strength wanted (mg/ml):");
+                efltk::Button::new(prt).with_size(250, -1)
+                .with_callback(|wgt| {
+                    efltk::Popup::new(&wgt.window())
+                        .with_child::<efltk::List>("Make your choice", |wgt| {
+                            println!("{:#?}", wgt.value());
+                        })
+                        .with_items(&["One", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two"]);
+                })
+                .set_text("Nicotine strength wanted (mg/ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
-                    .with_changed({
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
@@ -133,10 +144,11 @@ Total:         {t}<br>"
                     });
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, 0).set_text("Amount wanted (ml):");
+                efltk::Button::new(prt).with_size(250, -1)
+                .set_text("Amount wanted (ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
-                    .with_changed({
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
@@ -147,10 +159,11 @@ Total:         {t}<br>"
                     });
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, 0).set_text("Flavour amount (ml):");
+                efltk::Button::new(prt).with_size(250, -1)
+                .set_text("Flavour amount (ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("The flavour amount must be between 0 and the base amount minus nicotine base amount!")
-                    .with_changed({
+                    .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
@@ -160,21 +173,21 @@ Total:         {t}<br>"
                         }
                     });
             });
-            efltk::Separator::new(prt);
+            efltk::Separator::new(prt).set_horizontal(true);
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, 0).set_text("Nicotin base:");
+                efltk::Button::new(prt).with_size(250, -1).set_text("Nicotin base:");
                 self.nicotine_base = efltk::ProgressBar::new(prt);
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, 0).set_text("Base:");
+                efltk::Button::new(prt).with_size(250, -1).set_text("Base:");
                 self.base = efltk::ProgressBar::new(prt);
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, 0).set_text("Flavour:");
+                efltk::Button::new(prt).with_size(250, -1).set_text("Flavour:");
                 self.flavour = efltk::ProgressBar::new(prt);
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                efltk::Button::new(prt).with_size(250, 0).set_text("Total:");
+                efltk::Button::new(prt).with_size(250, -1).set_text("Total:");
                 efltk::ProgressBar::new(prt).set_value(1.0);
             });
             efltk::Separator::new(prt).set_horizontal(true);

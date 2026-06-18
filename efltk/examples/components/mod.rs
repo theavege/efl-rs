@@ -4,10 +4,12 @@ mod converter;
 mod dialect;
 mod niccalc;
 mod rangers;
+mod search;
 mod selectors;
+mod sieg;
 mod sudoku;
 
 pub use {
     booker::Booker, calculator::Calc, converter::Converter, dialect::Dialect, niccalc::NicCalc,
-    rangers::Ranger, selectors::Selector, sudoku::Sudoku,
+    rangers::Ranger, search::Search, selectors::Selector, sieg::Siege, sudoku::Sudoku,
 };
