@@ -174,7 +174,7 @@ impl Component for Cells {
                 let col_name = (b'A' as usize + col_idx) as u8 as char;
                 let label = efltk::Label::new(&row_box)
                     .with_text(&format!("{}{}", col_name, row_idx));
-                
+
                 *cell_entry = efltk::Entry::new(&row_box)
                     .with_size(80, 30)
                     .with_callback({

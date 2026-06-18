@@ -67,12 +67,12 @@ mod models {
 use efltk::prelude::*;
 
 pub enum Msg {
-    SetPath(String),
-    SetExt(String),
-    SetLog(String),
-    SetReg(String),
-    SetCase(bool),
-    SetLimit(usize),
+    Path(String),
+    Ext(String),
+    Log(String),
+    Reg(String),
+    Case(bool),
+    Limit(usize),
 }
 
 #[derive(Default)]
@@ -91,12 +91,12 @@ impl Component for Search {
     fn update(&self, _model: &Self::State) {}
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
         match msg {
-            Msg::SetPath(value) => model.path = value,
-            Msg::SetExt(value) => model.ext = value,
-            Msg::SetLog(value) => model.log = value,
-            Msg::SetCase(value) => model.case = value,
-            Msg::SetLimit(value) => model.limit = value,
-            Msg::SetReg(value) => model.reg = value,
+            Msg::Path(value) => model.path = value,
+            Msg::Ext(value) => model.ext = value,
+            Msg::Log(value) => model.log = value,
+            Msg::Case(value) => model.case = value,
+            Msg::Limit(value) => model.limit = value,
+            Msg::Reg(value) => model.reg = value,
         }
         true
     }
@@ -119,7 +119,7 @@ impl Component for Search {
                         let sender = sender.clone();
                         move |wgt| {
                             if wgt.focus() {
-                                sender.send(Msg::SetPath(wgt.value())).unwrap();
+                                sender.send(Msg::Path(wgt.value())).unwrap();
                             }
                         }
                     });
@@ -140,7 +140,7 @@ impl Component for Search {
                             } else if wgt.value().split(",").count() > 25 {
                                 efltk::Popup::warning(&wgt.window(), "Maximum of 25 file types!")
                             } else {
-                                sender.send(Msg::SetExt(wgt.value())).unwrap()
+                                sender.send(Msg::Ext(wgt.value())).unwrap()
                             }
                         }
                     }
@@ -162,7 +162,7 @@ impl Component for Search {
                             } else if regex::Regex::new(&wgt.value()).is_err() {
                                 efltk::Popup::warning(&wgt.window(), "Maximum of 25 file types!")
                             } else {
-                                sender.send(Msg::SetReg(wgt.value())).unwrap()
+                                sender.send(Msg::Reg(wgt.value())).unwrap()
                             }
                         }
                     }
@@ -178,7 +178,7 @@ impl Component for Search {
                         if wgt.focus() {
                             let value = wgt.value().parse::<usize>().unwrap_or_default();
                             if (1..=9999).contains(&value) {
-                                sender.send(Msg::SetLimit(value)).unwrap();
+                                sender.send(Msg::Limit(value)).unwrap();
                             } else {
                                 efltk::Popup::warning(
                                     &wgt.window(),
@@ -196,9 +196,9 @@ impl Component for Search {
                 self.log = efltk::Entry::new(prt)
                     .with_single_line(false)
                     .with_editable(false)
-                    .with_signal(InputSignal::Clicked, {
+                    .with_signal(Signal::Clicked, {
                         let sender = sender.clone();
-                        move |wgt| sender.send(Msg::SetLog(wgt.value())).unwrap()
+                        move |wgt| sender.send(Msg::Log(wgt.value())).unwrap()
                     });
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
@@ -209,7 +209,7 @@ impl Component for Search {
                     .with_text("sensitive")
                     .with_callback({
                         let sender = sender.clone();
-                        move |wgt| sender.send(Msg::SetCase(wgt.value())).unwrap()
+                        move |wgt| sender.send(Msg::Case(wgt.value())).unwrap()
                     });
             });
             efltk::Label::new(prt);

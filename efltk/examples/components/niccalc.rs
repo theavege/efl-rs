@@ -123,13 +123,6 @@ Total:         <number>{t}</number><br>
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt).with_size(250, -1)
-                .with_callback(|wgt| {
-                    efltk::Popup::new(&wgt.window())
-                        .with_child::<efltk::List>("Make your choice", |wgt| {
-                            println!("{:#?}", wgt.value());
-                        })
-                        .with_items(&["One", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two", "Two"]);
-                })
                 .set_text("Nicotine strength wanted (mg/ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")

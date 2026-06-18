@@ -8,9 +8,8 @@ mod search;
 mod selectors;
 mod sieg;
 mod sudoku;
-mod cells;
 
 pub use {
     booker::Booker, calculator::Calc, converter::Converter, dialect::Dialect, niccalc::NicCalc,
-    rangers::Ranger, search::Search, selectors::Selector, sieg::Siege, sudoku::Sudoku, cells::Cells,
+    rangers::Ranger, search::Search, selectors::Selector, sieg::Siege, sudoku::Sudoku,
 };

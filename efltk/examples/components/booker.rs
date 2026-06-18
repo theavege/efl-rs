@@ -69,7 +69,7 @@ impl Component for Booker {
                 .inside(|prt| {
                     self.start =
                         efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Departure data"))
-                            .with_signal(InputSignal::Unfocused, {
+                            .with_signal(Signal::Unfocused, {
                                 let sender = sender.clone();
                                 move |wgt| match chrono::NaiveDate::parse_from_str(
                                     &wgt.text(),
@@ -83,7 +83,7 @@ impl Component for Booker {
                             });
                     self.back =
                         efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Return data"))
-                            .with_signal(InputSignal::Unfocused, {
+                            .with_signal(Signal::Unfocused, {
                                 let sender = sender.clone();
                                 move |wgt| match chrono::NaiveDate::parse_from_str(
                                     &wgt.text(),
