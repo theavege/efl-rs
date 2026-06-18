@@ -40,9 +40,7 @@ impl WidgetExt for Menu {
 
 impl SelectorExt for Menu {
     fn add(&self, label: &str) -> WidgetItem {
-        self.append(label, label, |wgt| {
-            wgt.call_signal(SelectorSignal::Selected)
-        })
+        self.append(label, label, |wgt| wgt.call_signal(Signal::Selected))
     }
     fn set_value(&self, value: u32) {
         let mut temp = self.first().as_raw();

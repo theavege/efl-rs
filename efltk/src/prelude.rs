@@ -8,65 +8,21 @@ use {
     },
 };
 
-pub trait SignalExt {
-    fn to_str(&self) -> &str;
-}
-
 #[derive(Default)]
-pub enum TriggerSignal {
+pub enum Signal {
     #[default]
+    Changed,
     Clicked,
-}
-
-impl SignalExt for TriggerSignal {
-    fn to_str(&self) -> &str {
-        match self {
-            Self::Clicked => "clicked",
-        }
-    }
-}
-
-#[derive(Default)]
-pub enum SelectorSignal {
-    #[default]
     Selected,
-    Changed,
-}
-
-impl SignalExt for SelectorSignal {
-    fn to_str(&self) -> &str {
-        match self {
-            Self::Selected => "selected",
-            Self::Changed => "changed",
-        }
-    }
-}
-
-#[derive(Default)]
-pub enum RangerSignal {
-    #[default]
-    Changed,
-}
-impl SignalExt for RangerSignal {
-    fn to_str(&self) -> &str {
-        match self {
-            Self::Changed => "changed",
-        }
-    }
-}
-
-#[derive(Default)]
-pub enum InputSignal {
-    #[default]
-    Changed,
-    Clicked,
     Unfocused,
 }
-impl SignalExt for InputSignal {
-    fn to_str(&self) -> &str {
+
+impl Signal {
+    pub fn to_str(&self) -> &str {
         match self {
             Self::Changed => "changed",
             Self::Clicked => "clicked",
+            Self::Selected => "selected",
             Self::Unfocused => "unfocused",
         }
     }
@@ -80,6 +36,7 @@ pub enum Align {
     Center,
     Right,
 }
+
 impl Align {
     fn to_f64(&self) -> f64 {
         match self {
@@ -109,8 +66,9 @@ pub enum Cursor {
     Bogocity,
     Xterm,
 }
-impl SignalExt for Cursor {
-    fn to_str(&self) -> &str {
+
+impl Cursor {
+    pub fn to_str(&self) -> &str {
         match self {
             Self::Hand1 => "hand1",
             Self::Hand2 => "hand2",
@@ -393,10 +351,18 @@ pub trait WidgetExt: Sized {
             }
         }
     }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: Signal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
     fn window(&self) -> super::Window {
         super::Window::from_raw(unsafe { elm_win_get(self.as_raw()) })
     }
-    fn set_callback<F: FnMut(Self) + 'static>(&self, sign: impl SignalExt, func: F) {
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(Signal::Changed, func);
+        self
+    }
+    fn set_callback<F: FnMut(Self) + 'static>(&self, sign: Signal, func: F) {
         let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
         unsafe {
             evas_object_smart_callback_add(
@@ -407,7 +373,7 @@ pub trait WidgetExt: Sized {
             );
         }
     }
-    fn call_signal(&self, sign: impl SignalExt) {
+    fn call_signal(&self, sign: Signal) {
         unsafe {
             evas_object_smart_callback_call(
                 self.as_raw(),
@@ -461,7 +427,8 @@ pub trait ButtonExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_button_add(prt.as_raw()) })
             .with_conf()
-            .with_weight(true, false);
+            .with_weight(true, false)
+            .with_signal(Signal::Clicked, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
         elm
     }
@@ -473,16 +440,8 @@ pub trait ButtonExt: WidgetExt {
             }
         })
     }
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(TriggerSignal::Clicked, func);
-        self
-    }
     fn do_callback(&self) {
-        self.call_signal(TriggerSignal::Clicked);
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: TriggerSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
+        self.call_signal(Signal::Clicked);
     }
 }
 
@@ -531,7 +490,9 @@ pub trait BoxExt: ContainerExt {
 
 pub trait MenuExt: SelectorExt {
     fn popup(prt: &impl WidgetExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_menu_add(prt.window().as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_menu_add(prt.window().as_raw()) })
+            .with_conf()
+            .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
         elm.close();
         elm
     }
@@ -616,14 +577,6 @@ pub trait CheckExt: WidgetExt {
     fn value(&self) -> bool {
         unsafe { elm_check_state_get(self.as_raw()) != 0 }
     }
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(InputSignal::Changed, func);
-        self
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: InputSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
-    }
 }
 
 pub trait RangerExt: WidgetExt {
@@ -632,16 +585,8 @@ pub trait RangerExt: WidgetExt {
     fn set_step(&self, step: f64);
     fn set_range(&self, min: f64, max: f64);
     fn set_value(&self, value: f64);
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(RangerSignal::Changed, func);
-        self
-    }
     fn do_callback(self) {
-        self.call_signal(RangerSignal::Changed);
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: RangerSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
+        self.call_signal(Signal::Changed);
     }
     fn with_range(self, min: f64, max: f64) -> Self {
         self.set_range(min, max);
@@ -668,14 +613,6 @@ pub trait SelectorExt: WidgetExt {
     fn value(&self) -> u32;
     fn clear(&self);
     fn set_value(&self, value: u32);
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(SelectorSignal::Selected, func);
-        self
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: SelectorSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
-    }
     fn add_items(&self, items: &[&str]) {
         for item in items {
             self.add(item);
@@ -743,27 +680,19 @@ pub trait EntryExt: WidgetExt {
         prt.add(&elm);
         elm
     }
-    fn do_callback(self) {
-        self.call_signal(InputSignal::Changed);
-    }
     fn with_menu(prt: &impl ContainerExt, menu: super::Menu) -> Self {
         Self::new(prt)
             .with_editable(false)
             .with_cursor(Cursor::Hand1)
-            .with_signal(InputSignal::Clicked, {
+            .with_signal(Signal::Clicked, {
                 move |wgt| {
                     let pos = wgt.geometry();
                     menu.open(pos.0, pos.1 + pos.3);
                 }
             })
     }
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(InputSignal::Changed, func);
-        self
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: InputSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
+    fn do_callback(self) {
+        self.call_signal(Signal::Changed);
     }
     fn with_editable(self, value: bool) -> Self {
         self.set_editable(value);
@@ -875,7 +804,8 @@ pub trait ListExt: SelectorExt {
             elm_list_go(ptr);
             ptr
         })
-        .with_conf();
+        .with_conf()
+        .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
         elm
     }
@@ -904,17 +834,10 @@ pub trait FrameExt: ContainerExt {
         let prt = super::Box::new(parent).with_horizontal(true);
         let elm = Self::from_raw(unsafe { elm_frame_add(prt.as_raw()) })
             .with_autocollapse(true)
-            .with_conf();
+            .with_conf()
+            .with_signal(Signal::Clicked, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
         elm
-    }
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(TriggerSignal::Clicked, func);
-        self
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: TriggerSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
     }
     fn with_autocollapse(self, value: bool) -> Self {
         self.set_autocollapse(value);
@@ -991,38 +914,6 @@ pub trait PanesExt: WidgetExt {
     }
 }
 
-pub trait ChildExt: WidgetExt {
-    fn child(prt: &impl ContainerExt) -> Self;
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(SelectorSignal::Selected, func);
-        self
-    }
-}
-
-impl ChildExt for super::Calendar {
-    fn child(prt: &impl ContainerExt) -> Self {
-        Self::new(prt)
-    }
-}
-
-impl ChildExt for super::List {
-    fn child(prt: &impl ContainerExt) -> Self {
-        Self::new(prt)
-    }
-}
-
-impl ChildExt for super::ColorSel {
-    fn child(prt: &impl ContainerExt) -> Self {
-        Self::new(prt)
-    }
-}
-
-impl ChildExt for super::FileSel {
-    fn child(prt: &impl ContainerExt) -> Self {
-        Self::new(prt)
-    }
-}
-
 pub trait PopupExt: ContainerExt + Clone
 where
     Self: 'static,
@@ -1031,17 +922,6 @@ where
         let elm = Self::from_raw(unsafe { elm_popup_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
         elm
-    }
-    fn with_child<T: ChildExt>(&self, title: &str, mut func: impl FnMut(T) + 'static) -> T {
-        self.set_content(&super::Icon::new(self).with_standard("home"), "title,icon");
-        self.set_part("title,text", title);
-        T::child(&super::Box::new(self).with_size(-1, 90)).with_callback({
-            let elm = self.clone();
-            move |wgt| {
-                func(wgt);
-                elm.dismiss();
-            }
-        })
     }
     fn with_cancel<F: FnMut(super::Button) + 'static>(self, mut func: F) -> Self {
         let but = super::Button::new(&self)
@@ -1139,21 +1019,21 @@ pub trait ProgressBarExt: WidgetExt {
 }
 
 pub trait RadioExt: WidgetExt {
-    fn new<F: FnMut(Self) + 'static + Clone>(
+    fn from_items<F: FnMut(Self) + 'static + Clone>(
         prt: &impl ContainerExt,
         items: &[&str],
         func: F,
     ) -> Self {
-        let elm = Self::item(prt);
+        let elm = Self::new(prt);
         for (idx, item) in items.iter().enumerate() {
             if idx == 0 {
-                elm.set_callback(InputSignal::Changed, func.clone());
+                elm.set_callback(Signal::Changed, func.clone());
                 elm.set_state(idx as i32);
                 elm.set_text(item);
                 elm.set_icon(item);
             } else {
                 elm.add_group(
-                    &Self::item(prt)
+                    &Self::new(prt)
                         .with_callback(func.clone())
                         .with_state(idx as i32)
                         .with_text(item)
@@ -1164,14 +1044,10 @@ pub trait RadioExt: WidgetExt {
         elm.set_value(0);
         elm
     }
-    fn item(prt: &impl ContainerExt) -> Self {
+    fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_radio_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
         elm
-    }
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(InputSignal::Changed, func);
-        self
     }
     fn add_group(&self, child: &Self) {
         unsafe { elm_radio_group_add(child.as_raw(), self.as_raw()) };
@@ -1195,10 +1071,7 @@ pub trait SegmentControlExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_segment_control_add(prt.as_raw()) })
             .with_conf()
-            .with_weight(true, false)
-            .with_signal(SelectorSignal::Changed, |wgt| {
-                wgt.call_signal(SelectorSignal::Selected)
-            });
+            .with_weight(true, false);
         prt.add(&elm);
         elm
     }
@@ -1368,15 +1241,9 @@ pub trait ColorSelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) })
             .with_conf()
-            .with_signal(SelectorSignal::Changed, |wgt| {
-                wgt.call_signal(SelectorSignal::Selected)
-            });
+            .with_signal(Signal::Changed, |wgt| wgt.call_signal(Signal::Selected));
         prt.add(&elm);
         elm
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: SelectorSignal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
     }
     fn color(&self) -> (i32, i32, i32, i32) {
         let (mut r, mut g, mut b, mut a) = (0, 0, 0, 0);

@@ -154,13 +154,23 @@ impl Component for Dialect {
             .with_horizontal(true)
             .with_homogeneous(true)
             .inside(|prt| {
+                self.from = efltk::List::new(prt).with_callback({
+                    let sender = sender.clone();
+                    move |wgt| {
+                        sender.send(Msg::From(wgt.value() as i32)).unwrap();
+                    }
+                });
                 efltk::Box::new(prt).inside(|prt| {
-                    self.from = efltk::List::new(prt).with_signal(SelectorSignal::Selected, {
-                        let sender = sender.clone();
-                        move |wgt| {
-                            sender.send(Msg::From(wgt.value() as i32)).unwrap();
-                        }
-                    });
+                    self.source = efltk::Entry::new(prt)
+                        .with_single_line(false)
+                        .with_callback({
+                            let sender = sender.clone();
+                            move |wgt| {
+                                if wgt.focus() {
+                                    sender.send(Msg::Source(wgt.text())).unwrap();
+                                }
+                            }
+                        });
                     efltk::Button::new(prt).with_text("Switch").with_callback({
                         let sender = sender.clone();
                         move |_| {
@@ -168,26 +178,10 @@ impl Component for Dialect {
                         }
                     });
                 });
-                self.source = efltk::Entry::new(prt)
-                    .with_single_line(false)
-                    .with_callback({
-                        let sender = sender.clone();
-                        move |wgt| {
-                            if wgt.focus() {
-                                sender.send(Msg::Source(wgt.text())).unwrap();
-                            }
-                        }
-                    });
-                self.target = efltk::Entry::new(prt)
-                    .with_single_line(false)
-                    .with_editable(false);
                 efltk::Box::new(prt).inside(|prt| {
-                    self.to = efltk::List::new(prt).with_signal(SelectorSignal::Selected, {
-                        let sender = sender.clone();
-                        move |wgt| {
-                            sender.send(Msg::To(wgt.value() as i32)).unwrap();
-                        }
-                    });
+                    self.target = efltk::Entry::new(prt)
+                        .with_single_line(false)
+                        .with_editable(false);
                     efltk::Button::new(prt)
                         .with_text("Translate")
                         .with_callback({
@@ -196,6 +190,12 @@ impl Component for Dialect {
                                 sender.send(Msg::Run).unwrap();
                             }
                         });
+                });
+                self.to = efltk::List::new(prt).with_callback({
+                    let sender = sender.clone();
+                    move |wgt| {
+                        sender.send(Msg::To(wgt.value() as i32)).unwrap();
+                    }
                 });
             });
         std::thread::spawn(move || {
