@@ -150,55 +150,58 @@ impl Component for Dialect {
         self.target.update(&state.target);
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        efltk::Box::new(prt).with_horizontal(true).with_homogeneous(true).inside(|prt| {
-            efltk::Box::new(prt).inside(|prt| {
-                self.from = efltk::List::new(prt)
-                    .with_signal(SelectorSignal::Selected, {
+        efltk::Box::new(prt)
+            .with_horizontal(true)
+            .with_homogeneous(true)
+            .inside(|prt| {
+                efltk::Box::new(prt).inside(|prt| {
+                    self.from = efltk::List::new(prt).with_signal(SelectorSignal::Selected, {
                         let sender = sender.clone();
                         move |wgt| {
                             sender.send(Msg::From(wgt.value() as i32)).unwrap();
                         }
                     });
-                efltk::Button::new(prt)
-                    .with_text("Switch")
-                    .with_callback({
+                    efltk::Button::new(prt).with_text("Switch").with_callback({
                         let sender = sender.clone();
                         move |_| {
                             sender.send(Msg::Switch).unwrap();
                         }
                     });
-            });
-            self.source = efltk::Entry::new(prt).with_single_line(false).with_callback({
-                let sender = sender.clone();
-                move |wgt| {
-                    if wgt.focus() {
-                        sender.send(Msg::Source(wgt.text())).unwrap();
-                    }
-                }
-            });
-            self.target = efltk::Entry::new(prt)
-                .with_single_line(false)
-                .with_editable(false);
-            efltk::Box::new(prt).inside(|prt| {
-                self.to = efltk::List::new(prt)
-                    .with_signal(SelectorSignal::Selected, {
+                });
+                self.source = efltk::Entry::new(prt)
+                    .with_single_line(false)
+                    .with_callback({
+                        let sender = sender.clone();
+                        move |wgt| {
+                            if wgt.focus() {
+                                sender.send(Msg::Source(wgt.text())).unwrap();
+                            }
+                        }
+                    });
+                self.target = efltk::Entry::new(prt)
+                    .with_single_line(false)
+                    .with_editable(false);
+                efltk::Box::new(prt).inside(|prt| {
+                    self.to = efltk::List::new(prt).with_signal(SelectorSignal::Selected, {
                         let sender = sender.clone();
                         move |wgt| {
                             sender.send(Msg::To(wgt.value() as i32)).unwrap();
                         }
                     });
-                efltk::Button::new(prt)
-                    .with_text("Translate")
-                    .with_callback({
-                        let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Run).unwrap();
-                        }
-                    });
+                    efltk::Button::new(prt)
+                        .with_text("Translate")
+                        .with_callback({
+                            let sender = sender.clone();
+                            move |_| {
+                                sender.send(Msg::Run).unwrap();
+                            }
+                        });
+                });
             });
-        });
         std::thread::spawn(move || {
-            if let Ok(get) = reqwest::blocking::get("https://translate.plausibility.cloud/api/v1/languages") {
+            if let Ok(get) =
+                reqwest::blocking::get("https://translate.plausibility.cloud/api/v1/languages")
+            {
                 let value = get
                     .json::<HashMap<String, Vec<HashMap<String, String>>>>()
                     .unwrap()
