@@ -68,6 +68,7 @@ impl Component for View {
                 components::Siege::mount(prt);
                 components::Search::mount(prt);
                 components::Dialect::mount(prt);
+                components::CircleDrawer::mount(prt);
                 prt.promote();
             });
         });
