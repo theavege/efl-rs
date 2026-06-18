@@ -7,8 +7,9 @@ mod search;
 mod selectors;
 mod sieg;
 mod sudoku;
+mod dialect;
 
 pub use {
     booker::Booker, calculator::Calc, converter::Converter, niccalc::NicCalc, rangers::Ranger,
-    search::Search, selectors::Selector, sieg::Siege, sudoku::Sudoku,
+    search::Search, selectors::Selector, sieg::Siege, sudoku::Sudoku, dialect::Dialect,
 };

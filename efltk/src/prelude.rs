@@ -1265,7 +1265,7 @@ impl<T: RangerExt + 'static> Update<f64> for T {
 
 impl<T: SelectorExt + 'static> Update<u32> for T {
     fn update(&self, value: u32) {
-        if !self.focus() && (0..self.lenght()).contains(&value) {
+        if (0..self.lenght()).contains(&value) {
             self.set_value(value);
         };
     }
@@ -1273,13 +1273,13 @@ impl<T: SelectorExt + 'static> Update<u32> for T {
 
 impl<T: SelectorExt + 'static> Update<(Vec<String>, u32)> for T {
     fn update(&self, value: (Vec<String>, u32)) {
-        if !self.focus() && self.lenght() != (value.0.len() as u32) {
+        if self.lenght() != (value.0.len() as u32) {
             self.clear();
             for item in &value.0 {
                 self.add(item);
             }
-            self.update(value.1);
         }
+        self.update(value.1);
     }
 }
 
