@@ -10,7 +10,7 @@ pub enum Msg {
 }
 
 #[derive(Default)]
-pub struct View([efltk::Frame; 4], efltk::Naviframe);
+pub struct View([efltk::Frame; 5], efltk::Naviframe);
 
 impl Component for View {
     type Event = Msg;
@@ -31,7 +31,7 @@ impl Component for View {
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         efltk::Box::new(prt).inside(|prt| {
             let items = [
-                "home", "Calc", "Sudoku", "NicCalc", "Siege", "Search", "Dialect",
+                "home", "Calc", "Sudoku", "NicCalc", "Siege", "Search", "Dialect", "CRUD",
             ];
             efltk::SegmentControl::new(prt)
                 .with_items(&items)
@@ -42,7 +42,7 @@ impl Component for View {
             self.1 = efltk::Naviframe::new(prt);
             self.1.inside(|prt| {
                 efltk::Box::new(prt).inside(|prt| {
-                    for (idx, item) in ["Inputs", "Rangers", "Selectors", "Booker"]
+                    for (idx, item) in ["Inputs", "Rangers", "Selectors", "Booker", "CRUD"]
                         .iter()
                         .enumerate()
                     {
@@ -57,7 +57,8 @@ impl Component for View {
                             0 => components::Converter::mount(&self.0[idx]),
                             1 => components::Ranger::mount(&self.0[idx]),
                             2 => components::Selector::mount(&self.0[idx]),
-                            _ => components::Booker::mount(&self.0[idx]),
+                            3 => components::Booker::mount(&self.0[idx]),
+                            _ => components::Crud::mount(&self.0[idx]),
                         };
                     }
                     efltk::Label::new(prt);
@@ -68,6 +69,8 @@ impl Component for View {
                 components::Siege::mount(prt);
                 components::Search::mount(prt);
                 components::Dialect::mount(prt);
+                components::Cells::mount(prt);
+                components::Crud::mount(prt);
                 prt.promote();
             });
         });
