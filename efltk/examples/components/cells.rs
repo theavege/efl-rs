@@ -96,12 +96,10 @@ pub enum Msg {
     EditCell(i32, i32),
     UpdateFormula(String),
     FinishEdit,
-    CellClicked(i32, i32),
 }
 
 #[derive(Default)]
 pub struct Cells {
-    grid: efltk::Box,
     cells: Vec<Vec<efltk::Entry>>,
     edit_entry: efltk::Entry,
 }
@@ -116,25 +114,26 @@ impl Component for Cells {
                 if let Some(cell) = model.get_cell(row, col) {
                     model.editing = Some((row, col));
                     model.edit_text = cell.formula.clone();
+                    true
+                } else {
+                    false
                 }
             }
             Msg::UpdateFormula(formula) => {
                 model.edit_text = formula;
+                false
             }
             Msg::FinishEdit => {
                 if let Some((row, col)) = model.editing {
                     model.set_cell_formula(row, col, model.edit_text.clone());
                     model.editing = None;
                     model.edit_text = String::new();
+                    true
+                } else {
+                    false
                 }
             }
-            Msg::CellClicked(row, col) => {
-                // Double-click to edit
-                // For simplicity, we'll just edit on single click
-                sender.send(Msg::EditCell(row, col)).unwrap();
-            }
         }
-        true
     }
 
     fn update(&self, model: &Self::State) {
@@ -155,33 +154,36 @@ impl Component for Cells {
             self.edit_entry.show();
         } else {
             self.edit_entry.set_value("");
-            self.edit_entry.del();
         }
     }
 
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
-        // Create scrollable container
-        self.grid = efltk::Box::new(prt).with_vertical(true);
+        // Create main container
+        let grid_box = efltk::Box::new(prt).with_vertical(true);
 
         // Create grid of cells (5x5 for demo)
         const ROWS: usize = 5;
         const COLS: usize = 5;
 
-        self.cells = vec![vec![efltk::Entry::new(&self.grid); COLS]; ROWS];
+        self.cells = vec![vec![efltk::Entry::new(&grid_box); COLS]; ROWS];
 
-        for (row_idx, row) in self.cells.iter_mut().enumerate() {
-            let row_box = efltk::Box::new(&self.grid).with_horizontal(true);
-            for (col_idx, cell_entry) in row.iter_mut().enumerate() {
+        for (row_idx, row_entries) in self.cells.iter_mut().enumerate() {
+            let row_box = efltk::Box::new(&grid_box).with_horizontal(true);
+            for (col_idx, cell_entry) in row_entries.iter_mut().enumerate() {
                 let col_name = (b'A' as usize + col_idx) as u8 as char;
-                let cell = cell_entry
+                let label = efltk::Label::new(&row_box)
+                    .with_text(&format!("{}{}", col_name, row_idx));
+                row_box.add(&label);
+                
+                *cell_entry = efltk::Entry::new(&row_box)
                     .with_size(80, 30)
                     .with_callback({
                         let sender = sender.clone();
                         let row = row_idx as i32;
                         let col = col_idx as i32;
-                        move |_| sender.send(Msg::CellClicked(row, col)).unwrap()
+                        move |_| sender.send(Msg::EditCell(row, col)).unwrap()
                     });
-                row_box.add(&cell);
+                row_box.add(cell_entry);
             }
         }
 
