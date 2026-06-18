@@ -45,6 +45,6 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
   - [x] [Triggers](docs/elm_triggers.md)
     - [x] [Button](docs/elm_triggers.md#Button)
 
-# Scrot
+## Screenshots
 
 ![enlightenment](https://www.enlightenment.org/_media/aa/shot-2021-12-13_17-49-55.png)
