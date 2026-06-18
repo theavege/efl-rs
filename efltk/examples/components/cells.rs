@@ -190,7 +190,7 @@ impl Component for Cells {
             .with_size(200, 30)
             .with_callback({
                 let sender = sender.clone();
-                move |wgt| sender.send(Msg::UpdateFormula(wgt.text())).unwrap()
+                move |wgt| sender.send(Msg::UpdateFormula(wgt.value())).unwrap()
             })
             .with_signal(InputSignal::Unfocused, {
                 let sender = sender.clone();
