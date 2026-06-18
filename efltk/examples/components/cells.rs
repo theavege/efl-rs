@@ -102,6 +102,7 @@ pub enum Msg {
 pub struct Cells {
     cells: Vec<Vec<efltk::Entry>>,
     edit_entry: efltk::Entry,
+    grid_box: efltk::Box,
 }
 
 impl Component for Cells {
@@ -159,21 +160,20 @@ impl Component for Cells {
 
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         // Create main container
-        let grid_box = efltk::Box::new(prt).with_horizontal(false);
+        self.grid_box = efltk::Box::new(prt).with_horizontal(false);
 
         // Create grid of cells (5x5 for demo)
         const ROWS: usize = 5;
         const COLS: usize = 5;
 
-        self.cells = vec![vec![efltk::Entry::new(&grid_box); COLS]; ROWS];
+        self.cells = vec![vec![efltk::Entry::default(); COLS]; ROWS];
 
         for (row_idx, row_entries) in self.cells.iter_mut().enumerate() {
-            let row_box = efltk::Box::new(&grid_box).with_horizontal(true);
+            let row_box = efltk::Box::new(&self.grid_box).with_horizontal(true);
             for (col_idx, cell_entry) in row_entries.iter_mut().enumerate() {
                 let col_name = (b'A' as usize + col_idx) as u8 as char;
                 let label = efltk::Label::new(&row_box)
                     .with_text(&format!("{}{}", col_name, row_idx));
-                row_box.add(&label);
                 
                 *cell_entry = efltk::Entry::new(&row_box)
                     .with_size(80, 30)
@@ -183,7 +183,6 @@ impl Component for Cells {
                         let col = col_idx as i32;
                         move |_| sender.send(Msg::EditCell(row, col)).unwrap()
                     });
-                row_box.add(cell_entry);
             }
         }
 
