@@ -309,9 +309,6 @@ pub trait WidgetExt: Sized {
             ) != 0
         }
     }
-    fn disabled(&self) -> bool {
-        unsafe { elm_object_disabled_get(self.as_raw()) != 0 }
-    }
     fn focus(&self) -> bool {
         unsafe { elm_object_focus_get(self.as_raw()) != 0 }
     }
@@ -386,18 +383,17 @@ pub trait WidgetExt: Sized {
 
 pub trait BubbleExt: ContainerExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_bubble_add(prt.as_raw()) })
-            .with_conf()
-            .with_pos(1);
+        let elm = Self::from_raw(unsafe {
+            let ptr = elm_bubble_add(prt.as_raw());
+            elm_bubble_pos_set(ptr, 1);
+            ptr
+        })
+        .with_conf();
         prt.add(&elm);
         elm
     }
     fn with_info(self, info: &str) -> Self {
         self.set_part("info", info);
-        self
-    }
-    fn with_pos(self, value: i32) -> Self {
-        unsafe { elm_bubble_pos_set(self.as_raw(), value) };
         self
     }
 }
@@ -465,26 +461,17 @@ pub trait BoxExt: ContainerExt {
         elm
     }
     fn with_horizontal(self, value: bool) -> Self {
-        self.set_horizontal(value);
+        unsafe { elm_box_horizontal_set(self.as_raw(), value as Eina_Bool) };
+        self.set_weight(value, !value);
         self
     }
     fn with_homogeneous(self, value: bool) -> Self {
         unsafe { elm_box_homogeneous_set(self.as_raw(), value as Eina_Bool) };
         self
     }
-    fn with_padding(self, horizontal: i32, vertical: i32) -> Self {
-        unsafe { elm_box_padding_set(self.as_raw(), horizontal, vertical) };
+    fn with_padding(self, padding: i32) -> Self {
+        unsafe { elm_box_padding_set(self.as_raw(), padding, padding) };
         self
-    }
-    fn add_item(&self, item: &impl WidgetExt) {
-        unsafe {
-            elm_box_pack_end(self.as_raw(), item.as_raw());
-            elm_box_recalculate(self.as_raw());
-        };
-    }
-    fn set_horizontal(&self, value: bool) {
-        unsafe { elm_box_horizontal_set(self.as_raw(), value as Eina_Bool) };
-        self.set_weight(value, !value);
     }
 }
 
@@ -639,12 +626,9 @@ pub trait SliderExt: RangerExt {
         prt.add(&elm);
         elm
     }
-    fn set_horizontal(&self, value: bool) {
+    fn with_horizontal(self, value: bool) -> Self {
         unsafe { elm_slider_horizontal_set(self.as_raw(), value as Eina_Bool) };
         self.set_weight(value, !value);
-    }
-    fn with_horizontal(self, value: bool) -> Self {
-        self.set_horizontal(value);
         self
     }
 }
@@ -660,11 +644,11 @@ pub trait CalendarExt: WidgetExt {
         prt.add(&elm);
         elm
     }
-    fn set_selected(&self, value: super::Tm) {
+    fn set_value(&self, value: super::Tm) {
         let mut tm_ = value.to_tm();
         unsafe { elm_calendar_selected_time_set(self.as_raw(), &mut tm_) };
     }
-    fn selected(&self) -> super::Tm {
+    fn value(&self) -> super::Tm {
         let mut tm_ = super::Tm::default().to_tm();
         unsafe { elm_calendar_selected_time_get(self.as_raw(), &mut tm_) };
         super::Tm::from_tm(tm_)
@@ -695,11 +679,11 @@ pub trait EntryExt: WidgetExt {
         self.call_signal(Signal::Changed);
     }
     fn with_editable(self, value: bool) -> Self {
-        self.set_editable(value);
+        unsafe { elm_entry_editable_set(self.as_raw(), value as Eina_Bool) };
         self
     }
     fn with_scrollable(self, value: bool) -> Self {
-        self.set_scrollable(value);
+        unsafe { elm_entry_scrollable_set(self.as_raw(), value as Eina_Bool) };
         self
     }
     fn with_single_line(self, value: bool) -> Self {
@@ -719,20 +703,9 @@ pub trait EntryExt: WidgetExt {
         let ctext = CString::new(value).unwrap();
         unsafe { elm_entry_entry_set(self.as_raw(), ctext.as_ptr()) };
     }
-    fn set_scrollable(&self, value: bool) {
-        unsafe { elm_entry_scrollable_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn set_menu(&self, value: bool) {
-        unsafe { elm_entry_context_menu_disabled_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn set_password(&self, value: bool) {
+    fn with_password(self, value: bool) -> Self {
         unsafe { elm_entry_password_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn set_editable(&self, value: bool) {
-        unsafe { elm_entry_editable_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn set_context_menu_disabled(&self, value: bool) {
-        unsafe { elm_entry_context_menu_disabled_set(self.as_raw(), value as Eina_Bool) };
+        self
     }
     fn set_file(&self, file_: &str) {
         let file = CString::new(file_).unwrap();
@@ -744,17 +717,11 @@ pub trait EntryExt: WidgetExt {
             )
         };
     }
-    fn context_menu_clear(&self) {
-        unsafe { elm_entry_context_menu_clear(self.as_raw()) };
-    }
     fn value(&self) -> String {
         unsafe {
             let ptr = elm_entry_entry_get(self.as_raw());
             CStr::from_ptr(ptr).to_string_lossy().into_owned()
         }
-    }
-    fn editable(&self) -> bool {
-        unsafe { elm_entry_editable_get(self.as_raw()) != 0 }
     }
 }
 
@@ -765,11 +732,8 @@ pub trait IconExt: WidgetExt {
         elm
     }
     fn with_standard(self, value: &str) -> Self {
-        self.set_standard(value);
-        self
-    }
-    fn set_standard(&self, value: &str) {
         unsafe { elm_icon_standard_set(self.as_raw(), CString::new(value).unwrap().as_ptr()) };
+        self
     }
 }
 
@@ -782,12 +746,9 @@ pub trait SeparatorExt: WidgetExt {
         elm
     }
     fn with_horizontal(self, value: bool) -> Self {
-        self.set_horizontal(value);
-        self
-    }
-    fn set_horizontal(&self, value: bool) {
         unsafe { elm_separator_horizontal_set(self.as_raw(), value as Eina_Bool) };
         self.set_weight(value, !value);
+        self
     }
 }
 
@@ -833,18 +794,10 @@ pub trait FrameExt: ContainerExt {
     fn new(parent: &impl ContainerExt) -> Self {
         let prt = super::Box::new(parent).with_horizontal(true);
         let elm = Self::from_raw(unsafe { elm_frame_add(prt.as_raw()) })
-            .with_autocollapse(true)
             .with_conf()
             .with_signal(Signal::Clicked, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
         elm
-    }
-    fn with_autocollapse(self, value: bool) -> Self {
-        self.set_autocollapse(value);
-        self
-    }
-    fn set_autocollapse(&self, value: bool) {
-        unsafe { elm_frame_autocollapse_set(self.as_raw(), value as Eina_Bool) };
     }
     fn set_collapse(&self, value: bool) {
         unsafe { elm_frame_collapse_set(self.as_raw(), value as Eina_Bool) };
@@ -988,18 +941,12 @@ where
 
 pub trait ProgressBarExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_progressbar_add(prt.as_raw()) })
-            .with_conf()
-            .with_horizontal(true);
+        let elm = Self::from_raw(unsafe { elm_progressbar_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
         elm
     }
     fn value(&self) -> f64 {
         unsafe { elm_progressbar_value_get(self.as_raw()) }
-    }
-    fn set_horizontal(&self, value: bool) {
-        unsafe { elm_progressbar_horizontal_set(self.as_raw(), value as Eina_Bool) };
-        self.set_weight(value, !value);
     }
     fn set_value(&self, value: f64) {
         unsafe { elm_progressbar_value_set(self.as_raw(), value) };
@@ -1007,10 +954,6 @@ pub trait ProgressBarExt: WidgetExt {
     fn set_unit_format(&self, value: &str) {
         let ctext = CString::new(value).unwrap();
         unsafe { elm_progressbar_unit_format_set(self.as_raw(), ctext.as_ptr()) };
-    }
-    fn with_horizontal(self, value: bool) -> Self {
-        self.set_horizontal(value);
-        self
     }
     fn with_format(self, value: &str) -> Self {
         self.set_unit_format(value);
@@ -1080,34 +1023,23 @@ pub trait SegmentControlExt: SelectorExt {
 pub trait WindowExt: WidgetExt {
     fn new(id: &str, title: &str) -> Self {
         Self::from_raw(unsafe {
-            elm_win_util_standard_add(
+            let ptr = elm_win_util_standard_add(
                 CString::new(id).unwrap().as_ptr(),
                 CString::new(title).unwrap().as_ptr(),
-            )
+            );
+            elm_win_autodel_set(ptr, true as Eina_Bool);
+            ptr
         })
-        .with_autodel(true)
     }
     fn with_center(self, value: bool) -> Self {
-        self.set_center(value, value);
+        unsafe { elm_win_center(self.as_raw(), value as Eina_Bool, value as Eina_Bool) }
         self
-    }
-    fn with_autodel(self, value: bool) -> Self {
-        self.set_autodel(value);
-        self
-    }
-    fn set_center(&self, h: bool, v: bool) {
-        unsafe { elm_win_center(self.as_raw(), h as Eina_Bool, v as Eina_Bool) }
-    }
-    fn set_autodel(&self, value: bool) {
-        unsafe {
-            elm_win_autodel_set(self.as_raw(), value as Eina_Bool);
-        }
     }
 }
 
 pub trait Update<T>
 where
-    Self: 'static,
+    Self: WidgetExt,
 {
     fn update(&self, value: T);
 }
@@ -1227,12 +1159,12 @@ pub trait ClockExt: WidgetExt {
         prt.add(&elm);
         elm
     }
-    fn time(&self) -> (i32, i32, i32) {
+    fn value(&self) -> (i32, i32, i32) {
         let (mut hrs, mut min, mut sec) = (0, 0, 0);
         unsafe { elm_clock_time_get(self.as_raw(), &mut hrs, &mut min, &mut sec) };
         (hrs, min, sec)
     }
-    fn set_time(&self, hrs: i32, min: i32, sec: i32) {
+    fn set_value(&self, hrs: i32, min: i32, sec: i32) {
         unsafe { elm_clock_time_set(self.as_raw(), hrs, min, sec) };
     }
 }
@@ -1245,12 +1177,12 @@ pub trait ColorSelExt: WidgetExt {
         prt.add(&elm);
         elm
     }
-    fn color(&self) -> (i32, i32, i32, i32) {
+    fn value(&self) -> (i32, i32, i32, i32) {
         let (mut r, mut g, mut b, mut a) = (0, 0, 0, 0);
         unsafe { elm_colorselector_color_get(self.as_raw(), &mut r, &mut g, &mut b, &mut a) };
         (r, g, b, a)
     }
-    fn set_color(&self, r: i32, g: i32, b: i32, a: i32) {
+    fn set_value(&self, r: i32, g: i32, b: i32, a: i32) {
         unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
     }
 }

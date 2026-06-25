@@ -166,7 +166,7 @@ Total:         <number>{t}</number><br>
                         }
                     });
             });
-            efltk::Separator::new(prt).set_horizontal(true);
+            efltk::Separator::new(prt).with_horizontal(true);
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt).with_size(250, -1).set_text("Nicotin base:");
                 self.nicotine_base = efltk::ProgressBar::new(prt);
@@ -183,7 +183,7 @@ Total:         <number>{t}</number><br>
                 efltk::Button::new(prt).with_size(250, -1).set_text("Total:");
                 efltk::ProgressBar::new(prt).set_value(1.0);
             });
-            efltk::Separator::new(prt).set_horizontal(true);
+            efltk::Separator::new(prt).with_horizontal(true);
             self.list = efltk::Entry::new(prt).with_editable(false).with_single_line(false);
         });
     }

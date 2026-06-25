@@ -510,7 +510,10 @@ impl WidgetExt for Box {
 }
 impl ContainerExt for Box {
     fn add(&self, child: &impl WidgetExt) {
-        self.add_item(child);
+        unsafe {
+            elm_box_pack_end(self.as_raw(), child.as_raw());
+            elm_box_recalculate(self.as_raw());
+        };
         child.show();
     }
 }

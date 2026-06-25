@@ -48,3 +48,106 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
 ## Screenshots
 
 ![enlightenment](https://www.enlightenment.org/_media/aa/shot-2021-12-13_17-49-55.png)
+
+```plantuml
+@startuml
+
+!theme sunlust
+'skinparam linetype ortho
+
+right footer UML: Class Diagram
+left to right direction
+
+package "efl" <<package>> #line.dashed {
+    package containers <<Frame>> #line.dashed {
+        struct Box {
+            -ptr : Pointer
+        }
+        struct Buble {
+            -ptr : Pointer
+        }
+        struct Panes {
+            -ptr : Pointer
+        }
+        struct Frame {
+            -ptr : Pointer
+        }
+    }
+    package outputs <<Frame>> #line.dashed {
+        struct Separator {
+            -ptr : Pointer
+        }
+        struct Label {
+            -ptr : Pointer
+        }
+        struct ProgressBar {
+            -ptr : Pointer
+        }
+    }
+    package inputs <<Frame>> #line.dashed {
+        struct Slider {
+            -ptr : Pointer
+        }
+        struct Entry {
+            -ptr : Pointer
+        }
+        struct Button {
+            -ptr : Pointer
+        }
+    }
+    package prelude <<Frame>> #line.dashed {
+        interface OrientationExt {
+            +set_horizontal()
+            +Self with_horizontal()
+        }
+
+        interface ContainerExt {
+            #add(item: WidgetBase)
+        }
+
+        interface TextExt {
+            +text()
+            +set_text()
+        }
+
+        interface WidgetExt {
+            +call_signal(signal)
+            +do_callback()
+            +bool focus()
+            +set_disabled(bool)
+            +with_signal(signal)
+            +with_callback()
+            +with_cursor(cursor)
+            +with_tooltip(tooltip)
+        }
+
+        interface WidgetBase {
+            #ptr as_raw()
+            #from_raw(ptr)
+            #del()
+            #show()
+        }
+        interface WidgetExt extends WidgetBase
+        interface TextExt extends WidgetBase
+        interface OrientationExt extends WidgetBase
+        interface ContainerExt extends WidgetBase
+    }
+    struct outputs.Label implements prelude.TextExt
+    struct outputs.Separator implements prelude.OrientationExt
+    struct outputs.ProgressBar implements prelude.WidgetBase
+    struct containers.Frame implements prelude.TextExt
+    struct containers.Box implements prelude.OrientationExt
+    struct containers.Box implements prelude.ContainerExt
+    struct containers.Frame implements prelude.ContainerExt
+    struct containers.Buble implements prelude.ContainerExt
+    struct containers.Panes implements prelude.ContainerExt
+    struct containers.Panes implements prelude.OrientationExt
+    struct inputs.Button implements prelude.TextExt
+    struct inputs.Button implements prelude.WidgetExt
+    struct inputs.Entry implements prelude.WidgetExt
+    struct inputs.Slider implements prelude.WidgetExt
+    struct inputs.Slider implements prelude.OrientationExt
+}
+
+@enduml
+```

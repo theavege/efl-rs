@@ -46,13 +46,10 @@ impl Component for View {
                         .iter()
                         .enumerate()
                     {
-                        self.0[idx] = efltk::Frame::new(prt)
-                            .with_autocollapse(false)
-                            .with_text(item)
-                            .with_callback({
-                                let sender = sender.clone();
-                                move |_| sender.send(Msg::Set(idx)).unwrap()
-                            });
+                        self.0[idx] = efltk::Frame::new(prt).with_text(item).with_callback({
+                            let sender = sender.clone();
+                            move |_| sender.send(Msg::Set(idx)).unwrap()
+                        });
                         match idx {
                             0 => components::Converter::mount(&self.0[idx]),
                             1 => components::Ranger::mount(&self.0[idx]),
