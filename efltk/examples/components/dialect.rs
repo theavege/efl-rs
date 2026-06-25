@@ -32,10 +32,6 @@ mod models {
         pub fn switch(&mut self) {
             std::mem::swap(&mut self.from, &mut self.to);
         }
-        pub fn save(&self) {
-            std::fs::write(Self::file(), [self.from as u8, self.to as u8]).unwrap();
-            std::process::exit(0);
-        }
         pub fn url(&self) -> String {
             format!(
                 "{}/{}/{}/{}",
@@ -66,12 +62,9 @@ use std::collections::HashMap;
 
 pub enum Msg {
     Run,
-    Quit,
     Switch,
     Source(String),
     Target(String),
-    SaveAs(String),
-    Open(String),
     To(i32),
     From(i32),
     Lang(Vec<(String, String)>),
@@ -90,13 +83,6 @@ impl Component for Dialect {
     type State = models::Model;
     fn handle(msg: Self::Event, model: &mut Self::State, sender: Sender<Self::Event>) -> bool {
         match msg {
-            Msg::Open(value) => {
-                model.source = std::fs::read_to_string(value).unwrap();
-            }
-            Msg::SaveAs(value) => {
-                std::fs::write(value, model.target.as_bytes()).unwrap();
-                return false;
-            }
             Msg::Target(value) => {
                 model.target = value;
             }
@@ -112,10 +98,6 @@ impl Component for Dialect {
             }
             Msg::Source(value) => {
                 model.source = value;
-            }
-            Msg::Quit => {
-                model.save();
-                return false;
             }
             Msg::Switch => {
                 model.switch();

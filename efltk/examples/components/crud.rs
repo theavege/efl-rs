@@ -1,5 +1,3 @@
-// CRUD example based on https://7guis.bradwoods.io/crud
-
 use efltk::prelude::*;
 
 mod models {
@@ -11,7 +9,11 @@ mod models {
 
     impl Name {
         pub fn full(&self) -> String {
-            format!("{}, {}", self.last.to_uppercase(), self.first.to_uppercase())
+            format!(
+                "{}, {}",
+                self.last.to_uppercase(),
+                self.first.to_uppercase()
+            )
         }
     }
 
@@ -33,7 +35,9 @@ mod models {
                     if self.prefix.is_empty() {
                         true
                     } else {
-                        n.last.to_uppercase().starts_with(&self.prefix.to_uppercase())
+                        n.last
+                            .to_uppercase()
+                            .starts_with(&self.prefix.to_uppercase())
                     }
                 })
                 .map(|n| n.full())
@@ -83,10 +87,10 @@ impl Component for Crud {
             self.list.add(name);
         }
 
-        if let Some(ref selected) = model.selected {
-            if let Some(index) = model.find_index(selected) {
-                self.list.set_value(index as u32);
-            }
+        if let Some(ref selected) = model.selected
+            && let Some(index) = model.find_index(selected)
+        {
+            self.list.set_value(index as u32);
         }
 
         let has_selection = model.selected.is_some();
@@ -118,7 +122,7 @@ impl Component for Crud {
                     let full_name = name.full();
                     if !model.names.iter().any(|n| n.full() == full_name) {
                         model.names.push(name);
-                        model.names.sort_by(|a, b| a.full().cmp(&b.full()));
+                        model.names.sort_by_key(|a| a.full());
                         model.first = String::new();
                         model.last = String::new();
                         model.selected = None;
@@ -126,33 +130,35 @@ impl Component for Crud {
                 }
             }
             Msg::Update => {
-                if let Some(ref selected_name) = model.selected {
-                    if !model.first.is_empty() && !model.last.is_empty() {
-                        let new_name = models::Name {
-                            first: model.first.clone(),
-                            last: model.last.clone(),
-                        };
-                        let new_full = new_name.full();
-                        if !model.names.iter().any(|n| n.full() == new_full) {
-                            if let Some(index) = model.names.iter().position(|n| n.full() == *selected_name) {
-                                model.names[index] = new_name;
-                                model.names.sort_by(|a, b| a.full().cmp(&b.full()));
-                                model.selected = Some(new_full);
-                                model.first = String::new();
-                                model.last = String::new();
-                            }
-                        }
+                if let Some(ref selected_name) = model.selected
+                    && !model.first.is_empty()
+                    && !model.last.is_empty()
+                {
+                    let new_name = models::Name {
+                        first: model.first.clone(),
+                        last: model.last.clone(),
+                    };
+                    let new_full = new_name.full();
+                    if !model.names.iter().any(|n| n.full() == new_full)
+                        && let Some(index) =
+                            model.names.iter().position(|n| n.full() == *selected_name)
+                    {
+                        model.names[index] = new_name;
+                        model.names.sort_by_key(|a| a.full());
+                        model.selected = Some(new_full);
+                        model.first = String::new();
+                        model.last = String::new();
                     }
                 }
             }
             Msg::Delete => {
-                if let Some(ref selected_name) = model.selected {
-                    if let Some(index) = model.names.iter().position(|n| n.full() == *selected_name) {
-                        model.names.remove(index);
-                        model.selected = None;
-                        model.first = String::new();
-                        model.last = String::new();
-                    }
+                if let Some(ref selected_name) = model.selected
+                    && let Some(index) = model.names.iter().position(|n| n.full() == *selected_name)
+                {
+                    model.names.remove(index);
+                    model.selected = None;
+                    model.first = String::new();
+                    model.last = String::new();
                 }
             }
         }
@@ -163,62 +169,55 @@ impl Component for Crud {
         efltk::Box::new(prt).with_horizontal(false).inside(|prt| {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Label::new(prt).with_text("Filter prefix: ");
-                self.prefix_entry = efltk::Entry::new(prt)
-                    .with_signal(InputSignal::Changed, {
-                        let sender = sender.clone();
-                        move |wgt| {
-                            sender.send(Msg::SetPrefix(wgt.value())).unwrap();
-                        }
-                    });
+                self.prefix_entry = efltk::Entry::new(prt).with_callback({
+                    let sender = sender.clone();
+                    move |wgt| {
+                        sender.send(Msg::SetPrefix(wgt.value())).unwrap();
+                    }
+                });
             });
 
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Label::new(prt).with_text("Name: ");
-                self.first_entry = efltk::Entry::new(prt)
-                    .with_signal(InputSignal::Changed, {
-                        let sender = sender.clone();
-                        move |wgt| {
-                            sender.send(Msg::SetFirst(wgt.value())).unwrap();
-                        }
-                    });
+                self.first_entry = efltk::Entry::new(prt).with_callback({
+                    let sender = sender.clone();
+                    move |wgt| {
+                        sender.send(Msg::SetFirst(wgt.value())).unwrap();
+                    }
+                });
             });
 
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Label::new(prt).with_text("Surname: ");
-                self.last_entry = efltk::Entry::new(prt)
-                    .with_signal(InputSignal::Changed, {
-                        let sender = sender.clone();
-                        move |wgt| {
-                            sender.send(Msg::SetLast(wgt.value())).unwrap();
-                        }
-                    });
+                self.last_entry = efltk::Entry::new(prt).with_callback({
+                    let sender = sender.clone();
+                    move |wgt| {
+                        sender.send(Msg::SetLast(wgt.value())).unwrap();
+                    }
+                });
             });
 
             self.list = efltk::List::new(prt)
                 .with_weight(true, true)
-                .with_signal(SelectorSignal::Selected, {
+                .with_callback({
                     let sender = sender.clone();
                     move |wgt| {
-                        let selected_item = wgt.selected();
-                        let text = selected_item.text();
-                        sender.send(Msg::Select(text)).unwrap();
+                        sender.send(Msg::Select(wgt.selected().text())).unwrap();
                     }
                 });
 
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
-                self.create_btn = efltk::Button::new(prt)
-                    .with_text("Create")
-                    .with_signal(TriggerSignal::Clicked, {
-                        let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Create).unwrap();
-                        }
-                    });
+                self.create_btn = efltk::Button::new(prt).with_text("Create").with_callback({
+                    let sender = sender.clone();
+                    move |_| {
+                        sender.send(Msg::Create).unwrap();
+                    }
+                });
 
                 self.update_btn = efltk::Button::new(prt)
                     .with_text("Update")
                     .with_disabled(true)
-                    .with_signal(TriggerSignal::Clicked, {
+                    .with_callback({
                         let sender = sender.clone();
                         move |_| {
                             sender.send(Msg::Update).unwrap();
@@ -228,7 +227,7 @@ impl Component for Crud {
                 self.delete_btn = efltk::Button::new(prt)
                     .with_text("Delete")
                     .with_disabled(true)
-                    .with_signal(TriggerSignal::Clicked, {
+                    .with_callback({
                         let sender = sender.clone();
                         move |_| {
                             sender.send(Msg::Delete).unwrap();
@@ -237,8 +236,4 @@ impl Component for Crud {
             });
         });
     }
-}
-
-fn main() {
-    Crud::run("CRUD", 400, 600);
 }

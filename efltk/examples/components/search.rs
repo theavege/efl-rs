@@ -73,6 +73,7 @@ pub enum Msg {
     Reg(String),
     Case(bool),
     Limit(usize),
+    Run,
 }
 
 #[derive(Default)]
@@ -97,6 +98,7 @@ impl Component for Search {
             Msg::Case(value) => model.case = value,
             Msg::Limit(value) => model.limit = value,
             Msg::Reg(value) => model.reg = value,
+            Msg::Run => model.log = model.search(),
         }
         true
     }
@@ -211,6 +213,10 @@ impl Component for Search {
                         let sender = sender.clone();
                         move |wgt| sender.send(Msg::Case(wgt.value())).unwrap()
                     });
+            });
+            efltk::Button::new(prt).with_text("Search").with_callback({
+                let sender = sender.clone();
+                move |_| sender.send(Msg::Run).unwrap()
             });
             efltk::Label::new(prt);
         });
