@@ -43,7 +43,8 @@ impl Component for Ranger {
                         }
                     });
                 self.progress =
-                    efltk::ProgressBar::new(&efltk::Bubble::new(prt).with_info("ProgressBar"));
+                    efltk::ProgressBar::new(&efltk::Bubble::new(prt).with_info("ProgressBar"))
+                        .with_icon("home");
                 self.slider = efltk::Slider::new(&efltk::Bubble::new(prt).with_info("Slider"))
                     .with_format("%1.2f")
                     .with_callback({
@@ -53,7 +54,8 @@ impl Component for Ranger {
                                 sender.send(Msg::Set(wgt.value())).unwrap();
                             }
                         }
-                    });
+                    })
+                    .with_icon("home");
             });
     }
 }

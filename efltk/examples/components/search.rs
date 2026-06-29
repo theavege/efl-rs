@@ -110,7 +110,7 @@ impl Component for Search {
                     .with_size(WIDTH, -1)
                     .set_text("PATH: ");
                 self.path = efltk::Entry::new(prt)
-                    .with_value(
+                    .with_text(
                         &std::env::var(match cfg!(target_os = "windows") {
                             true => "%HOMEPATH%",
                             false => "HOME",
@@ -130,7 +130,7 @@ impl Component for Search {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
                     .set_text("EXTENSIONS: ");
-                self.ext = efltk::Entry::new(prt).with_value("txt,md").with_callback({
+                self.ext = efltk::Entry::new(prt).with_text("txt,md").with_callback({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -152,7 +152,7 @@ impl Component for Search {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
                     .set_text("REGEXP: ");
-                self.reg = efltk::Entry::new(prt).with_value("*").with_callback({
+                self.reg = efltk::Entry::new(prt).with_text("*").with_callback({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -174,7 +174,7 @@ impl Component for Search {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
                     .set_text("LIMIT: ");
-                self.limit = efltk::Entry::new(prt).with_value("0").with_callback({
+                self.limit = efltk::Entry::new(prt).with_text("0").with_callback({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {

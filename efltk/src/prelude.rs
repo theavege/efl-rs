@@ -118,27 +118,6 @@ impl From<*mut Ecore_Timer> for super::Timer {
     }
 }
 
-impl super::EventHandler {
-    pub fn as_ptr(&self) -> *mut Ecore_Event_Handler {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    pub fn new<F: FnMut() -> bool + 'static>(type_: i32, func: F) -> Self {
-        let raw_ptr: *mut Box<EcoreCb> = Box::into_raw(Box::new(Box::new(func)));
-        Self::from(unsafe {
-            ecore_event_handler_add(type_, Some(ecore_event_handler_cb), raw_ptr as *mut c_void)
-        })
-    }
-    pub fn del(&self) {
-        unsafe { ecore_event_handler_del(self.as_ptr()) };
-    }
-}
-
-impl From<*mut Ecore_Event_Handler> for super::EventHandler {
-    fn from(obj: *mut Ecore_Event_Handler) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-
 type EcoreCb = dyn FnMut() -> bool;
 
 pub(crate) unsafe extern "C" fn smart_cb<T: WidgetExt>(
@@ -153,17 +132,6 @@ pub(crate) unsafe extern "C" fn smart_cb<T: WidgetExt>(
 }
 
 pub(crate) unsafe extern "C" fn ecore_task_cb(data: *mut c_void) -> Eina_Bool {
-    unsafe {
-        let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
-        func() as Eina_Bool
-    }
-}
-
-pub(crate) unsafe extern "C" fn ecore_event_handler_cb(
-    data: *mut c_void,
-    _type_: i32,
-    _event: *mut c_void,
-) -> Eina_Bool {
     unsafe {
         let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
         func() as Eina_Bool
@@ -191,6 +159,100 @@ impl super::WidgetItem {
         unsafe { elm_object_item_del(self.as_raw()) };
     }
 }
+
+pub trait OrientExt: WidgetExt {
+    fn with_horizontal(self, value: bool) -> Self;
+}
+
+pub trait TextExt: WidgetExt {
+    fn text(&self) -> String {
+        unsafe {
+            let ptr = elm_object_part_text_get(self.as_raw(), std::ptr::null());
+            match !ptr.is_null() {
+                true => CStr::from_ptr(ptr).to_string_lossy().into_owned(),
+                false => String::new(),
+            }
+        }
+    }
+    fn set_text(&self, text: &str) {
+        self.set_part("default", text);
+    }
+    fn with_text(self, text: &str) -> Self {
+        self.set_text(text);
+        self
+    }
+}
+
+pub trait InputExt<T>: WidgetExt {
+    fn value(&self) -> T;
+    fn set_value(&self, value: T);
+    fn with_value(self, value: T) -> Self {
+        self.set_value(value);
+        self
+    }
+    fn with_tooltip(self, value: &str) -> Self {
+        self.set_tooltip(value);
+        self
+    }
+    fn with_cursor(self, cursor: Cursor) -> Self {
+        self.set_cursor(cursor);
+        self
+    }
+    fn set_tooltip(&self, value: &str) {
+        let ctext = CString::new(value).unwrap();
+        unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
+    }
+    fn set_cursor(&self, cursor: Cursor) -> bool {
+        unsafe {
+            elm_object_cursor_set(
+                self.as_raw(),
+                CString::new(cursor.to_str()).unwrap().as_ptr(),
+            ) != 0
+        }
+    }
+    fn with_disabled(self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+    fn set_disabled(&self, disabled: bool) {
+        unsafe { elm_object_disabled_set(self.as_raw(), disabled as Eina_Bool) }
+    }
+    fn disabled(&self) -> bool {
+        unsafe { elm_object_disabled_get(self.as_raw()) != 0 }
+    }
+    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
+        self.set_callback(Signal::Changed, func);
+        self
+    }
+    fn with_signal<F: FnMut(Self) + 'static>(self, sign: Signal, func: F) -> Self {
+        self.set_callback(sign, func);
+        self
+    }
+    fn set_callback<F: FnMut(Self) + 'static>(&self, sign: Signal, func: F) {
+        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        unsafe {
+            evas_object_smart_callback_add(
+                self.as_raw(),
+                CString::new(sign.to_str()).unwrap().as_ptr(),
+                Some(smart_cb::<Self>),
+                raw_ptr as *mut c_void,
+            );
+        }
+    }
+    fn call_signal(&self, sign: Signal) {
+        unsafe {
+            evas_object_smart_callback_call(
+                self.as_raw(),
+                CString::new(sign.to_str()).unwrap().as_ptr(),
+                std::ptr::null_mut(),
+            );
+        }
+    }
+    fn do_callback(&self) {
+        self.call_signal(Signal::Changed);
+    }
+}
+
 pub trait WidgetExt: Sized {
     fn as_raw(&self) -> *mut Evas_Object;
     fn from_raw(obj: *mut Evas_Object) -> Self;
@@ -231,6 +293,12 @@ pub trait WidgetExt: Sized {
         self.set_min_size(w, h);
         self.set_weight(w == -1, h == -1);
     }
+    fn set_icon(&self, value: &str) {
+        super::Icon::new(self).with_standard(value);
+    }
+    fn window(&self) -> super::Window {
+        super::Window::from_raw(unsafe { elm_win_get(self.as_raw()) })
+    }
     fn geometry(&self) -> (i32, i32, i32, i32) {
         let (mut x, mut y, mut w, mut h) = (0, 0, 0, 0);
         unsafe { evas_object_geometry_get(self.as_raw(), &mut x, &mut y, &mut w, &mut h) };
@@ -252,25 +320,14 @@ pub trait WidgetExt: Sized {
         self.set_min_size(w, h);
         self
     }
-    fn with_text(self, text: &str) -> Self {
-        self.set_text(text);
-        self
-    }
     fn with_icon(self, value: &str) -> Self {
         self.set_icon(value);
         self
     }
     fn with_conf(self) -> Self {
-        self.set_align(Align::Fill, Align::Fill);
-        self.set_weight(true, true);
-        self.set_focus(false);
-        self
-    }
-    fn set_icon(&self, value: &str) {
-        super::Icon::new(self).with_standard(value);
-    }
-    fn set_text(&self, text: &str) {
-        self.set_part("default", text);
+        self.with_align(Align::Fill, Align::Fill)
+            .with_weight(true, true)
+            .with_focus(false)
     }
     fn set_part(&self, part: &str, text: &str) {
         let c_part = CString::new(part).unwrap();
@@ -285,42 +342,17 @@ pub trait WidgetExt: Sized {
         };
         unsafe { elm_object_part_text_set(self.as_raw(), c_part_ptr, c_text_ptr) };
     }
-    fn with_tooltip(self, value: &str) -> Self {
-        self.set_tooltip(value);
-        self
-    }
+
     fn with_part(self, part: &str, text: &str) -> Self {
         self.set_part(part, text);
         self
     }
-    fn with_cursor(self, cursor: Cursor) -> Self {
-        self.set_cursor(cursor);
-        self
-    }
-    fn set_tooltip(&self, value: &str) {
-        let ctext = CString::new(value).unwrap();
-        unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
-    }
-    fn set_cursor(&self, cursor: Cursor) -> bool {
-        unsafe {
-            elm_object_cursor_set(
-                self.as_raw(),
-                CString::new(cursor.to_str()).unwrap().as_ptr(),
-            ) != 0
-        }
-    }
     fn focus(&self) -> bool {
         unsafe { elm_object_focus_get(self.as_raw()) != 0 }
     }
-    fn with_disabled(self, disabled: bool) -> Self {
-        self.set_disabled(disabled);
+    fn with_focus(self, value: bool) -> Self {
+        unsafe { elm_object_focus_set(self.as_raw(), value as Eina_Bool) };
         self
-    }
-    fn set_disabled(&self, disabled: bool) {
-        unsafe { elm_object_disabled_set(self.as_raw(), disabled as Eina_Bool) }
-    }
-    fn set_focus(&self, value: bool) {
-        unsafe { elm_object_focus_set(self.as_raw(), value as Eina_Bool) }
     }
     fn with_content(self, obj: &impl WidgetExt, value: &str) -> Self {
         self.set_content(obj, value);
@@ -337,46 +369,6 @@ pub trait WidgetExt: Sized {
         match ptr.is_null() {
             true => None,
             false => Some(super::WidgetItem::from_raw(ptr)),
-        }
-    }
-    fn text(&self) -> String {
-        unsafe {
-            let ptr = elm_object_part_text_get(self.as_raw(), std::ptr::null());
-            match !ptr.is_null() {
-                true => CStr::from_ptr(ptr).to_string_lossy().into_owned(),
-                false => String::new(),
-            }
-        }
-    }
-    fn with_signal<F: FnMut(Self) + 'static>(self, sign: Signal, func: F) -> Self {
-        self.set_callback(sign, func);
-        self
-    }
-    fn window(&self) -> super::Window {
-        super::Window::from_raw(unsafe { elm_win_get(self.as_raw()) })
-    }
-    fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
-        self.set_callback(Signal::Changed, func);
-        self
-    }
-    fn set_callback<F: FnMut(Self) + 'static>(&self, sign: Signal, func: F) {
-        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
-        unsafe {
-            evas_object_smart_callback_add(
-                self.as_raw(),
-                CString::new(sign.to_str()).unwrap().as_ptr(),
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            );
-        }
-    }
-    fn call_signal(&self, sign: Signal) {
-        unsafe {
-            evas_object_smart_callback_call(
-                self.as_raw(),
-                CString::new(sign.to_str()).unwrap().as_ptr(),
-                std::ptr::null_mut(),
-            );
         }
     }
 }
@@ -413,13 +405,15 @@ pub trait LabelExt: WidgetExt {
 }
 pub trait SpinnerExt: RangerExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_spinner_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_spinner_add(prt.as_raw()) })
+            .with_conf()
+            .with_weight(true, false);
         prt.add(&elm);
         elm
     }
 }
 
-pub trait ButtonExt: WidgetExt {
+pub trait ButtonExt: InputExt<bool> + TextExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_button_add(prt.as_raw()) })
             .with_conf()
@@ -436,9 +430,6 @@ pub trait ButtonExt: WidgetExt {
             }
         })
     }
-    fn do_callback(&self) {
-        self.call_signal(Signal::Clicked);
-    }
 }
 
 pub trait ContainerExt: WidgetExt {
@@ -451,7 +442,7 @@ pub trait ContainerExt: WidgetExt {
     }
 }
 
-pub trait BoxExt: ContainerExt {
+pub trait BoxExt: ContainerExt + OrientExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_box_add(prt.as_raw()) })
             .with_homogeneous(false)
@@ -459,11 +450,6 @@ pub trait BoxExt: ContainerExt {
             .with_conf();
         prt.add(&elm);
         elm
-    }
-    fn with_horizontal(self, value: bool) -> Self {
-        unsafe { elm_box_horizontal_set(self.as_raw(), value as Eina_Bool) };
-        self.set_weight(value, !value);
-        self
     }
     fn with_homogeneous(self, value: bool) -> Self {
         unsafe { elm_box_homogeneous_set(self.as_raw(), value as Eina_Bool) };
@@ -482,9 +468,6 @@ pub trait MenuExt: SelectorExt {
             .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
         elm.close();
         elm
-    }
-    fn main(win: &impl ContainerExt) -> Self {
-        Self::from_raw(unsafe { elm_win_main_menu_get(win.as_raw()) }).with_conf()
     }
     fn with_appends<F: FnMut(Self) + 'static + Clone>(self, items: &[&str], func: F) -> Self {
         for item in items {
@@ -554,27 +537,18 @@ pub trait FileEntryExt: WidgetExt {
 
 pub trait CheckExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_check_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_check_add(prt.as_raw()) })
+            .with_conf()
+            .with_weight(true, false);
         prt.add(&elm);
         elm
     }
-    fn set_value(&self, value: bool) {
-        unsafe { elm_check_state_set(self.as_raw(), value as Eina_Bool) };
-    }
-    fn value(&self) -> bool {
-        unsafe { elm_check_state_get(self.as_raw()) != 0 }
-    }
 }
 
-pub trait RangerExt: WidgetExt {
-    fn value(&self) -> f64;
-    fn set_format(&self, format: &str);
+pub trait RangerExt: InputExt<f64> {
     fn set_step(&self, step: f64);
     fn set_range(&self, min: f64, max: f64);
-    fn set_value(&self, value: f64);
-    fn do_callback(self) {
-        self.call_signal(Signal::Changed);
-    }
+    fn with_format(self, format: &str) -> Self;
     fn with_range(self, min: f64, max: f64) -> Self {
         self.set_range(min, max);
         self
@@ -583,53 +557,29 @@ pub trait RangerExt: WidgetExt {
         self.set_step(step);
         self
     }
-    fn with_value(self, value: f64) -> Self {
-        self.set_value(value);
-        self
-    }
-    fn with_format(self, format: &str) -> Self {
-        self.set_format(format);
-        self
-    }
 }
 
-pub trait SelectorExt: WidgetExt {
-    fn find(&self, item: super::WidgetItem) -> u32;
+pub trait SelectorExt: InputExt<i32> {
     fn add(&self, label: &str) -> super::WidgetItem;
     fn lenght(&self) -> u32;
-    fn value(&self) -> u32;
     fn clear(&self);
-    fn set_value(&self, value: u32);
     fn add_items(&self, items: &[&str]) {
         for item in items {
             self.add(item);
         }
-    }
-    fn with_value(self, value: u32) -> Self {
-        self.set_value(value);
-        self
-    }
-    fn with_item(self, label: &str) -> Self {
-        self.add(label);
-        self
     }
     fn with_items(self, items: &[&str]) -> Self {
         self.add_items(items);
         self
     }
 }
-pub trait SliderExt: RangerExt {
+pub trait SliderExt: RangerExt + OrientExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_slider_add(prt.as_raw()) })
             .with_conf()
             .with_horizontal(true);
         prt.add(&elm);
         elm
-    }
-    fn with_horizontal(self, value: bool) -> Self {
-        unsafe { elm_slider_horizontal_set(self.as_raw(), value as Eina_Bool) };
-        self.set_weight(value, !value);
-        self
     }
 }
 
@@ -655,7 +605,7 @@ pub trait CalendarExt: WidgetExt {
     }
 }
 
-pub trait EntryExt: WidgetExt {
+pub trait EntryExt: InputExt<String> {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_entry_add(prt.as_raw()) })
             .with_conf()
@@ -663,20 +613,6 @@ pub trait EntryExt: WidgetExt {
             .with_scrollable(true);
         prt.add(&elm);
         elm
-    }
-    fn with_menu(prt: &impl ContainerExt, menu: super::Menu) -> Self {
-        Self::new(prt)
-            .with_editable(false)
-            .with_cursor(Cursor::Hand1)
-            .with_signal(Signal::Clicked, {
-                move |wgt| {
-                    let pos = wgt.geometry();
-                    menu.open(pos.0, pos.1 + pos.3);
-                }
-            })
-    }
-    fn do_callback(self) {
-        self.call_signal(Signal::Changed);
     }
     fn with_editable(self, value: bool) -> Self {
         unsafe { elm_entry_editable_set(self.as_raw(), value as Eina_Bool) };
@@ -691,17 +627,9 @@ pub trait EntryExt: WidgetExt {
         self.set_weight(true, !value);
         self
     }
-    fn with_value(self, value: &str) -> Self {
-        self.set_value(value);
-        self
-    }
     fn with_guide(self, guide: &str) -> Self {
         self.set_part("guide", guide);
         self
-    }
-    fn set_value(&self, value: &str) {
-        let ctext = CString::new(value).unwrap();
-        unsafe { elm_entry_entry_set(self.as_raw(), ctext.as_ptr()) };
     }
     fn with_password(self, value: bool) -> Self {
         unsafe { elm_entry_password_set(self.as_raw(), value as Eina_Bool) };
@@ -717,12 +645,6 @@ pub trait EntryExt: WidgetExt {
             )
         };
     }
-    fn value(&self) -> String {
-        unsafe {
-            let ptr = elm_entry_entry_get(self.as_raw());
-            CStr::from_ptr(ptr).to_string_lossy().into_owned()
-        }
-    }
 }
 
 pub trait IconExt: WidgetExt {
@@ -737,18 +659,13 @@ pub trait IconExt: WidgetExt {
     }
 }
 
-pub trait SeparatorExt: WidgetExt {
+pub trait SeparatorExt: OrientExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_separator_add(prt.as_raw()) })
             .with_conf()
             .with_horizontal(true);
         prt.add(&elm);
         elm
-    }
-    fn with_horizontal(self, value: bool) -> Self {
-        unsafe { elm_separator_horizontal_set(self.as_raw(), value as Eina_Bool) };
-        self.set_weight(value, !value);
-        self
     }
 }
 
@@ -790,7 +707,7 @@ pub trait ListExt: SelectorExt {
     }
 }
 
-pub trait FrameExt: ContainerExt {
+pub trait FrameExt: InputExt<bool> + ContainerExt {
     fn new(parent: &impl ContainerExt) -> Self {
         let prt = super::Box::new(parent).with_horizontal(true);
         let elm = Self::from_raw(unsafe { elm_frame_add(prt.as_raw()) })
@@ -798,9 +715,6 @@ pub trait FrameExt: ContainerExt {
             .with_signal(Signal::Clicked, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
         elm
-    }
-    fn set_collapse(&self, value: bool) {
-        unsafe { elm_frame_collapse_set(self.as_raw(), value as Eina_Bool) };
     }
 }
 
@@ -843,27 +757,6 @@ pub trait PanesExt: WidgetExt {
         let elm = Self::from_raw(unsafe { elm_panes_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
         elm
-    }
-    fn set_horizontal(&self, value: bool) {
-        unsafe { elm_panes_horizontal_set(self.as_raw(), value as Eina_Bool) };
-        self.set_weight(value, !value);
-    }
-    fn set_fixed_size(&self, left: f64) {
-        if (0.0..1.0).contains(&left) {
-            unsafe {
-                elm_panes_content_left_size_set(self.as_raw(), left);
-                elm_panes_content_right_size_set(self.as_raw(), 1.0 - left);
-                elm_panes_fixed_set(self.as_raw(), true as Eina_Bool);
-            };
-        }
-    }
-    fn with_horizontal(self, value: bool) -> Self {
-        self.set_horizontal(value);
-        self
-    }
-    fn with_fixed_size(self, left: f64) -> Self {
-        self.set_fixed_size(left);
-        self
     }
 }
 
@@ -941,7 +834,9 @@ where
 
 pub trait ProgressBarExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_progressbar_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_progressbar_add(prt.as_raw()) })
+            .with_conf()
+            .with_weight(true, false);
         prt.add(&elm);
         elm
     }
@@ -951,17 +846,14 @@ pub trait ProgressBarExt: WidgetExt {
     fn set_value(&self, value: f64) {
         unsafe { elm_progressbar_value_set(self.as_raw(), value) };
     }
-    fn set_unit_format(&self, value: &str) {
+    fn with_format(self, value: &str) -> Self {
         let ctext = CString::new(value).unwrap();
         unsafe { elm_progressbar_unit_format_set(self.as_raw(), ctext.as_ptr()) };
-    }
-    fn with_format(self, value: &str) -> Self {
-        self.set_unit_format(value);
         self
     }
 }
 
-pub trait RadioExt: WidgetExt {
+pub trait RadioExt: InputExt<i32> + TextExt {
     fn from_items<F: FnMut(Self) + 'static + Clone>(
         prt: &impl ContainerExt,
         items: &[&str],
@@ -988,7 +880,9 @@ pub trait RadioExt: WidgetExt {
         elm
     }
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_radio_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_radio_add(prt.as_raw()) })
+            .with_conf()
+            .with_weight(true, false);
         prt.add(&elm);
         elm
     }
@@ -1001,12 +895,6 @@ pub trait RadioExt: WidgetExt {
     fn with_state(self, state: i32) -> Self {
         self.set_state(state);
         self
-    }
-    fn value(&self) -> i32 {
-        unsafe { elm_radio_value_get(self.as_raw()) as i32 }
-    }
-    fn set_value(&self, value: i32) {
-        unsafe { elm_radio_value_set(self.as_raw(), value) };
     }
 }
 
@@ -1037,10 +925,7 @@ pub trait WindowExt: WidgetExt {
     }
 }
 
-pub trait Update<T>
-where
-    Self: WidgetExt,
-{
+pub trait Update<T>: WidgetExt {
     fn update(&self, value: T);
 }
 
@@ -1068,21 +953,19 @@ impl<T: RangerExt + 'static> Update<f64> for T {
     }
 }
 
-impl<T: SelectorExt + 'static> Update<u32> for T {
-    fn update(&self, value: u32) {
-        if (0..self.lenght()).contains(&value) {
+impl<T: SelectorExt + 'static> Update<i32> for T {
+    fn update(&self, value: i32) {
+        if (0..self.lenght() as i32).contains(&value) {
             self.set_value(value);
         };
     }
 }
 
-impl<T: SelectorExt + 'static> Update<(Vec<String>, u32)> for T {
-    fn update(&self, value: (Vec<String>, u32)) {
+impl<T: SelectorExt + 'static> Update<(&Vec<&str>, i32)> for T {
+    fn update(&self, value: (&Vec<&str>, i32)) {
         if self.lenght() != (value.0.len() as u32) {
             self.clear();
-            for item in &value.0 {
-                self.add(item);
-            }
+            self.add_items(value.0);
         }
         self.update(value.1);
     }
@@ -1169,7 +1052,7 @@ pub trait ClockExt: WidgetExt {
     }
 }
 
-pub trait ColorSelExt: WidgetExt {
+pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) })
             .with_conf()
@@ -1177,14 +1060,14 @@ pub trait ColorSelExt: WidgetExt {
         prt.add(&elm);
         elm
     }
-    fn value(&self) -> (i32, i32, i32, i32) {
-        let (mut r, mut g, mut b, mut a) = (0, 0, 0, 0);
-        unsafe { elm_colorselector_color_get(self.as_raw(), &mut r, &mut g, &mut b, &mut a) };
-        (r, g, b, a)
-    }
-    fn set_value(&self, r: i32, g: i32, b: i32, a: i32) {
-        unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
-    }
+    //~ fn value(&self) -> (i32, i32, i32, i32) {
+    //~ let (mut r, mut g, mut b, mut a) = (0, 0, 0, 0);
+    //~ unsafe { elm_colorselector_color_get(self.as_raw(), &mut r, &mut g, &mut b, &mut a) };
+    //~ (r, g, b, a)
+    //~ }
+    //~ fn set_value(&self, r: i32, g: i32, b: i32, a: i32) {
+    //~ unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
+    //~ }
 }
 
 pub trait Component: Default + 'static {

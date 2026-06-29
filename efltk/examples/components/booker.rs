@@ -42,9 +42,9 @@ impl Component for Booker {
     type State = models::Model;
     fn update(&self, model: &Self::State) {
         self.flight.set_value(model.flight);
-        self.start.set_value(&model.start);
+        self.start.set_text(&model.start);
         self.back.set_disabled(model.flight);
-        self.back.set_value(&model.back);
+        self.back.set_text(&model.back);
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
         match msg {
@@ -72,12 +72,12 @@ impl Component for Booker {
                             .with_signal(Signal::Unfocused, {
                                 let sender = sender.clone();
                                 move |wgt| match chrono::NaiveDate::parse_from_str(
-                                    &wgt.text(),
+                                    &wgt.value(),
                                     "%Y-%m-%d",
                                 )
                                 .is_ok()
                                 {
-                                    true => sender.send(Msg::Start(wgt.text())).unwrap(),
+                                    true => sender.send(Msg::Start(wgt.value())).unwrap(),
                                     false => efltk::Popup::warning(&wgt.window(), "ERROR"),
                                 }
                             });
@@ -86,12 +86,12 @@ impl Component for Booker {
                             .with_signal(Signal::Unfocused, {
                                 let sender = sender.clone();
                                 move |wgt| match chrono::NaiveDate::parse_from_str(
-                                    &wgt.text(),
+                                    &wgt.value(),
                                     "%Y-%m-%d",
                                 )
                                 .is_ok()
                                 {
-                                    true => sender.send(Msg::Back(wgt.text())).unwrap(),
+                                    true => sender.send(Msg::Back(wgt.value())).unwrap(),
                                     false => efltk::Popup::new(&wgt.window())
                                         .with_timeout(0.0)
                                         .set_message("home", "ERROR", "ERROR"),

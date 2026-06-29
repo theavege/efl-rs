@@ -148,8 +148,8 @@ impl Component for Siege {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
-                    .set_text("PROTO: ");
-                efltk::Entry::with_menu(
+                    .with_text("PROTO: ");
+                efltk::Button::with_menu(
                     prt,
                     efltk::Menu::popup(prt)
                         .with_items(&["https", "http"])
@@ -165,7 +165,7 @@ impl Component for Siege {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
-                    .set_text("CONCURRENT: ");
+                    .with_text("CONCURRENT: ");
                 efltk::Spinner::new(prt)
                     .with_range(1_f64, 8f64)
                     .with_step(1_f64)
@@ -181,9 +181,9 @@ impl Component for Siege {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
-                    .set_text("PORT: ");
+                    .with_text("PORT: ");
                 efltk::Entry::new(prt)
-                    .with_value("443")
+                    .with_text("443")
                     .with_callback({
                         let sender = sender.clone();
                         move |wgt| {
@@ -196,10 +196,10 @@ impl Component for Siege {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
-                    .set_text("TARGETS: ");
+                    .with_text("TARGETS: ");
                 efltk::Entry::new(prt)
                     .with_single_line(false)
-                    .with_value("127.0.0.1")
+                    .with_text("127.0.0.1")
                     .with_callback({
                         let sender = sender.clone();
                         move |wgt| sender.send(Msg::Target(wgt.value())).unwrap()
@@ -209,10 +209,10 @@ impl Component for Siege {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
-                    .set_text("ENDPOINTS: ");
+                    .with_text("ENDPOINTS: ");
                 efltk::Entry::new(prt)
                     .with_single_line(false)
-                    .with_value("/")
+                    .with_text("/")
                     .with_callback({
                         let sender = sender.clone();
                         move |wgt| sender.send(Msg::Endpoint(wgt.value())).unwrap()
@@ -222,9 +222,8 @@ impl Component for Siege {
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
-                    .set_text("RESULT: ");
+                    .with_text("RESULT: ");
                 efltk::Entry::new(prt)
-                    .with_single_line(false)
                     .with_editable(false)
                     .with_signal(Signal::Clicked, {
                         let sender = sender.clone();

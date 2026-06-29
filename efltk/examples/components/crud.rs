@@ -78,9 +78,9 @@ impl Component for Crud {
     type State = models::Model;
 
     fn update(&self, model: &Self::State) {
-        self.prefix_entry.set_value(&model.prefix);
-        self.first_entry.set_value(&model.first);
-        self.last_entry.set_value(&model.last);
+        self.prefix_entry.set_text(&model.prefix);
+        self.first_entry.set_text(&model.first);
+        self.last_entry.set_text(&model.last);
 
         self.list.clear();
         for name in &model.filtered() {
@@ -90,7 +90,7 @@ impl Component for Crud {
         if let Some(ref selected) = model.selected
             && let Some(index) = model.find_index(selected)
         {
-            self.list.set_value(index as u32);
+            self.list.set_value(index as i32);
         }
 
         let has_selection = model.selected.is_some();

@@ -18,7 +18,7 @@ impl Component for View {
     fn update(&self, model: &Self::State) {
         self.1.set_top(model.1);
         for idx in 0..self.0.len() {
-            self.0[idx].set_collapse(idx != model.0);
+            self.0[idx].set_value(idx != model.0);
         }
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {

@@ -51,103 +51,145 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
 
 ```plantuml
 @startuml
-
 !theme sunlust
-'skinparam linetype ortho
-
+skinparam linetype ortho
 right footer UML: Class Diagram
 left to right direction
-
-package "efl" <<package>> #line.dashed {
-    package containers <<Frame>> #line.dashed {
+package "efl" #line.dashed {
+    package containers #line.dashed {
         struct Box {
             -ptr : Pointer
         }
         struct Buble {
             -ptr : Pointer
         }
-        struct Panes {
-            -ptr : Pointer
-        }
         struct Frame {
             -ptr : Pointer
         }
-    }
-    package outputs <<Frame>> #line.dashed {
-        struct Separator {
+        struct Naviframe {
             -ptr : Pointer
         }
+        struct Panes {
+            -ptr : Pointer
+        }
+        struct Window {
+            -ptr : Pointer
+        }
+    }
+    package outputs #line.dashed {
         struct Label {
             -ptr : Pointer
         }
         struct ProgressBar {
             -ptr : Pointer
         }
+        struct Separator {
+            -ptr : Pointer
+        }
     }
-    package inputs <<Frame>> #line.dashed {
-        struct Slider {
+    package inputs #line.dashed {
+        struct Button {
+            -ptr : Pointer
+        }
+        struct Check {
             -ptr : Pointer
         }
         struct Entry {
             -ptr : Pointer
         }
-        struct Button {
+        struct List {
+            -ptr : Pointer
+        }
+        struct Radio {
+            -ptr : Pointer
+        }
+        struct Slider {
+            -ptr : Pointer
+        }
+        struct Spinner {
+            -ptr : Pointer
+        }
+        struct SegmentControl {
             -ptr : Pointer
         }
     }
-    package prelude <<Frame>> #line.dashed {
-        interface OrientationExt {
-            +set_horizontal()
-            +Self with_horizontal()
-        }
-
-        interface ContainerExt {
-            #add(item: WidgetBase)
-        }
-
-        interface TextExt {
-            +text()
-            +set_text()
-        }
-
+    package prelude #line.dashed {
         interface WidgetExt {
-            +call_signal(signal)
-            +do_callback()
-            +bool focus()
-            +set_disabled(bool)
-            +with_signal(signal)
-            +with_callback()
-            +with_cursor(cursor)
-            +with_tooltip(tooltip)
-        }
-
-        interface WidgetBase {
             #ptr as_raw()
             #from_raw(ptr)
             #del()
             #show()
         }
-        interface WidgetExt extends WidgetBase
-        interface TextExt extends WidgetBase
-        interface OrientationExt extends WidgetBase
-        interface ContainerExt extends WidgetBase
+        interface TextExt {
+            +str text()
+            +set_text(str)
+        }
+        interface ContainerExt {
+            #add_item(WidgetExt)
+        }
+        interface OrientExt {
+            +Self with_horizontal()
+        }
+        interface InputsExt {
+            +call_signal(signal)
+            +do_callback()
+            +bool focus()
+            +type value()
+            +set_value(type)
+            +Self  with_value(type)
+            +set_disabled(bool)
+            +Self with_signal(signal)
+            +Self with_callback()
+            +Self with_cursor(cursor)
+            +Self with_tooltip(tooltip)
+        }
+        interface RangerExt {
+            +Self with_range(f64, f64)
+            +Self with_step(f64)
+            +Self with_format(str)
+        }
+        interface SelectorExt {
+            +u32 lenght()
+            +Self with_items([str])
+        }
+        interface OrientationExt extends WidgetExt
+        interface ContainerExt extends WidgetExt
+        interface TextExt extends WidgetExt
+        interface InputsExt extends WidgetExt
+        interface RangerExt extends InputsExt
+        interface SelectorExt extends InputsExt
     }
     struct outputs.Label implements prelude.TextExt
+
     struct outputs.Separator implements prelude.OrientationExt
-    struct outputs.ProgressBar implements prelude.WidgetBase
-    struct containers.Frame implements prelude.TextExt
+
     struct containers.Box implements prelude.OrientationExt
     struct containers.Box implements prelude.ContainerExt
-    struct containers.Frame implements prelude.ContainerExt
+
     struct containers.Buble implements prelude.ContainerExt
+
+    struct containers.Frame implements prelude.TextExt
+    struct containers.Frame implements prelude.OrientationExt
+
     struct containers.Panes implements prelude.ContainerExt
     struct containers.Panes implements prelude.OrientationExt
-    struct inputs.Button implements prelude.TextExt
-    struct inputs.Button implements prelude.WidgetExt
-    struct inputs.Entry implements prelude.WidgetExt
-    struct inputs.Slider implements prelude.WidgetExt
-    struct inputs.Slider implements prelude.OrientationExt
-}
 
+    struct containers.Window implements prelude.ContainerExt
+
+    struct inputs.Button implements prelude.TextExt
+    struct inputs.Check implements prelude.TextExt
+    struct inputs.Radio implements prelude.TextExt
+    struct inputs.Button implements prelude.InputsExt
+
+    struct inputs.Entry implements prelude.InputsExt
+
+    struct inputs.Slider implements prelude.RangerExt
+    struct inputs.Slider implements prelude.OrientationExt
+
+    struct inputs.Spinner implements prelude.RangerExt
+
+    struct inputs.List implements prelude.SelectorExt
+    struct inputs.SegmentControl implements prelude.SelectorExt
+}
 @enduml
 ```

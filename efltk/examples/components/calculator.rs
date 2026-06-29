@@ -74,25 +74,19 @@ mod models {
 
 use efltk::prelude::*;
 
-pub enum Msg {
-    Push(String),
-}
-
 #[derive(Default)]
 pub struct Calc {
     outp: efltk::Entry,
     prev: efltk::Entry,
-    oper: efltk::Label,
+    oper: efltk::Entry,
     curr: efltk::Entry,
 }
 
 impl Component for Calc {
-    type Event = Msg;
+    type Event = String;
     type State = models::Calc;
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
-        match msg {
-            Msg::Push(value) => model.click(&value),
-        };
+        model.click(&msg);
         true
     }
     fn update(&self, model: &Self::State) {
@@ -118,7 +112,9 @@ impl Component for Calc {
                 .with_homogeneous(true)
                 .with_horizontal(true)
                 .inside(|prt| {
-                    self.oper = efltk::Label::new(prt).with_tooltip("Operation");
+                    self.oper = efltk::Entry::new(prt)
+                        .with_scrollable(false)
+                        .with_tooltip("Operation");
                     efltk::Box::new(prt).with_homogeneous(true).inside(|prt| {
                         self.prev = efltk::Entry::new(prt)
                             .with_editable(false)
@@ -149,7 +145,7 @@ impl Component for Calc {
                                 .with_callback({
                                     let sender = sender.clone();
                                     move |wgt| {
-                                        sender.send(Msg::Push(wgt.text())).unwrap();
+                                        sender.send(wgt.text()).unwrap();
                                     }
                                 });
                         }
