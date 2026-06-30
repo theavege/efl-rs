@@ -31,7 +31,7 @@ impl Component for View {
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         efltk::Box::new(prt).inside(|prt| {
             let items = [
-                "home", "Calc", "Sudoku", "NicCalc", "Siege", "Search", "Dialect", "CRUD",
+                "home", "Calc", "Sudoku", "NicCalc", "Siege", "Search", "Dialect",
             ];
             efltk::SegmentControl::new(prt)
                 .with_items(&items)
@@ -66,7 +66,6 @@ impl Component for View {
                 components::Siege::mount(prt);
                 components::Search::mount(prt);
                 components::Dialect::mount(prt);
-                components::Crud::mount(prt);
                 prt.promote();
             });
         });

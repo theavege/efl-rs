@@ -133,11 +133,12 @@ impl Component for Dialect {
         self.target.update(&state.target);
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
+        const WIDTH: i32 = 125;
         efltk::Box::new(prt)
             .with_horizontal(true)
             .with_homogeneous(true)
             .inside(|prt| {
-                efltk::Panes::new(prt).inside(|prt| {
+                efltk::Panes::new(prt).with_right_size(WIDTH).inside(|prt| {
                     self.from = efltk::List::new(prt).with_callback({
                         let sender = sender.clone();
                         move |wgt| {
@@ -163,7 +164,7 @@ impl Component for Dialect {
                         });
                     });
                 });
-                efltk::Panes::new(prt).inside(|prt| {
+                efltk::Panes::new(prt).with_left_size(WIDTH).inside(|prt| {
                     efltk::Box::new(prt).inside(|prt| {
                         self.target = efltk::Entry::new(prt)
                             .with_single_line(false)

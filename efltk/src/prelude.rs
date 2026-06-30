@@ -279,20 +279,6 @@ pub trait WidgetExt: Sized {
             evas_object_size_hint_align_set(self.as_raw(), x.to_f64(), y.to_f64());
         };
     }
-    fn set_min_size(&self, w: i32, h: i32) {
-        unsafe {
-            evas_object_size_hint_min_set(self.as_raw(), w, h);
-            evas_object_resize(self.as_raw(), w, h);
-        };
-    }
-    fn set_size(&self, w: i32, h: i32) {
-        unsafe {
-            evas_object_size_hint_max_set(self.as_raw(), w, h);
-            evas_object_resize(self.as_raw(), w, h);
-        };
-        self.set_min_size(w, h);
-        self.set_weight(w == -1, h == -1);
-    }
     fn set_icon(&self, value: &str) {
         super::Icon::new(self).with_standard(value);
     }
@@ -313,11 +299,19 @@ pub trait WidgetExt: Sized {
         self
     }
     fn with_size(self, w: i32, h: i32) -> Self {
-        self.set_size(w, h);
+        unsafe {
+            evas_object_size_hint_min_set(self.as_raw(), w, h);
+            evas_object_size_hint_max_set(self.as_raw(), w, h);
+            evas_object_resize(self.as_raw(), w, h);
+        };
+        self.set_weight(w == -1, h == -1);
         self
     }
     fn with_min_size(self, w: i32, h: i32) -> Self {
-        self.set_min_size(w, h);
+        unsafe {
+            evas_object_size_hint_min_set(self.as_raw(), w, h);
+            evas_object_resize(self.as_raw(), w, h);
+        };
         self
     }
     fn with_icon(self, value: &str) -> Self {
@@ -384,8 +378,8 @@ pub trait BubbleExt: ContainerExt {
         prt.add(&elm);
         elm
     }
-    fn with_info(self, info: &str) -> Self {
-        self.set_part("info", info);
+    fn with_text(self, text: &str) -> Self {
+        self.set_part("info", text);
         self
     }
 }
@@ -757,6 +751,20 @@ pub trait PanesExt: WidgetExt {
         let elm = Self::from_raw(unsafe { elm_panes_add(prt.as_raw()) }).with_conf();
         prt.add(&elm);
         elm
+    }
+    fn with_left_size(self, size: i32) -> Self {
+        unsafe {
+            elm_panes_content_left_min_size_set(self.as_raw(), size);
+            elm_panes_content_right_size_set(self.as_raw(), 0.0);
+        };
+        self
+    }
+    fn with_right_size(self, size: i32) -> Self {
+        unsafe {
+            elm_panes_content_right_min_size_set(self.as_raw(), size);
+            elm_panes_content_left_size_set(self.as_raw(), 0.0);
+        };
+        self
     }
 }
 

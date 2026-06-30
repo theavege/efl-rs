@@ -30,7 +30,7 @@ impl Component for Ranger {
             .with_homogeneous(true)
             .with_horizontal(true)
             .inside(|prt| {
-                self.spinner = efltk::Spinner::new(&efltk::Bubble::new(prt).with_info("Spinner"))
+                self.spinner = efltk::Spinner::new(&efltk::Bubble::new(prt).with_text("Spinner"))
                     .with_range(0.0, 1.0)
                     .with_step(0.1)
                     .with_format("%1.2f")
@@ -43,9 +43,9 @@ impl Component for Ranger {
                         }
                     });
                 self.progress =
-                    efltk::ProgressBar::new(&efltk::Bubble::new(prt).with_info("ProgressBar"))
+                    efltk::ProgressBar::new(&efltk::Bubble::new(prt).with_text("ProgressBar"))
                         .with_icon("home");
-                self.slider = efltk::Slider::new(&efltk::Bubble::new(prt).with_info("Slider"))
+                self.slider = efltk::Slider::new(&efltk::Bubble::new(prt).with_text("Slider"))
                     .with_format("%1.2f")
                     .with_callback({
                         let sender = sender.clone();

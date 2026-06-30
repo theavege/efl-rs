@@ -54,7 +54,7 @@ impl Component for Converter {
             .with_homogeneous(true)
             .with_horizontal(true)
             .inside(|prt| {
-                self.cel = efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Celsius"))
+                self.cel = efltk::Entry::new(&efltk::Bubble::new(prt).with_text("Celsius"))
                     .with_tooltip("Entry")
                     .with_text("0")
                     .with_editable(true)
@@ -67,7 +67,7 @@ impl Component for Converter {
                             }
                         }
                     });
-                self.far = efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Fahrenheit"))
+                self.far = efltk::Entry::new(&efltk::Bubble::new(prt).with_text("Fahrenheit"))
                     .with_tooltip("Entry")
                     .with_text("0")
                     .with_editable(true)

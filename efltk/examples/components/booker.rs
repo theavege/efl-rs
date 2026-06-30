@@ -68,7 +68,7 @@ impl Component for Booker {
                 .with_horizontal(true)
                 .inside(|prt| {
                     self.start =
-                        efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Departure data"))
+                        efltk::Entry::new(&efltk::Bubble::new(prt).with_text("Departure data"))
                             .with_signal(Signal::Unfocused, {
                                 let sender = sender.clone();
                                 move |wgt| match chrono::NaiveDate::parse_from_str(
@@ -82,7 +82,7 @@ impl Component for Booker {
                                 }
                             });
                     self.back =
-                        efltk::Entry::new(&efltk::Bubble::new(prt).with_info("Return data"))
+                        efltk::Entry::new(&efltk::Bubble::new(prt).with_text("Return data"))
                             .with_signal(Signal::Unfocused, {
                                 let sender = sender.clone();
                                 move |wgt| match chrono::NaiveDate::parse_from_str(
@@ -102,7 +102,7 @@ impl Component for Booker {
                 .with_homogeneous(true)
                 .with_horizontal(true)
                 .inside(|prt| {
-                    self.flight = efltk::Check::new(&efltk::Bubble::new(prt).with_info("Flight"))
+                    self.flight = efltk::Check::new(&efltk::Bubble::new(prt).with_text("Flight"))
                         .with_tooltip("Check")
                         .with_text("Return")
                         .with_callback({
