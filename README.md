@@ -48,11 +48,12 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
 
 ![enlightenment](https://www.enlightenment.org/_media/aa/shot-2021-12-13_17-49-55.png)
 
+## [UML: Class Diagram](https://plantuml.com)
+
 ```plantuml
 @startuml
 !theme sunlust
 skinparam linetype ortho
-right footer UML: Class Diagram
 left to right direction
 package "efl" #line.dashed {
     package containers #line.dotted {
