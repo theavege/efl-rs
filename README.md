@@ -120,7 +120,7 @@ package "efl" #line.dashed {
         interface ContainerExt {
             #add_item(WidgetExt)
         }
-        interface OrientExt {
+        interface OrientationExt {
             +Self with_horizontal()
         }
         interface InputsExt {
