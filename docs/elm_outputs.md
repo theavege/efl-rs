@@ -1,8 +1,8 @@
 # [Label](https://www.enlightenment.org/develop/legacy/program_guide/widgets/label)
 
-![Label](https://www.enlightenment.org/_media/widgets_label.png)
-
 The label widget displays text with simple html-like markup.
+
+![Label](https://www.enlightenment.org/_media/widgets_label.png)
 
 ```rust
     efltk::Label::new(parent).with_text("Home");
@@ -10,9 +10,9 @@ The label widget displays text with simple html-like markup.
 
 # [ProgressBar](https://www.enlightenment.org/develop/legacy/program_guide/widgets/progressbar)
 
-![ProgressBar](https://www.enlightenment.org/_media/widgets_progressbar.png)
-
 The progress bar is a widget for visually representing the progress status of a given job/task.
+
+![ProgressBar](https://www.enlightenment.org/_media/widgets_progressbar.png)
 
 ```rust
     efltk::ProgressBar::new(parent)

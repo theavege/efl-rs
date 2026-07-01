@@ -1,7 +1,7 @@
 use efltk::prelude::*;
 
 #[derive(Default)]
-pub struct Selector(efltk::List, efltk::Button);
+pub struct Selector(efltk::List, efltk::Button, efltk::Radio);
 
 impl Component for Selector {
     type Event = (i32, String);
@@ -9,6 +9,7 @@ impl Component for Selector {
     fn update(&self, model: &Self::State) {
         self.0.update(model.0);
         self.1.set_text(&model.1);
+        self.2.update(model.0);
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
         *model = msg;
@@ -21,14 +22,10 @@ impl Component for Selector {
             "folder",
             "apps",
             "arrow_up",
-            "arrow_down",
-            "arrow_left",
-            "arrow_right",
             "chat",
             "clock",
             "delete",
             "refresh",
-            "folder",
             "file",
             "dialog-info",
         ];
@@ -52,6 +49,15 @@ impl Component for Selector {
                     }
                 }),
             );
+            efltk::Separator::new(prt);
+            self.2 = efltk::Radio::from_items(prt, &items, {
+                let sender = sender.clone();
+                move |wgt| {
+                    sender
+                        .send((wgt.value(), items[wgt.value() as usize].to_string()))
+                        .unwrap();
+                }
+            });
         });
     }
 }

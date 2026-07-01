@@ -68,7 +68,7 @@ impl Component for Booker {
                 .with_horizontal(true)
                 .inside(|prt| {
                     self.start =
-                        efltk::Entry::new(&efltk::Bubble::new(prt).with_text("Departure data"))
+                        efltk::Entry::new(&efltk::Frame::new(prt).with_text("Departure data"))
                             .with_signal(Signal::Unfocused, {
                                 let sender = sender.clone();
                                 move |wgt| match chrono::NaiveDate::parse_from_str(
@@ -81,28 +81,27 @@ impl Component for Booker {
                                     false => efltk::Popup::warning(&wgt.window(), "ERROR"),
                                 }
                             });
-                    self.back =
-                        efltk::Entry::new(&efltk::Bubble::new(prt).with_text("Return data"))
-                            .with_signal(Signal::Unfocused, {
-                                let sender = sender.clone();
-                                move |wgt| match chrono::NaiveDate::parse_from_str(
-                                    &wgt.value(),
-                                    "%Y-%m-%d",
-                                )
-                                .is_ok()
-                                {
-                                    true => sender.send(Msg::Back(wgt.value())).unwrap(),
-                                    false => efltk::Popup::new(&wgt.window())
-                                        .with_timeout(0.0)
-                                        .set_message("home", "ERROR", "ERROR"),
-                                }
-                            });
+                    self.back = efltk::Entry::new(&efltk::Frame::new(prt).with_text("Return data"))
+                        .with_signal(Signal::Unfocused, {
+                            let sender = sender.clone();
+                            move |wgt| match chrono::NaiveDate::parse_from_str(
+                                &wgt.value(),
+                                "%Y-%m-%d",
+                            )
+                            .is_ok()
+                            {
+                                true => sender.send(Msg::Back(wgt.value())).unwrap(),
+                                false => efltk::Popup::new(&wgt.window())
+                                    .with_timeout(0.0)
+                                    .set_message("home", "ERROR", "ERROR"),
+                            }
+                        });
                 });
             efltk::Box::new(prt)
                 .with_homogeneous(true)
                 .with_horizontal(true)
                 .inside(|prt| {
-                    self.flight = efltk::Check::new(&efltk::Bubble::new(prt).with_text("Flight"))
+                    self.flight = efltk::Check::new(&efltk::Frame::new(prt).with_text("Flight"))
                         .with_tooltip("Check")
                         .with_text("Return")
                         .with_callback({

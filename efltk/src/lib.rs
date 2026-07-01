@@ -594,20 +594,6 @@ impl OrientExt for Box {
 impl BoxExt for Box {}
 
 #[derive(Default)]
-pub struct Bubble(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Bubble {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ContainerExt for Bubble {}
-impl BubbleExt for Bubble {}
-
-#[derive(Default)]
 pub struct Button(Option<NonNull<Evas_Object>>);
 
 impl WidgetExt for Button {

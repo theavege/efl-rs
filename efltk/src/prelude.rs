@@ -367,23 +367,6 @@ pub trait WidgetExt: Sized {
     }
 }
 
-pub trait BubbleExt: ContainerExt {
-    fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe {
-            let ptr = elm_bubble_add(prt.as_raw());
-            elm_bubble_pos_set(ptr, 1);
-            ptr
-        })
-        .with_conf();
-        prt.add(&elm);
-        elm
-    }
-    fn with_text(self, text: &str) -> Self {
-        self.set_part("info", text);
-        self
-    }
-}
-
 pub trait LabelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe {
@@ -642,9 +625,9 @@ pub trait EntryExt: InputExt<String> {
 }
 
 pub trait IconExt: WidgetExt {
-    fn new(parent: &impl WidgetExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_icon_add(parent.as_raw()) });
-        parent.set_content(&elm, "icon");
+    fn new(prt: &impl WidgetExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_icon_add(prt.as_raw()) });
+        prt.set_content(&elm, "icon");
         elm
     }
     fn with_standard(self, value: &str) -> Self {

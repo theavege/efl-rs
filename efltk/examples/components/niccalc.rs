@@ -124,7 +124,7 @@ Total:         <number>{t}</number><br>
             });
             efltk::Box::new(prt).with_horizontal(true).inside(|prt| {
                 efltk::Button::new(prt).with_size(WIDTH, -1)
-                .set_text("Nicotine strength wanted (mg/ml):");
+                    .set_text("Nicotine strength wanted (mg/ml):");
                 efltk::Entry::new(prt)
                     .with_tooltip("Nicotine strength wanted must be between  0 and value of nicotine base strength")
                     .with_callback({

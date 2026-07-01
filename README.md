@@ -23,27 +23,26 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
 
 - [x] [Widgets](https://www.enlightenment.org/_legacy_embed/widgetslist.html)
   - [x] [Containers](docs/elm_containers.md)
-    - [x] [Box](docs/elm_containers.md#Box) - Basic horizontal/vertical packing
-    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame) - Slided container
-    - [x] [Bubble](docs/elm_containers.md#Bubble) - Container with title
-    - [x] [Frame](docs/elm_containers.md#Frame) - Collapsed container
-    - [x] [Popup](docs/elm_containers.md#Popup) - Modal container
+    - [x] [Box](docs/elm_containers.md#Box) - is horizontal/vertical container.
+    - [x] [NaviFrame](docs/elm_containers.md#NaviFrame) - is a container that shows a single child at a time.
+    - [x] [Frame](docs/elm_containers.md#Frame) - allows to provide additional content that is initially hidden.
+    - [x] [Panes](docs/elm_containers.md#Panes) - divides its content area into two panes with a divider in between that the user can adjust.
   - [x] [Outputs](docs/elm_outputs.md)
+    - [x] [Label](docs/elm_outputs.md#Label) - Display text
     - [x] [Separator](docs/elm_outputs.md#Separator) - Display horizontal/vertical line
     - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar) - Display progress
   - [x] [Inputs](docs/elm_inputs.md)
-    - [x] [Entry (String)](docs/elm_inputs.md#Entry) - Change text
+    - [x] [Button](docs/elm_inputs.md#Button)
     - [x] [Check (bool)](docs/elm_triggers.md#Check) - Change option
-    - [x] [Rangers ((f64..=f64), f64)](docs/elm_outputs.md) - Change float
-      - [x] [Spinner](docs/elm_ranges.md#Spinner)
-      - [x] [Slider](docs/elm_ranges.md#Slider)
-  - [x] [Selectors (Vec<String>, u32)](docs/elm_selectors.md)  - Select variant
-    - [x] [Radio](docs/elm_selectors.md#Radio) - Classic selector
-    - [x] [List](docs/elm_selectors.md#List) - Vertical scrollable selector
-    - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Horizontal selector
-    - [x] [Menu](docs/elm_selectors.md#Menu) - Popup selector
-  - [x] [Triggers](docs/elm_triggers.md)
-    - [x] [Button](docs/elm_triggers.md#Button)
+    - [x] [Entry (String)](docs/elm_inputs.md#Entry) - Change text
+    - [x] [Rangers ((f64..=f64), f64)](docs/elm_outputs.md)
+      - [x] [Spinner](docs/elm_ranges.md#Spinner) - provides convenient ways to input data that can be seen as a value in a range.
+      - [x] [Slider](docs/elm_ranges.md#Slider) - is a way to select a value from a range. Slider can have marks to help pick special values, and they can also restrict the values that can be chosen.
+    - [x] [Selectors (Vec<String>, u32)](docs/elm_selectors.md)  - Select variant
+      - [x] [Radio](docs/elm_selectors.md#Radio) - Classic selector
+      - [x] [List](docs/elm_selectors.md#List) - is used to store data in list form.
+      - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Horizontal selector
+      - [x] [Menu](docs/elm_selectors.md#Menu) - Popup selector
 
 ## Screenshots
 
@@ -56,27 +55,21 @@ skinparam linetype ortho
 right footer UML: Class Diagram
 left to right direction
 package "efl" #line.dashed {
-    package containers #line.dashed {
+    package containers #line.dotted {
         struct Box {
-            -ptr : Pointer
-        }
-        struct Buble {
-            -ptr : Pointer
-        }
-        struct Frame {
             -ptr : Pointer
         }
         struct Naviframe {
             -ptr : Pointer
         }
+        struct Frame {
+            -ptr : Pointer
+        }
         struct Panes {
             -ptr : Pointer
         }
-        struct Window {
-            -ptr : Pointer
-        }
     }
-    package outputs #line.dashed {
+    package outputs #line.dotted {
         struct Label {
             -ptr : Pointer
         }
@@ -87,7 +80,7 @@ package "efl" #line.dashed {
             -ptr : Pointer
         }
     }
-    package inputs #line.dashed {
+    package inputs #line.dotted {
         struct Button {
             -ptr : Pointer
         }
@@ -113,7 +106,7 @@ package "efl" #line.dashed {
             -ptr : Pointer
         }
     }
-    package prelude #line.dashed {
+    package prelude #line.dotted {
         interface WidgetExt {
             #ptr as_raw()
             #from_raw(ptr)
@@ -131,17 +124,11 @@ package "efl" #line.dashed {
             +Self with_horizontal()
         }
         interface InputsExt {
-            +call_signal(signal)
             +do_callback()
-            +bool focus()
             +type value()
             +set_value(type)
-            +Self  with_value(type)
             +set_disabled(bool)
-            +Self with_signal(signal)
             +Self with_callback()
-            +Self with_cursor(cursor)
-            +Self with_tooltip(tooltip)
         }
         interface RangerExt {
             +Self with_range(f64, f64)
@@ -165,8 +152,6 @@ package "efl" #line.dashed {
 
     struct containers.Box implements prelude.OrientationExt
     struct containers.Box implements prelude.ContainerExt
-
-    struct containers.Buble implements prelude.ContainerExt
 
     struct containers.Frame implements prelude.TextExt
     struct containers.Frame implements prelude.OrientationExt
