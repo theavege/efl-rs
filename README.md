@@ -44,6 +44,15 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
       - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Horizontal selector
       - [x] [Menu](docs/elm_selectors.md#Menu) - Popup selector
 
+## Transition Table
+
+Rough equivalents between common widgets of GTK+ 3 and widgets of EFL.
+
+| GTK+ | EFL |
+| ---- | --- |
+| [`Gtk.Button`](https://valadoc.org/gtk+-3.0/Gtk.Button.html) | [`Elm.Button`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Button.html) |
+| [`Gtk.CheckButton`](https://valadoc.org/gtk+-3.0/Gtk.CheckButton.html) | [`Elm.Check`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Check.html) |
+
 ## Screenshots
 
 ![enlightenment](https://www.enlightenment.org/_media/aa/shot-2021-12-13_17-49-55.png)
