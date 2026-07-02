@@ -32,10 +32,6 @@ mod models {
         pub fn switch(&mut self) {
             std::mem::swap(&mut self.from, &mut self.to);
         }
-        pub fn save(&self) {
-            std::fs::write(Self::file(), [self.from as u8, self.to as u8]).unwrap();
-            std::process::exit(0);
-        }
         pub fn url(&self) -> String {
             format!(
                 "{}/{}/{}/{}",
@@ -52,11 +48,12 @@ mod models {
                     .replace("?", "%3F")
             )
         }
-        pub fn lang(&self) -> Vec<String> {
-            self.lang
-                .iter()
-                .map(|lang| lang.1.clone())
-                .collect::<Vec<String>>()
+        pub fn lang(&self) -> Vec<&str> {
+            let mut rsl = Vec::<&str>::new();
+            for (item, _) in &self.lang {
+                rsl.push(item);
+            }
+            rsl
         }
     }
 }
@@ -66,12 +63,9 @@ use std::collections::HashMap;
 
 pub enum Msg {
     Run,
-    Quit,
     Switch,
     Source(String),
     Target(String),
-    SaveAs(String),
-    Open(String),
     To(i32),
     From(i32),
     Lang(Vec<(String, String)>),
@@ -90,13 +84,6 @@ impl Component for Dialect {
     type State = models::Model;
     fn handle(msg: Self::Event, model: &mut Self::State, sender: Sender<Self::Event>) -> bool {
         match msg {
-            Msg::Open(value) => {
-                model.source = std::fs::read_to_string(value).unwrap();
-            }
-            Msg::SaveAs(value) => {
-                std::fs::write(value, model.target.as_bytes()).unwrap();
-                return false;
-            }
             Msg::Target(value) => {
                 model.target = value;
             }
@@ -112,10 +99,6 @@ impl Component for Dialect {
             }
             Msg::Source(value) => {
                 model.source = value;
-            }
-            Msg::Quit => {
-                model.save();
-                return false;
             }
             Msg::Switch => {
                 model.switch();
@@ -144,58 +127,63 @@ impl Component for Dialect {
         true
     }
     fn update(&self, state: &Self::State) {
-        self.to.update((state.lang(), state.to as u32));
-        self.from.update((state.lang(), state.from as u32));
+        self.to.update((&state.lang(), state.to));
+        self.from.update((&state.lang(), state.from));
         self.source.update(&state.source);
         self.target.update(&state.target);
     }
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
+        const WIDTH: i32 = 125;
         efltk::Box::new(prt)
             .with_horizontal(true)
             .with_homogeneous(true)
             .inside(|prt| {
-                self.from = efltk::List::new(prt).with_callback({
-                    let sender = sender.clone();
-                    move |wgt| {
-                        sender.send(Msg::From(wgt.value() as i32)).unwrap();
-                    }
-                });
-                efltk::Box::new(prt).inside(|prt| {
-                    self.source = efltk::Entry::new(prt)
-                        .with_single_line(false)
-                        .with_callback({
-                            let sender = sender.clone();
-                            move |wgt| {
-                                if wgt.focus() {
-                                    sender.send(Msg::Source(wgt.text())).unwrap();
-                                }
-                            }
-                        });
-                    efltk::Button::new(prt).with_text("Switch").with_callback({
+                efltk::Panes::new(prt).with_right_size(WIDTH).inside(|prt| {
+                    self.from = efltk::List::new(prt).with_callback({
                         let sender = sender.clone();
-                        move |_| {
-                            sender.send(Msg::Switch).unwrap();
+                        move |wgt| {
+                            sender.send(Msg::From(wgt.value())).unwrap();
                         }
                     });
-                });
-                efltk::Box::new(prt).inside(|prt| {
-                    self.target = efltk::Entry::new(prt)
-                        .with_single_line(false)
-                        .with_editable(false);
-                    efltk::Button::new(prt)
-                        .with_text("Translate")
-                        .with_callback({
+                    efltk::Box::new(prt).inside(|prt| {
+                        self.source = efltk::Entry::new(prt)
+                            .with_single_line(false)
+                            .with_callback({
+                                let sender = sender.clone();
+                                move |wgt| {
+                                    if wgt.focus() {
+                                        sender.send(Msg::Source(wgt.value())).unwrap();
+                                    }
+                                }
+                            });
+                        efltk::Button::new(prt).with_text("Switch").with_callback({
                             let sender = sender.clone();
                             move |_| {
-                                sender.send(Msg::Run).unwrap();
+                                sender.send(Msg::Switch).unwrap();
                             }
                         });
+                    });
                 });
-                self.to = efltk::List::new(prt).with_callback({
-                    let sender = sender.clone();
-                    move |wgt| {
-                        sender.send(Msg::To(wgt.value() as i32)).unwrap();
-                    }
+                efltk::Panes::new(prt).with_left_size(WIDTH).inside(|prt| {
+                    efltk::Box::new(prt).inside(|prt| {
+                        self.target = efltk::Entry::new(prt)
+                            .with_single_line(false)
+                            .with_editable(false);
+                        efltk::Button::new(prt)
+                            .with_text("Translate")
+                            .with_callback({
+                                let sender = sender.clone();
+                                move |_| {
+                                    sender.send(Msg::Run).unwrap();
+                                }
+                            });
+                    });
+                    self.to = efltk::List::new(prt).with_callback({
+                        let sender = sender.clone();
+                        move |wgt| {
+                            sender.send(Msg::To(wgt.value())).unwrap();
+                        }
+                    });
                 });
             });
         std::thread::spawn(move || {

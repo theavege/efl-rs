@@ -18,7 +18,7 @@ impl Component for View {
     fn update(&self, model: &Self::State) {
         self.1.set_top(model.1);
         for idx in 0..self.0.len() {
-            self.0[idx].set_collapse(idx != model.0);
+            self.0[idx].set_value(idx != model.0);
         }
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
@@ -31,7 +31,7 @@ impl Component for View {
     fn view(&mut self, prt: &impl ContainerExt, sender: Sender<Self::Event>) {
         efltk::Box::new(prt).inside(|prt| {
             let items = [
-                "home", "Calc", "Sudoku", "NicCalc", "Siege", "Search", "Dialect", "CRUD",
+                "home", "Calc", "Sudoku", "NicCalc", "Siege", "Search", "Dialect",
             ];
             efltk::SegmentControl::new(prt)
                 .with_items(&items)
@@ -46,13 +46,10 @@ impl Component for View {
                         .iter()
                         .enumerate()
                     {
-                        self.0[idx] = efltk::Frame::new(prt)
-                            .with_autocollapse(false)
-                            .with_text(item)
-                            .with_callback({
-                                let sender = sender.clone();
-                                move |_| sender.send(Msg::Set(idx)).unwrap()
-                            });
+                        self.0[idx] = efltk::Frame::new(prt).with_text(item).with_callback({
+                            let sender = sender.clone();
+                            move |_| sender.send(Msg::Set(idx)).unwrap()
+                        });
                         match idx {
                             0 => components::Converter::mount(&self.0[idx]),
                             1 => components::Ranger::mount(&self.0[idx]),
@@ -69,7 +66,6 @@ impl Component for View {
                 components::Siege::mount(prt);
                 components::Search::mount(prt);
                 components::Dialect::mount(prt);
-                components::Crud::mount(prt);
                 prt.promote();
             });
         });

@@ -73,6 +73,7 @@ pub enum Msg {
     Reg(String),
     Case(bool),
     Limit(usize),
+    Run,
 }
 
 #[derive(Default)]
@@ -97,6 +98,7 @@ impl Component for Search {
             Msg::Case(value) => model.case = value,
             Msg::Limit(value) => model.limit = value,
             Msg::Reg(value) => model.reg = value,
+            Msg::Run => model.log = model.search(),
         }
         true
     }
@@ -108,7 +110,7 @@ impl Component for Search {
                     .with_size(WIDTH, -1)
                     .set_text("PATH: ");
                 self.path = efltk::Entry::new(prt)
-                    .with_value(
+                    .with_text(
                         &std::env::var(match cfg!(target_os = "windows") {
                             true => "%HOMEPATH%",
                             false => "HOME",
@@ -128,7 +130,7 @@ impl Component for Search {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
                     .set_text("EXTENSIONS: ");
-                self.ext = efltk::Entry::new(prt).with_value("txt,md").with_callback({
+                self.ext = efltk::Entry::new(prt).with_text("txt,md").with_callback({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -150,7 +152,7 @@ impl Component for Search {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
                     .set_text("REGEXP: ");
-                self.reg = efltk::Entry::new(prt).with_value("*").with_callback({
+                self.reg = efltk::Entry::new(prt).with_text("*").with_callback({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -172,7 +174,7 @@ impl Component for Search {
                 efltk::Button::new(prt)
                     .with_size(WIDTH, -1)
                     .set_text("LIMIT: ");
-                self.limit = efltk::Entry::new(prt).with_value("0").with_callback({
+                self.limit = efltk::Entry::new(prt).with_text("0").with_callback({
                     let sender = sender.clone();
                     move |wgt| {
                         if wgt.focus() {
@@ -211,6 +213,10 @@ impl Component for Search {
                         let sender = sender.clone();
                         move |wgt| sender.send(Msg::Case(wgt.value())).unwrap()
                     });
+            });
+            efltk::Button::new(prt).with_text("Search").with_callback({
+                let sender = sender.clone();
+                move |_| sender.send(Msg::Run).unwrap()
             });
             efltk::Label::new(prt);
         });

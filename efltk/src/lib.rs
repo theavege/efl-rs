@@ -9,9 +9,6 @@ use {
 };
 
 #[derive(Default)]
-pub struct EventHandler(Option<NonNull<Ecore_Event_Handler>>);
-
-#[derive(Default)]
 pub struct Timer(Option<NonNull<Ecore_Timer>>);
 
 #[derive(Default)]
@@ -37,20 +34,23 @@ impl WidgetExt for Menu {
         Self(NonNull::new(obj))
     }
 }
-
+impl InputExt<i32> for Menu {
+    fn value(&self) -> i32 {
+        unsafe { elm_menu_item_index_get(self.selected().as_raw()) as i32 }
+    }
+    fn set_value(&self, value: i32) {
+        if (0..self.lenght()).contains(&(value as u32)) {
+            let mut temp = self.first().as_raw();
+            for _ in 0..value {
+                temp = unsafe { elm_menu_item_next_get(temp) };
+            }
+            unsafe { elm_menu_item_selected_set(temp, true as Eina_Bool) }
+        }
+    }
+}
 impl SelectorExt for Menu {
     fn add(&self, label: &str) -> WidgetItem {
         self.append(label, label, |wgt| wgt.call_signal(Signal::Selected))
-    }
-    fn set_value(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _idx in 0..value {
-            temp = unsafe { elm_menu_item_next_get(temp) }
-        }
-        unsafe { elm_menu_item_selected_set(temp, true as Eina_Bool) };
-    }
-    fn value(&self) -> u32 {
-        unsafe { elm_menu_item_index_get(self.selected().as_raw()) as u32 }
     }
     fn lenght(&self) -> u32 {
         let mut count = 0;
@@ -58,15 +58,6 @@ impl SelectorExt for Menu {
         while temp.0.is_some() {
             count += 1;
             temp = WidgetItem::from_raw(unsafe { elm_menu_item_next_get(temp.as_raw()) });
-        }
-        count
-    }
-    fn find(&self, item: WidgetItem) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first().as_raw();
-        while temp != item.as_raw() {
-            temp = unsafe { elm_menu_item_next_get(temp) };
-            count += 1;
         }
         count
     }
@@ -151,6 +142,30 @@ impl WidgetExt for Entry {
     }
 }
 impl EntryExt for Entry {}
+impl TextExt for Entry {
+    fn text(&self) -> String {
+        unsafe {
+            let ptr = elm_entry_entry_get(self.as_raw());
+            std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
+        }
+    }
+    fn set_text(&self, text: &str) {
+        unsafe {
+            elm_entry_entry_set(
+                self.as_raw(),
+                std::ffi::CString::new(text).unwrap().as_ptr(),
+            )
+        };
+    }
+}
+impl InputExt<String> for Entry {
+    fn value(&self) -> String {
+        self.text()
+    }
+    fn set_value(&self, value: String) {
+        self.set_text(&value);
+    }
+}
 
 #[derive(Default)]
 pub struct Frame(Option<NonNull<Evas_Object>>);
@@ -164,10 +179,19 @@ impl WidgetExt for Frame {
     }
 }
 impl ContainerExt for Frame {}
+impl TextExt for Frame {}
+impl InputExt<bool> for Frame {
+    fn value(&self) -> bool {
+        unsafe { elm_frame_collapse_get(self.as_raw()) != 0 }
+    }
+    fn set_value(&self, value: bool) {
+        unsafe { elm_frame_collapse_set(self.as_raw(), value as Eina_Bool) };
+    }
+}
 impl FrameExt for Frame {}
 
 #[derive(Default)]
-pub struct Icon(Option<NonNull<Evas_Object>>);
+pub(crate) struct Icon(Option<NonNull<Evas_Object>>);
 
 impl WidgetExt for Icon {
     fn as_raw(&self) -> *mut Evas_Object {
@@ -190,6 +214,7 @@ impl WidgetExt for Label {
         Self(NonNull::new(obj))
     }
 }
+impl TextExt for Label {}
 impl LabelExt for Label {}
 
 #[derive(Default)]
@@ -201,6 +226,13 @@ impl WidgetExt for Separator {
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
         Self(NonNull::new(obj))
+    }
+}
+impl OrientExt for Separator {
+    fn with_horizontal(self, value: bool) -> Self {
+        unsafe { elm_separator_horizontal_set(self.as_raw(), value as Eina_Bool) };
+        self.set_weight(value, !value);
+        self
     }
 }
 impl SeparatorExt for Separator {}
@@ -224,31 +256,34 @@ impl WidgetExt for List {
         Self(NonNull::new(obj))
     }
 }
+
+impl InputExt<i32> for List {
+    fn value(&self) -> i32 {
+        if self.lenght() > 0 {
+            let mut count = 0;
+            let mut temp = self.first().as_raw();
+            while temp != self.selected().as_raw() {
+                count += 1;
+                temp = unsafe { elm_list_item_next(temp) };
+            }
+            count
+        } else {
+            -1
+        }
+    }
+    fn set_value(&self, value: i32) {
+        if (0..self.lenght()).contains(&(value as u32)) {
+            let mut temp = self.first().as_raw();
+            for _ in 0..value {
+                temp = unsafe { elm_list_item_next(temp) };
+            }
+            unsafe { elm_list_item_selected_set(temp, true as Eina_Bool) }
+        }
+    }
+}
 impl SelectorExt for List {
     fn add(&self, label: &str) -> WidgetItem {
         self.add_item(label, label, |_| {})
-    }
-    fn set_value(&self, value: u32) {
-        let mut temp = self.first().as_raw();
-        for _ in 0..value {
-            temp = unsafe { elm_list_item_next(temp) };
-        }
-        unsafe { elm_list_item_selected_set(temp, true as Eina_Bool) }
-    }
-    fn value(&self) -> u32 {
-        self.find(self.selected())
-    }
-    fn find(&self, item: WidgetItem) -> u32 {
-        let mut count = 0;
-        let mut temp = self.first().as_raw();
-        while temp != item.as_raw() {
-            count += 1;
-            temp = unsafe { elm_list_item_next(temp) };
-        }
-        count
-    }
-    fn clear(&self) {
-        unsafe { elm_list_clear(self.as_raw()) };
     }
     fn lenght(&self) -> u32 {
         let mut count = 0;
@@ -258,6 +293,9 @@ impl SelectorExt for List {
             temp = WidgetItem::from_raw(unsafe { elm_list_item_next(temp.as_raw()) });
         }
         count
+    }
+    fn clear(&self) {
+        unsafe { elm_list_clear(self.as_raw()) };
     }
 }
 impl ListExt for List {}
@@ -324,6 +362,13 @@ impl ContainerExt for Panes {
         child.show();
     }
 }
+impl OrientExt for Panes {
+    fn with_horizontal(self, value: bool) -> Self {
+        unsafe { elm_panes_horizontal_set(self.as_raw(), value as Eina_Bool) };
+        self.set_weight(value, !value);
+        self
+    }
+}
 impl PanesExt for Panes {}
 
 #[derive(Default, Clone)]
@@ -364,6 +409,15 @@ impl WidgetExt for Radio {
         Self(NonNull::new(obj))
     }
 }
+impl InputExt<i32> for Radio {
+    fn value(&self) -> i32 {
+        unsafe { elm_radio_value_get(self.as_raw()) as i32 }
+    }
+    fn set_value(&self, value: i32) {
+        unsafe { elm_radio_value_set(self.as_raw(), value) };
+    }
+}
+impl TextExt for Radio {}
 impl RadioExt for Radio {}
 
 #[derive(Default)]
@@ -384,6 +438,19 @@ impl WidgetExt for SegmentControl {
     }
 }
 impl SegmentControlExt for SegmentControl {}
+impl InputExt<i32> for SegmentControl {
+    fn value(&self) -> i32 {
+        unsafe { elm_segment_control_item_index_get(self.selected().as_raw()) as i32 }
+    }
+    fn set_value(&self, value: i32) {
+        unsafe {
+            elm_segment_control_item_selected_set(
+                elm_segment_control_item_get(self.as_raw(), value),
+                true as Eina_Bool,
+            )
+        };
+    }
+}
 impl SelectorExt for SegmentControl {
     fn add(&self, label: &str) -> WidgetItem {
         WidgetItem::from_raw(unsafe {
@@ -394,23 +461,10 @@ impl SelectorExt for SegmentControl {
             )
         })
     }
-    fn find(&self, item: WidgetItem) -> u32 {
-        unsafe { elm_segment_control_item_index_get(item.as_raw()) as u32 }
-    }
-    fn value(&self) -> u32 {
-        unsafe { elm_segment_control_item_index_get(self.selected().as_raw()) as u32 }
-    }
     fn lenght(&self) -> u32 {
         unsafe { elm_segment_control_item_count_get(self.as_raw()) as u32 }
     }
-    fn set_value(&self, value: u32) {
-        unsafe {
-            elm_segment_control_item_selected_set(
-                elm_segment_control_item_get(self.as_raw(), value as i32),
-                true as Eina_Bool,
-            )
-        };
-    }
+
     fn clear(&self) {
         unsafe { elm_diskselector_clear(self.as_raw()) };
     }
@@ -428,22 +482,32 @@ impl WidgetExt for Slider {
     }
 }
 impl SliderExt for Slider {}
-impl RangerExt for Slider {
+impl InputExt<f64> for Slider {
     fn value(&self) -> f64 {
         unsafe { elm_slider_value_get(self.as_raw()) }
-    }
-    fn set_range(&self, min: f64, max: f64) {
-        unsafe { elm_slider_min_max_set(self.as_raw(), min, max) };
     }
     fn set_value(&self, value: f64) {
         unsafe { elm_slider_value_set(self.as_raw(), value) };
     }
+}
+impl OrientExt for Slider {
+    fn with_horizontal(self, value: bool) -> Self {
+        unsafe { elm_slider_horizontal_set(self.as_raw(), value as Eina_Bool) };
+        self.set_weight(value, !value);
+        self
+    }
+}
+impl RangerExt for Slider {
+    fn set_range(&self, min: f64, max: f64) {
+        unsafe { elm_slider_min_max_set(self.as_raw(), min, max) };
+    }
     fn set_step(&self, value: f64) {
         unsafe { elm_slider_step_set(self.as_raw(), value) };
     }
-    fn set_format(&self, value: &str) {
+    fn with_format(self, value: &str) -> Self {
         let ctext = std::ffi::CString::new(value).unwrap();
         unsafe { elm_slider_unit_format_set(self.as_raw(), ctext.as_ptr()) };
+        self
     }
 }
 
@@ -459,22 +523,25 @@ impl WidgetExt for Spinner {
     }
 }
 impl SpinnerExt for Spinner {}
+impl InputExt<f64> for Spinner {
+    fn set_value(&self, value: f64) {
+        unsafe { elm_spinner_value_set(self.as_raw(), value) };
+    }
+    fn value(&self) -> f64 {
+        unsafe { elm_spinner_value_get(self.as_raw()) }
+    }
+}
 impl RangerExt for Spinner {
-    fn set_format(&self, format: &str) {
+    fn with_format(self, format: &str) -> Self {
         let cformat = std::ffi::CString::new(format).unwrap();
         unsafe { elm_spinner_label_format_set(self.as_raw(), cformat.as_ptr()) };
+        self
     }
     fn set_range(&self, min: f64, max: f64) {
         unsafe { elm_spinner_min_max_set(self.as_raw(), min, max) };
     }
     fn set_step(&self, step: f64) {
         unsafe { elm_spinner_step_set(self.as_raw(), step) };
-    }
-    fn set_value(&self, value: f64) {
-        unsafe { elm_spinner_value_set(self.as_raw(), value) };
-    }
-    fn value(&self) -> f64 {
-        unsafe { elm_spinner_value_get(self.as_raw()) }
     }
 }
 
@@ -510,37 +577,21 @@ impl WidgetExt for Box {
 }
 impl ContainerExt for Box {
     fn add(&self, child: &impl WidgetExt) {
-        self.add_item(child);
+        unsafe {
+            elm_box_pack_end(self.as_raw(), child.as_raw());
+            elm_box_recalculate(self.as_raw());
+        };
         child.show();
     }
 }
+impl OrientExt for Box {
+    fn with_horizontal(self, value: bool) -> Self {
+        unsafe { elm_box_horizontal_set(self.as_raw(), value as Eina_Bool) };
+        self.set_weight(value, !value);
+        self
+    }
+}
 impl BoxExt for Box {}
-
-#[derive(Default)]
-pub struct Calendar(Option<NonNull<Evas_Object>>);
-impl WidgetExt for Calendar {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl CalendarExt for Calendar {}
-
-#[derive(Default)]
-pub struct Bubble(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Bubble {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ContainerExt for Bubble {}
-impl BubbleExt for Bubble {}
 
 #[derive(Default)]
 pub struct Button(Option<NonNull<Evas_Object>>);
@@ -551,6 +602,15 @@ impl WidgetExt for Button {
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
         Self(NonNull::new(obj))
+    }
+}
+impl TextExt for Button {}
+impl InputExt<bool> for Button {
+    fn value(&self) -> bool {
+        self.disabled()
+    }
+    fn set_value(&self, value: bool) {
+        self.set_disabled(value);
     }
 }
 impl ButtonExt for Button {}
@@ -566,56 +626,13 @@ impl WidgetExt for Check {
         Self(NonNull::new(obj))
     }
 }
+impl InputExt<bool> for Check {
+    fn set_value(&self, value: bool) {
+        unsafe { elm_check_state_set(self.as_raw(), value as Eina_Bool) };
+    }
+    fn value(&self) -> bool {
+        unsafe { elm_check_state_get(self.as_raw()) != 0 }
+    }
+}
+impl TextExt for Check {}
 impl CheckExt for Check {}
-
-#[derive(Default)]
-pub struct ColorSel(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for ColorSel {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ColorSelExt for ColorSel {}
-
-#[derive(Default)]
-pub struct FileSel(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for FileSel {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl FileSelExt for FileSel {}
-
-#[derive(Default)]
-pub struct Clock(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Clock {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl ClockExt for Clock {}
-
-#[derive(Default)]
-pub struct FileEntry(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for FileEntry {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-impl FileEntryExt for FileEntry {}
