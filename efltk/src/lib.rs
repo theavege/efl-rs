@@ -39,7 +39,7 @@ impl InputExt<i32> for Menu {
         unsafe { elm_menu_item_index_get(self.selected().as_raw()) as i32 }
     }
     fn set_value(&self, value: i32) {
-        if (0..self.lenght()).contains(&(value as u32)) {
+        if (0..self.length()).contains(&(value as u32)) {
             let mut temp = self.first().as_raw();
             for _ in 0..value {
                 temp = unsafe { elm_menu_item_next_get(temp) };
@@ -52,7 +52,7 @@ impl SelectorExt for Menu {
     fn add(&self, label: &str) -> WidgetItem {
         self.append(label, label, |wgt| wgt.call_signal(Signal::Selected))
     }
-    fn lenght(&self) -> u32 {
+    fn length(&self) -> u32 {
         let mut count = 0;
         let mut temp = self.first();
         while temp.0.is_some() {
@@ -259,7 +259,7 @@ impl WidgetExt for List {
 
 impl InputExt<i32> for List {
     fn value(&self) -> i32 {
-        if self.lenght() > 0 {
+        if self.length() > 0 {
             let mut count = 0;
             let mut temp = self.first().as_raw();
             while temp != self.selected().as_raw() {
@@ -272,7 +272,7 @@ impl InputExt<i32> for List {
         }
     }
     fn set_value(&self, value: i32) {
-        if (0..self.lenght()).contains(&(value as u32)) {
+        if (0..self.length()).contains(&(value as u32)) {
             let mut temp = self.first().as_raw();
             for _ in 0..value {
                 temp = unsafe { elm_list_item_next(temp) };
@@ -285,7 +285,7 @@ impl SelectorExt for List {
     fn add(&self, label: &str) -> WidgetItem {
         self.add_item(label, label, |_| {})
     }
-    fn lenght(&self) -> u32 {
+    fn length(&self) -> u32 {
         let mut count = 0;
         let mut temp = self.first();
         while temp.0.is_some() {
@@ -461,7 +461,7 @@ impl SelectorExt for SegmentControl {
             )
         })
     }
-    fn lenght(&self) -> u32 {
+    fn length(&self) -> u32 {
         unsafe { elm_segment_control_item_count_get(self.as_raw()) as u32 }
     }
 
