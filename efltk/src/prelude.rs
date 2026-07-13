@@ -160,6 +160,9 @@ impl super::WidgetItem {
     }
 }
 
+/// Trait for widgets that can have a horizontal or vertical orientation.
+///
+/// Widgets implementing this trait can be configured to display horizontally or vertically.
 pub trait OrientExt: WidgetExt {
     fn with_horizontal(self, value: bool) -> Self;
 }
@@ -367,6 +370,9 @@ pub trait WidgetExt: Sized {
     }
 }
 
+/// Trait for label widgets.
+///
+/// Provides methods for creating and configuring label widgets.
 pub trait LabelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe {
@@ -380,6 +386,9 @@ pub trait LabelExt: WidgetExt {
         elm
     }
 }
+/// Trait for spinner widgets.
+///
+/// Provides methods for creating and configuring spinner widgets.
 pub trait SpinnerExt: RangerExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_spinner_add(prt.as_raw()) })
@@ -390,6 +399,9 @@ pub trait SpinnerExt: RangerExt {
     }
 }
 
+/// Trait for button widgets.
+///
+/// Provides methods for creating and configuring button widgets.
 pub trait ButtonExt: InputExt<bool> + TextExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_button_add(prt.as_raw()) })
@@ -409,6 +421,9 @@ pub trait ButtonExt: InputExt<bool> + TextExt {
     }
 }
 
+/// Trait for container widgets.
+///
+/// Provides methods for widgets that can contain other widgets.
 pub trait ContainerExt: WidgetExt {
     fn add(&self, child: &impl WidgetExt) {
         self.set_content(child, "default");
@@ -419,6 +434,9 @@ pub trait ContainerExt: WidgetExt {
     }
 }
 
+/// Trait for box widgets.
+///
+/// Provides methods for creating and configuring box layout widgets.
 pub trait BoxExt: ContainerExt + OrientExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_box_add(prt.as_raw()) })
@@ -438,6 +456,9 @@ pub trait BoxExt: ContainerExt + OrientExt {
     }
 }
 
+/// Trait for menu widgets.
+///
+/// Provides methods for creating and configuring popup menu widgets.
 pub trait MenuExt: SelectorExt {
     fn popup(prt: &impl WidgetExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_menu_add(prt.window().as_raw()) })
@@ -512,6 +533,9 @@ pub trait FileEntryExt: WidgetExt {
     }
 }
 
+/// Trait for check box widgets.
+///
+/// Provides methods for creating and configuring check box widgets.
 pub trait CheckExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_check_add(prt.as_raw()) })
@@ -522,6 +546,9 @@ pub trait CheckExt: WidgetExt {
     }
 }
 
+/// Trait for range-based input widgets (Slider, Spinner).
+///
+/// Provides methods for widgets that have a numeric range and step values.
 pub trait RangerExt: InputExt<f64> {
     fn set_step(&self, step: f64);
     fn set_range(&self, min: f64, max: f64);
@@ -536,6 +563,9 @@ pub trait RangerExt: InputExt<f64> {
     }
 }
 
+/// Trait for selector widgets (List, SegmentControl, Menu, Radio).
+///
+/// Provides methods for widgets that allow selection from multiple items.
 pub trait SelectorExt: InputExt<i32> {
     fn add(&self, label: &str) -> super::WidgetItem;
     fn length(&self) -> u32;
@@ -550,6 +580,9 @@ pub trait SelectorExt: InputExt<i32> {
         self
     }
 }
+/// Trait for slider widgets.
+///
+/// Provides methods for creating and configuring slider widgets.
 pub trait SliderExt: RangerExt + OrientExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_slider_add(prt.as_raw()) })
@@ -560,6 +593,9 @@ pub trait SliderExt: RangerExt + OrientExt {
     }
 }
 
+/// Trait for calendar widgets.
+///
+/// Provides methods for creating and configuring calendar widgets.
 pub trait CalendarExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe {
@@ -582,6 +618,9 @@ pub trait CalendarExt: WidgetExt {
     }
 }
 
+/// Trait for entry widgets.
+///
+/// Provides methods for creating and configuring text entry widgets.
 pub trait EntryExt: InputExt<String> {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_entry_add(prt.as_raw()) })
@@ -624,6 +663,9 @@ pub trait EntryExt: InputExt<String> {
     }
 }
 
+/// Trait for icon widgets.
+///
+/// Provides methods for creating and configuring icon widgets.
 pub trait IconExt: WidgetExt {
     fn new(prt: &impl WidgetExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_icon_add(prt.as_raw()) });
@@ -636,6 +678,9 @@ pub trait IconExt: WidgetExt {
     }
 }
 
+/// Trait for separator widgets.
+///
+/// Provides methods for creating and configuring separator widgets.
 pub trait SeparatorExt: OrientExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_separator_add(prt.as_raw()) })
@@ -646,6 +691,9 @@ pub trait SeparatorExt: OrientExt {
     }
 }
 
+/// Trait for list widgets.
+///
+/// Provides methods for creating and configuring list widgets.
 pub trait ListExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe {
@@ -684,6 +732,9 @@ pub trait ListExt: SelectorExt {
     }
 }
 
+/// Trait for frame widgets.
+///
+/// Provides methods for creating and configuring frame widgets.
 pub trait FrameExt: InputExt<bool> + ContainerExt {
     fn new(parent: &impl ContainerExt) -> Self {
         let prt = super::Box::new(parent).with_horizontal(true);
@@ -695,6 +746,9 @@ pub trait FrameExt: InputExt<bool> + ContainerExt {
     }
 }
 
+/// Trait for naviframe widgets.
+///
+/// Provides methods for creating and configuring navigation frame widgets.
 pub trait NaviframeExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_naviframe_add(prt.as_raw()) })
@@ -729,6 +783,9 @@ pub trait NaviframeExt: WidgetExt {
     }
 }
 
+/// Trait for panes widgets.
+///
+/// Provides methods for creating and configuring panes widgets.
 pub trait PanesExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_panes_add(prt.as_raw()) }).with_conf();
@@ -751,6 +808,9 @@ pub trait PanesExt: WidgetExt {
     }
 }
 
+/// Trait for popup widgets.
+///
+/// Provides methods for creating and configuring popup dialog widgets.
 pub trait PopupExt: ContainerExt + Clone
 where
     Self: 'static,
@@ -823,6 +883,9 @@ where
     }
 }
 
+/// Trait for progress bar widgets.
+///
+/// Provides methods for creating and configuring progress bar widgets.
 pub trait ProgressBarExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_progressbar_add(prt.as_raw()) })
@@ -844,6 +907,9 @@ pub trait ProgressBarExt: WidgetExt {
     }
 }
 
+/// Trait for radio button widgets.
+///
+/// Provides methods for creating and configuring radio button widgets.
 pub trait RadioExt: InputExt<i32> + TextExt {
     fn from_items<F: FnMut(Self) + 'static + Clone>(
         prt: &impl ContainerExt,
@@ -889,6 +955,9 @@ pub trait RadioExt: InputExt<i32> + TextExt {
     }
 }
 
+/// Trait for segment control widgets.
+///
+/// Provides methods for creating and configuring segment control widgets.
 pub trait SegmentControlExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_segment_control_add(prt.as_raw()) })
@@ -899,6 +968,9 @@ pub trait SegmentControlExt: SelectorExt {
     }
 }
 
+/// Trait for window widgets.
+///
+/// Provides methods for creating and configuring window widgets.
 pub trait WindowExt: WidgetExt {
     fn new(id: &str, title: &str) -> Self {
         Self::from_raw(unsafe {
@@ -916,6 +988,9 @@ pub trait WindowExt: WidgetExt {
     }
 }
 
+/// Trait for widgets that can be updated with new values.
+///
+/// Provides a generic way to update widget values based on model changes.
 pub trait Update<T>: WidgetExt {
     fn update(&self, value: T);
 }
@@ -962,6 +1037,9 @@ impl<T: SelectorExt + 'static> Update<(&Vec<&str>, i32)> for T {
     }
 }
 
+/// Trait for file selector widgets.
+///
+/// Provides methods for creating and configuring file selector widgets.
 pub trait FileSelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_fileselector_add(prt.as_raw()) })
@@ -1027,6 +1105,9 @@ pub trait FileSelExt: WidgetExt {
     }
 }
 
+/// Trait for clock widgets.
+///
+/// Provides methods for creating and configuring clock widgets.
 pub trait ClockExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_clock_add(prt.as_raw()) }).with_conf();
@@ -1043,6 +1124,9 @@ pub trait ClockExt: WidgetExt {
     }
 }
 
+/// Trait for color selector widgets.
+///
+/// Provides methods for creating and configuring color selector widgets.
 pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) })
@@ -1061,6 +1145,17 @@ pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
     //~ }
 }
 
+/// Trait for component-based UI patterns.
+///
+/// Provides a component architecture for building reactive UIs with
+/// separate state, events, and view definitions.
+///
+/// Components follow the Elm architecture pattern with:
+/// - `Event`: Messages that trigger state changes
+/// - `State`: The application state
+/// - `handle`: Function to process events and update state
+/// - `update`: Function to update the view based on state
+/// - `view`: Function to build the UI
 pub trait Component: Default + 'static {
     type Event: 'static;
     type State: Default + 'static;
