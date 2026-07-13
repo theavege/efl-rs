@@ -1,3 +1,9 @@
+//! Prelude module containing traits, types, and utilities for EFL widgets.
+//!
+//! This module provides the core trait system that powers the efl-rs widget API.
+//! All widget-specific functionality is defined through traits that can be
+//! implemented by widget types.
+
 pub use std::sync::mpsc::Sender;
 use {
     efltk_sys::*,
@@ -8,6 +14,9 @@ use {
     },
 };
 
+/// Signals that can be emitted by widgets.
+///
+/// Widgets emit signals when certain events occur, such as user interaction.
 #[derive(Default)]
 pub enum Signal {
     #[default]
@@ -28,6 +37,9 @@ impl Signal {
     }
 }
 
+/// Horizontal and vertical alignment options for widgets.
+///
+/// Used to control how widgets are positioned within their parent containers.
 #[derive(Default)]
 pub enum Align {
     #[default]
@@ -57,6 +69,9 @@ pub enum PanelOrient {
     Right,
 }
 
+/// Cursor styles that can be set on widgets.
+///
+/// Controls the mouse cursor appearance when hovering over a widget.
 #[derive(Default)]
 pub enum Cursor {
     #[default]
@@ -79,6 +94,10 @@ impl Cursor {
     }
 }
 
+/// Start the EFL main loop with a window.
+///
+/// This function initializes the EFL libraries, creates the window using the provided
+/// function, and starts the main event loop.
 pub fn run(func: impl Fn() -> super::Window) {
     let c_args = std::env::args()
         .map(|arg| CString::new(arg).unwrap())
@@ -96,6 +115,9 @@ pub fn run(func: impl Fn() -> super::Window) {
     }
 }
 
+/// Exit the EFL main loop.
+///
+/// This function terminates the EFL main loop.
 pub fn exit() {
     unsafe {
         efl_exit(0);
@@ -163,10 +185,16 @@ impl super::WidgetItem {
 /// Trait for widgets that can have a horizontal or vertical orientation.
 ///
 /// Widgets implementing this trait can be configured to display horizontally or vertically.
+/// Trait for widgets that can have a horizontal or vertical orientation.
+///
+/// Widgets implementing this trait can be configured to display horizontally or vertically.
 pub trait OrientExt: WidgetExt {
     fn with_horizontal(self, value: bool) -> Self;
 }
 
+/// Trait for widgets that can display and edit text.
+///
+/// Widgets implementing this trait can get and set their text content.
 pub trait TextExt: WidgetExt {
     fn text(&self) -> String {
         unsafe {
@@ -186,6 +214,9 @@ pub trait TextExt: WidgetExt {
     }
 }
 
+/// Trait for widgets that have an input value.
+///
+/// Widgets implementing this trait can get and set their value.
 pub trait InputExt<T>: WidgetExt {
     fn value(&self) -> T;
     fn set_value(&self, value: T);
@@ -256,6 +287,9 @@ pub trait InputExt<T>: WidgetExt {
     }
 }
 
+/// Trait for all EFL widgets.
+///
+/// This is the base trait that all widgets implement.
 pub trait WidgetExt: Sized {
     fn as_raw(&self) -> *mut Evas_Object;
     fn from_raw(obj: *mut Evas_Object) -> Self;
@@ -424,6 +458,9 @@ pub trait ButtonExt: InputExt<bool> + TextExt {
 /// Trait for container widgets.
 ///
 /// Provides methods for widgets that can contain other widgets.
+/// Trait for container widgets.
+///
+/// Provides methods for widgets that can contain other widgets.
 pub trait ContainerExt: WidgetExt {
     fn add(&self, child: &impl WidgetExt) {
         self.set_content(child, "default");
@@ -549,6 +586,9 @@ pub trait CheckExt: WidgetExt {
 /// Trait for range-based input widgets (Slider, Spinner).
 ///
 /// Provides methods for widgets that have a numeric range and step values.
+/// Trait for range-based input widgets.
+///
+/// Provides methods for widgets that have a numeric range and step values.
 pub trait RangerExt: InputExt<f64> {
     fn set_step(&self, step: f64);
     fn set_range(&self, min: f64, max: f64);
@@ -564,6 +604,9 @@ pub trait RangerExt: InputExt<f64> {
 }
 
 /// Trait for selector widgets (List, SegmentControl, Menu, Radio).
+///
+/// Provides methods for widgets that allow selection from multiple items.
+/// Trait for selector widgets.
 ///
 /// Provides methods for widgets that allow selection from multiple items.
 pub trait SelectorExt: InputExt<i32> {
@@ -1156,6 +1199,9 @@ pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
 /// - `handle`: Function to process events and update state
 /// - `update`: Function to update the view based on state
 /// - `view`: Function to build the UI
+/// Trait for component-based UI patterns.
+///
+/// Provides a component architecture for building reactive UIs.
 pub trait Component: Default + 'static {
     type Event: 'static;
     type State: Default + 'static;

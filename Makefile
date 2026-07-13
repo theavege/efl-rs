@@ -58,14 +58,6 @@ check-all: fmt-check clippy test
 clean:
 	cargo clean
 
-# Install the library
-install:
-	cargo install --path efltk
-
-# Run examples
-run-simple:
-	cargo run --example simple
-
 # Show help
 help:
 	@echo "Available targets:"
@@ -84,5 +76,3 @@ help:
 	@echo "  clippy-all   - Run clippy with all features"
 	@echo "  check-all    - Run all checks (fmt, clippy, test)"
 	@echo "  clean        - Clean build artifacts"
-	@echo "  install      - Install the library"
-	@echo "  run-simple   - Run the simple example"

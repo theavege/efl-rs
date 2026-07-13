@@ -71,7 +71,6 @@ cargo fmt
 - Use `snake_case` for functions, variables, and modules
 - Use `PascalCase` for types, traits, and enum variants
 - Use `SCREAMING_SNAKE_CASE` for constants
-- Type parameters should be single uppercase letters (T, U, V) or descriptive names (Widget, Value)
 
 ### Error Handling
 - Prefer `Result` over `expect()` and `unwrap()`
@@ -85,14 +84,6 @@ cargo fmt
 - Use the imperative mood ("Fix bug" not "Fixes bug")
 - Limit the first line to 72 characters or less
 - Reference issues and pull requests liberally
-- Consider starting the commit message with an applicable emoji:
-  - `✨` for new features
-  - `🐛` for bug fixes
-  - `📝` for documentation
-  - `🔧` for configuration changes
-  - `⚡` for performance improvements
-  - `🎨` for UI/UX changes
-  - `🚀` for releases
 
 ### Commit Structure
 - Each commit should be a single logical change
@@ -102,64 +93,32 @@ cargo fmt
 
 ## Pull Request Process
 
-1. **Push your branch** to your fork:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-2. **Open a Pull Request** on GitHub:
-   - Use a clear, descriptive title
-   - Include a detailed description of the changes
-   - Reference any related issues
-   - Include screenshots if applicable
-
-3. **Address Review Comments**:
-   - Respond to all review comments
-   - Make requested changes or explain why they're not needed
-   - Update the PR description if the scope changes
-
-4. **Wait for Approval**:
-   - At least one maintainer must approve the PR
-   - All CI checks must pass
-   - The PR will be merged by a maintainer
+1. **Push your branch** to your fork
+2. **Open a Pull Request** on GitHub with a clear title and description
+3. **Address Review Comments**
+4. **Wait for Approval**
 
 ## Testing
 
-### Running Tests
 ```bash
 cargo test
 cargo test --all-features
 ```
 
-### Adding Tests
-- Add unit tests in the same file as the code being tested
-- Use `#[cfg(test)]` module for tests
-- Test both happy paths and error cases
-- Include property-based tests where appropriate
-
 ## Reporting Issues
 
-When reporting issues, please include:
-- A clear description of the problem
+Please include:
+- Clear description of the problem
 - Steps to reproduce
 - Expected vs actual behavior
-- Your operating system and version
-- Your Rust version (`rustc --version`)
-- Any relevant code or error messages
-
-## Code Review
-
-When reviewing code:
-- Be kind and constructive
-- Focus on the code, not the person
-- Explain the reasoning behind your suggestions
-- Be open to discussion and alternative approaches
-- Approve PRs that improve the codebase, even if they're not perfect
+- OS and version
+- Rust version
+- Relevant code or error messages
 
 ## Maintainers
 
-- [@theavege](https://github.com/theavege) - Project maintainer
+- [@theavege](https://github.com/theavege)
 
 ## License
 
-By contributing to this project, you agree to license your contributions under the [LGPL-2.1-only](LICENSE) license.
+By contributing, you agree to license your contributions under [LGPL-2.1-only](LICENSE).
