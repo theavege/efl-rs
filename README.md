@@ -146,7 +146,7 @@ package "efl" #line.dashed {
             +Self with_format(str)
         }
         interface SelectorExt {
-            +u32 lenght()
+            +u32 length()
             +Self with_items([str])
         }
         interface OrientationExt extends WidgetExt

@@ -538,7 +538,7 @@ pub trait RangerExt: InputExt<f64> {
 
 pub trait SelectorExt: InputExt<i32> {
     fn add(&self, label: &str) -> super::WidgetItem;
-    fn lenght(&self) -> u32;
+    fn length(&self) -> u32;
     fn clear(&self);
     fn add_items(&self, items: &[&str]) {
         for item in items {
@@ -946,7 +946,7 @@ impl<T: RangerExt + 'static> Update<f64> for T {
 
 impl<T: SelectorExt + 'static> Update<i32> for T {
     fn update(&self, value: i32) {
-        if (0..self.lenght() as i32).contains(&value) {
+        if (0..self.length() as i32).contains(&value) {
             self.set_value(value);
         };
     }
@@ -954,7 +954,7 @@ impl<T: SelectorExt + 'static> Update<i32> for T {
 
 impl<T: SelectorExt + 'static> Update<(&Vec<&str>, i32)> for T {
     fn update(&self, value: (&Vec<&str>, i32)) {
-        if self.lenght() != (value.0.len() as u32) {
+        if self.length() != (value.0.len() as u32) {
             self.clear();
             self.add_items(value.0);
         }
