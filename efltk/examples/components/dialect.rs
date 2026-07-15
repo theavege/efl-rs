@@ -127,8 +127,8 @@ impl Component for Dialect {
         true
     }
     fn update(&self, state: &Self::State) {
-        self.to.update((&state.lang(), state.to));
-        self.from.update((&state.lang(), state.from));
+        self.to.update((&state.lang()[..], state.to));
+        self.from.update((&state.lang()[..], state.from));
         self.source.update(&state.source);
         self.target.update(&state.target);
     }

@@ -8,14 +8,32 @@ use {
     std::{cell::RefCell, ptr::NonNull, rc::Rc},
 };
 
+macro_rules! impl_widget {
+    ($name:ident) => {
+        #[derive(Default)]
+        pub struct $name(Option<std::ptr::NonNull<Evas_Object>>);
+
+        impl WidgetExt for $name {
+            fn as_raw(&self) -> *mut Evas_Object {
+                self.0
+                    .expect(concat!("Empty ", stringify!($name), "!"))
+                    .as_ptr()
+            }
+
+            fn from_raw(obj: *mut Evas_Object) -> Self {
+                Self(std::ptr::NonNull::new(obj))
+            }
+        }
+    };
+}
+
 #[derive(Default)]
 pub struct Timer(Option<NonNull<Ecore_Timer>>);
 
 #[derive(Default)]
 pub struct WidgetItem(Option<NonNull<Evas_Object>>);
 
-#[derive(Default)]
-pub struct Menu(Option<NonNull<Evas_Object>>);
+impl_widget!(Menu);
 
 impl Menu {
     pub fn selected(&self) -> WidgetItem {
@@ -26,14 +44,6 @@ impl Menu {
     }
 }
 
-impl WidgetExt for Menu {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl InputExt<i32> for Menu {
     fn value(&self) -> i32 {
         unsafe { elm_menu_item_index_get(self.selected().as_raw()) as i32 }
@@ -48,6 +58,7 @@ impl InputExt<i32> for Menu {
         }
     }
 }
+
 impl SelectorExt for Menu {
     fn add(&self, label: &str) -> WidgetItem {
         self.append(label, label, |wgt| wgt.call_signal(Signal::Selected))
@@ -70,6 +81,7 @@ impl SelectorExt for Menu {
         }
     }
 }
+
 impl MenuExt for Menu {}
 
 #[derive(Debug, Default)]
@@ -89,7 +101,6 @@ pub struct Tm {
 
 impl Tm {
     pub fn to_tm(&self) -> tm {
-        let zone = std::ffi::CString::new(self.zone.clone()).unwrap();
         tm {
             tm_sec: self.sec,
             tm_min: self.min,
@@ -101,7 +112,7 @@ impl Tm {
             tm_yday: self.yday,
             tm_isdst: self.isdst,
             tm_gmtoff: self.gmtoff,
-            tm_zone: zone.as_ptr(),
+            tm_zone: std::ptr::null_mut(),
         }
     }
     pub fn from_tm(value: tm) -> Self {
@@ -130,17 +141,8 @@ impl Tm {
     }
 }
 
-#[derive(Default)]
-pub struct Entry(Option<NonNull<Evas_Object>>);
+impl_widget!(Entry);
 
-impl WidgetExt for Entry {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl EntryExt for Entry {}
 impl TextExt for Entry {
     fn text(&self) -> String {
@@ -167,17 +169,8 @@ impl InputExt<String> for Entry {
     }
 }
 
-#[derive(Default)]
-pub struct Frame(Option<NonNull<Evas_Object>>);
+impl_widget!(Frame);
 
-impl WidgetExt for Frame {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl ContainerExt for Frame {}
 impl TextExt for Frame {}
 impl InputExt<bool> for Frame {
@@ -190,44 +183,16 @@ impl InputExt<bool> for Frame {
 }
 impl FrameExt for Frame {}
 
-#[derive(Default)]
-pub(crate) struct Icon(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Icon {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
+impl_widget!(Icon);
 impl IconExt for Icon {}
 
-#[derive(Default)]
-pub struct Label(Option<NonNull<Evas_Object>>);
+impl_widget!(Label);
 
-impl WidgetExt for Label {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl TextExt for Label {}
 impl LabelExt for Label {}
 
-#[derive(Default)]
-pub struct Separator(Option<NonNull<Evas_Object>>);
+impl_widget!(Separator);
 
-impl WidgetExt for Separator {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl OrientExt for Separator {
     fn with_horizontal(self, value: bool) -> Self {
         unsafe { elm_separator_horizontal_set(self.as_raw(), value as Eina_Bool) };
@@ -237,23 +202,14 @@ impl OrientExt for Separator {
 }
 impl SeparatorExt for Separator {}
 
-#[derive(Default)]
-pub struct List(Option<NonNull<Evas_Object>>);
+impl_widget!(List);
+
 impl List {
     pub fn selected(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { elm_list_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { elm_list_first_item_get(self.as_raw()) })
-    }
-}
-
-impl WidgetExt for List {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
     }
 }
 
@@ -342,17 +298,8 @@ impl ContainerExt for Naviframe {
 }
 impl NaviframeExt for Naviframe {}
 
-#[derive(Default)]
-pub struct Panes(Option<NonNull<Evas_Object>>);
+impl_widget!(Panes);
 
-impl WidgetExt for Panes {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl ContainerExt for Panes {
     fn add(&self, child: &impl WidgetExt) {
         match self.content("left") {
@@ -385,30 +332,12 @@ impl WidgetExt for Popup {
 impl PopupExt for Popup {}
 impl ContainerExt for Popup {}
 
-#[derive(Default)]
-pub struct ProgressBar(Option<NonNull<Evas_Object>>);
+impl_widget!(ProgressBar);
 
-impl WidgetExt for ProgressBar {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl ProgressBarExt for ProgressBar {}
 
-#[derive(Default)]
-pub struct Radio(Option<NonNull<Evas_Object>>);
+impl_widget!(Radio);
 
-impl WidgetExt for Radio {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl InputExt<i32> for Radio {
     fn value(&self) -> i32 {
         unsafe { elm_radio_value_get(self.as_raw()) as i32 }
@@ -420,8 +349,7 @@ impl InputExt<i32> for Radio {
 impl TextExt for Radio {}
 impl RadioExt for Radio {}
 
-#[derive(Default)]
-pub struct SegmentControl(Option<NonNull<Evas_Object>>);
+impl_widget!(SegmentControl);
 
 impl SegmentControl {
     fn selected(&self) -> WidgetItem {
@@ -429,14 +357,6 @@ impl SegmentControl {
     }
 }
 
-impl WidgetExt for SegmentControl {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl SegmentControlExt for SegmentControl {}
 impl InputExt<i32> for SegmentControl {
     fn value(&self) -> i32 {
@@ -470,17 +390,7 @@ impl SelectorExt for SegmentControl {
     }
 }
 
-#[derive(Default)]
-pub struct Slider(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Slider {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
+impl_widget!(Slider);
 impl SliderExt for Slider {}
 impl InputExt<f64> for Slider {
     fn value(&self) -> f64 {
@@ -511,17 +421,7 @@ impl RangerExt for Slider {
     }
 }
 
-#[derive(Default)]
-pub struct Spinner(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Spinner {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
+impl_widget!(Spinner);
 impl SpinnerExt for Spinner {}
 impl InputExt<f64> for Spinner {
     fn set_value(&self, value: f64) {
@@ -545,17 +445,8 @@ impl RangerExt for Spinner {
     }
 }
 
-#[derive(Default)]
-pub struct Window(Option<NonNull<Evas_Object>>);
+impl_widget!(Window);
 
-impl WidgetExt for Window {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl ContainerExt for Window {
     fn add(&self, child: &impl WidgetExt) {
         unsafe { elm_win_resize_object_add(self.as_raw(), child.as_raw()) };
@@ -564,17 +455,7 @@ impl ContainerExt for Window {
 }
 impl WindowExt for Window {}
 
-#[derive(Default)]
-pub struct Box(Option<NonNull<Evas_Object>>);
-
-impl WidgetExt for Box {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
+impl_widget!(Box);
 impl ContainerExt for Box {
     fn add(&self, child: &impl WidgetExt) {
         unsafe {
@@ -593,17 +474,8 @@ impl OrientExt for Box {
 }
 impl BoxExt for Box {}
 
-#[derive(Default)]
-pub struct Button(Option<NonNull<Evas_Object>>);
+impl_widget!(Button);
 
-impl WidgetExt for Button {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl TextExt for Button {}
 impl InputExt<bool> for Button {
     fn value(&self) -> bool {
@@ -615,17 +487,8 @@ impl InputExt<bool> for Button {
 }
 impl ButtonExt for Button {}
 
-#[derive(Default)]
-pub struct Check(Option<NonNull<Evas_Object>>);
+impl_widget!(Check);
 
-impl WidgetExt for Check {
-    fn as_raw(&self) -> *mut Evas_Object {
-        self.0.expect("Empty Evas_Object!").as_ptr()
-    }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
 impl InputExt<bool> for Check {
     fn set_value(&self, value: bool) {
         unsafe { elm_check_state_set(self.as_raw(), value as Eina_Bool) };

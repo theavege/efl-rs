@@ -26,8 +26,8 @@ pub enum Signal {
     Unfocused,
 }
 
-impl Signal {
-    pub fn to_str(&self) -> &str {
+impl AsRef<str> for Signal {
+    fn as_ref(&self) -> &str {
         match self {
             Self::Changed => "changed",
             Self::Clicked => "clicked",
@@ -49,13 +49,13 @@ pub enum Align {
     Right,
 }
 
-impl Align {
-    fn to_f64(&self) -> f64 {
-        match self {
-            Self::Fill => -1.0,
-            Self::Left => 0.0,
-            Self::Center => 0.5,
-            Self::Right => 1.0,
+impl From<Align> for f64 {
+    fn from(align: Align) -> Self {
+        match align {
+            Align::Fill => -1.0,
+            Align::Left => 0.0,
+            Align::Center => 0.5,
+            Align::Right => 1.0,
         }
     }
 }
@@ -148,8 +148,8 @@ pub(crate) unsafe extern "C" fn smart_cb<T: WidgetExt>(
     _event_info: *mut c_void,
 ) {
     unsafe {
-        let func: &mut Box<dyn FnMut(T)> = &mut *(data as *mut Box<dyn FnMut(T)>);
-        func(T::from_raw(object));
+        let callback = &mut *(data as *mut Callback<T>);
+        (callback.0)(T::from_raw(object));
     }
 }
 
@@ -214,6 +214,8 @@ pub trait TextExt: WidgetExt {
     }
 }
 
+struct Callback<T>(Box<dyn FnMut(T)>);
+
 /// Trait for widgets that have an input value.
 ///
 /// Widgets implementing this trait can get and set their value.
@@ -263,11 +265,11 @@ pub trait InputExt<T>: WidgetExt {
         self
     }
     fn set_callback<F: FnMut(Self) + 'static>(&self, sign: Signal, func: F) {
-        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
         unsafe {
             evas_object_smart_callback_add(
                 self.as_raw(),
-                CString::new(sign.to_str()).unwrap().as_ptr(),
+                CString::new(sign.as_ref()).unwrap().as_ptr(),
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             );
@@ -277,7 +279,7 @@ pub trait InputExt<T>: WidgetExt {
         unsafe {
             evas_object_smart_callback_call(
                 self.as_raw(),
-                CString::new(sign.to_str()).unwrap().as_ptr(),
+                CString::new(sign.as_ref()).unwrap().as_ptr(),
                 std::ptr::null_mut(),
             );
         }
@@ -313,7 +315,7 @@ pub trait WidgetExt: Sized {
     }
     fn set_align(&self, x: Align, y: Align) {
         unsafe {
-            evas_object_size_hint_align_set(self.as_raw(), x.to_f64(), y.to_f64());
+            evas_object_size_hint_align_set(self.as_raw(), f64::from(x), f64::from(y));
         };
     }
     fn set_icon(&self, value: &str) {
@@ -355,7 +357,7 @@ pub trait WidgetExt: Sized {
         self.set_icon(value);
         self
     }
-    fn with_conf(self) -> Self {
+    fn with_defaults(self) -> Self {
         self.with_align(Align::Fill, Align::Fill)
             .with_weight(true, true)
             .with_focus(false)
@@ -415,7 +417,7 @@ pub trait LabelExt: WidgetExt {
             elm_label_line_wrap_set(ptr, Elm_Wrap_Type_ELM_WRAP_WORD);
             ptr
         })
-        .with_conf();
+        .with_defaults();
         prt.add(&elm);
         elm
     }
@@ -426,7 +428,7 @@ pub trait LabelExt: WidgetExt {
 pub trait SpinnerExt: RangerExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_spinner_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_weight(true, false);
         prt.add(&elm);
         elm
@@ -439,7 +441,7 @@ pub trait SpinnerExt: RangerExt {
 pub trait ButtonExt: InputExt<bool> + TextExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_button_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_weight(true, false)
             .with_signal(Signal::Clicked, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
@@ -479,7 +481,7 @@ pub trait BoxExt: ContainerExt + OrientExt {
         let elm = Self::from_raw(unsafe { elm_box_add(prt.as_raw()) })
             .with_homogeneous(false)
             .with_horizontal(false)
-            .with_conf();
+            .with_defaults();
         prt.add(&elm);
         elm
     }
@@ -499,7 +501,7 @@ pub trait BoxExt: ContainerExt + OrientExt {
 pub trait MenuExt: SelectorExt {
     fn popup(prt: &impl WidgetExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_menu_add(prt.window().as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
         elm.close();
         elm
@@ -516,7 +518,7 @@ pub trait MenuExt: SelectorExt {
         label: &str,
         func: F,
     ) -> super::WidgetItem {
-        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
         super::WidgetItem::from_raw(unsafe {
             elm_menu_item_add(
                 self.as_raw(),
@@ -576,7 +578,7 @@ pub trait FileEntryExt: WidgetExt {
 pub trait CheckExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_check_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_weight(true, false);
         prt.add(&elm);
         elm
@@ -629,7 +631,7 @@ pub trait SelectorExt: InputExt<i32> {
 pub trait SliderExt: RangerExt + OrientExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_slider_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_horizontal(true);
         prt.add(&elm);
         elm
@@ -646,7 +648,7 @@ pub trait CalendarExt: WidgetExt {
             elm_calendar_selectable_set(prt, Elm_Calendar_Selectable_ELM_CALENDAR_SELECTABLE_DAY);
             prt
         })
-        .with_conf();
+        .with_defaults();
         prt.add(&elm);
         elm
     }
@@ -667,7 +669,7 @@ pub trait CalendarExt: WidgetExt {
 pub trait EntryExt: InputExt<String> {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_entry_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_single_line(true)
             .with_scrollable(true);
         prt.add(&elm);
@@ -727,7 +729,7 @@ pub trait IconExt: WidgetExt {
 pub trait SeparatorExt: OrientExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_separator_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_horizontal(true);
         prt.add(&elm);
         elm
@@ -750,7 +752,7 @@ pub trait ListExt: SelectorExt {
             elm_list_go(ptr);
             ptr
         })
-        .with_conf()
+        .with_defaults()
         .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
         elm
@@ -761,7 +763,7 @@ pub trait ListExt: SelectorExt {
         label_: &str,
         func: F,
     ) -> super::WidgetItem {
-        let raw_ptr: *mut Box<dyn FnMut(Self)> = Box::into_raw(Box::new(Box::new(func)));
+        let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
         super::WidgetItem::from_raw(unsafe {
             elm_list_item_append(
                 self.as_raw(),
@@ -782,7 +784,7 @@ pub trait FrameExt: InputExt<bool> + ContainerExt {
     fn new(parent: &impl ContainerExt) -> Self {
         let prt = super::Box::new(parent).with_horizontal(true);
         let elm = Self::from_raw(unsafe { elm_frame_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_signal(Signal::Clicked, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
         elm
@@ -796,7 +798,7 @@ pub trait NaviframeExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_naviframe_add(prt.as_raw()) })
             .with_prev(false)
-            .with_conf();
+            .with_defaults();
         prt.add(&elm);
         elm
     }
@@ -831,7 +833,7 @@ pub trait NaviframeExt: WidgetExt {
 /// Provides methods for creating and configuring panes widgets.
 pub trait PanesExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_panes_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_panes_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -859,7 +861,7 @@ where
     Self: 'static,
 {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_popup_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_popup_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -932,7 +934,7 @@ where
 pub trait ProgressBarExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_progressbar_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_weight(true, false);
         prt.add(&elm);
         elm
@@ -981,7 +983,7 @@ pub trait RadioExt: InputExt<i32> + TextExt {
     }
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_radio_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_weight(true, false);
         prt.add(&elm);
         elm
@@ -1004,7 +1006,7 @@ pub trait RadioExt: InputExt<i32> + TextExt {
 pub trait SegmentControlExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_segment_control_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_weight(true, false);
         prt.add(&elm);
         elm
@@ -1070,8 +1072,8 @@ impl<T: SelectorExt + 'static> Update<i32> for T {
     }
 }
 
-impl<T: SelectorExt + 'static> Update<(&Vec<&str>, i32)> for T {
-    fn update(&self, value: (&Vec<&str>, i32)) {
+impl<T: SelectorExt + 'static> Update<(&[&str], i32)> for T {
+    fn update(&self, value: (&[&str], i32)) {
         if self.length() != (value.0.len() as u32) {
             self.clear();
             self.add_items(value.0);
@@ -1153,7 +1155,7 @@ pub trait FileSelExt: WidgetExt {
 /// Provides methods for creating and configuring clock widgets.
 pub trait ClockExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = Self::from_raw(unsafe { elm_clock_add(prt.as_raw()) }).with_conf();
+        let elm = Self::from_raw(unsafe { elm_clock_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -1173,7 +1175,7 @@ pub trait ClockExt: WidgetExt {
 pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) })
-            .with_conf()
+            .with_defaults()
             .with_signal(Signal::Changed, |wgt| wgt.call_signal(Signal::Selected));
         prt.add(&elm);
         elm
@@ -1199,7 +1201,7 @@ pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
 /// - `handle`: Function to process events and update state
 /// - `update`: Function to update the view based on state
 /// - `view`: Function to build the UI
-/// Trait for component-based UI patterns.
+///   Trait for component-based UI patterns.
 ///
 /// Provides a component architecture for building reactive UIs.
 pub trait Component: Default + 'static {
