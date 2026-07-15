@@ -144,22 +144,7 @@ impl Tm {
 impl_widget!(Entry);
 
 impl EntryExt for Entry {}
-impl TextExt for Entry {
-    fn text(&self) -> String {
-        unsafe {
-            let ptr = elm_entry_entry_get(self.as_raw());
-            std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
-        }
-    }
-    fn set_text(&self, text: &str) {
-        unsafe {
-            elm_entry_entry_set(
-                self.as_raw(),
-                std::ffi::CString::new(text).unwrap().as_ptr(),
-            )
-        };
-    }
-}
+impl TextExt for Entry {}
 impl InputExt<String> for Entry {
     fn value(&self) -> String {
         self.text()

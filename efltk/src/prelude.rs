@@ -82,8 +82,8 @@ pub enum Cursor {
     Xterm,
 }
 
-impl Cursor {
-    pub fn to_str(&self) -> &str {
+impl AsRef<str> for Cursor {
+    fn as_ref(&self) -> &str {
         match self {
             Self::Hand1 => "hand1",
             Self::Hand2 => "hand2",
@@ -242,7 +242,7 @@ pub trait InputExt<T>: WidgetExt {
         unsafe {
             elm_object_cursor_set(
                 self.as_raw(),
-                CString::new(cursor.to_str()).unwrap().as_ptr(),
+                CString::new(cursor.as_ref()).unwrap().as_ptr(),
             ) != 0
         }
     }
@@ -1216,12 +1216,14 @@ pub trait Component: Default + 'static {
         let mut model = Self::State::default();
         page.view(prt, sender.clone());
         page.update(&model);
-        super::Timer::new(0.02, move || {
-            if let Ok(msg) = receiver.try_recv()
-                && Self::handle(msg, &mut model, sender.clone())
-            {
-                page.update(&model);
+        super::Timer::new(0.041, move || {
+            let mut update = false;
+            while let Ok(msg) = receiver.try_recv() {
+                update = Self::handle(msg, &mut model, sender.clone()) || update;
             };
+            if update {
+                page.update(&model);
+            }
             true
         });
     }
