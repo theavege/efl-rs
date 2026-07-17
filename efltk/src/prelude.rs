@@ -1216,11 +1216,11 @@ pub trait Component: Default + 'static {
         let mut model = Self::State::default();
         page.view(prt, sender.clone());
         page.update(&model);
-        super::Timer::new(0.041, move || {
+        super::Timer::new(0.04, move || {
             let mut update = false;
             while let Ok(msg) = receiver.try_recv() {
                 update = Self::handle(msg, &mut model, sender.clone()) || update;
-            };
+            }
             if update {
                 page.update(&model);
             }
