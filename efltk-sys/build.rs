@@ -135,7 +135,7 @@ fn compile() -> Vec<String> {
         ];
 
         for (url, name) in &installers {
-            let installer_path = Path::new(&out_dir).join(&format!("{}.exe", name));
+            let installer_path = Path::new(&out_dir).join(format!("{name}.exe"));
 
             if !installer_path.exists() {
                 download_file(url, &installer_path);
