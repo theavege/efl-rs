@@ -134,12 +134,6 @@ impl super::Timer {
     }
 }
 
-impl From<*mut Ecore_Timer> for super::Timer {
-    fn from(obj: *mut Ecore_Timer) -> Self {
-        Self(NonNull::new(obj))
-    }
-}
-
 type EcoreCb = dyn FnMut() -> bool;
 
 pub(crate) unsafe extern "C" fn smart_cb<T: WidgetExt>(

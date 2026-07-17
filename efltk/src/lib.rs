@@ -24,11 +24,23 @@ macro_rules! impl_widget {
                 Self(std::ptr::NonNull::new(obj))
             }
         }
+
+        impl From<*mut Evas_Object> for $name {
+            fn from(obj: *mut Evas_Object) -> Self {
+                Self(NonNull::new(obj))
+            }
+        }
     };
 }
 
 #[derive(Default)]
 pub struct Timer(Option<NonNull<Ecore_Timer>>);
+
+impl From<*mut Ecore_Timer> for Timer {
+    fn from(obj: *mut Ecore_Timer) -> Self {
+        Self(NonNull::new(obj))
+    }
+}
 
 #[derive(Default)]
 pub struct WidgetItem(Option<NonNull<Evas_Object>>);
