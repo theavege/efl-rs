@@ -98,7 +98,7 @@ impl AsRef<str> for Cursor {
 ///
 /// This function initializes the EFL libraries, creates the window using the provided
 /// function, and starts the main event loop.
-pub fn run(func: impl Fn() -> super::Window) {
+fn run(func: impl Fn() -> super::Window) {
     let c_args = std::env::args()
         .map(|arg| CString::new(arg).unwrap())
         .map(|arg| arg.as_ptr())
@@ -136,7 +136,9 @@ impl super::Timer {
 
 type EcoreCb = dyn FnMut() -> bool;
 
-pub(crate) unsafe extern "C" fn smart_cb<T: WidgetExt>(
+struct Callback<T>(Box<dyn FnMut(T)>);
+
+unsafe extern "C" fn smart_cb<T: WidgetExt>(
     data: *mut c_void,
     object: *mut Evas_Object,
     _event_info: *mut c_void,
@@ -207,8 +209,6 @@ pub trait TextExt: WidgetExt {
         self
     }
 }
-
-struct Callback<T>(Box<dyn FnMut(T)>);
 
 /// Trait for widgets that have an input value.
 ///
