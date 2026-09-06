@@ -7,6 +7,9 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
 
 jobs:
   make:
@@ -16,8 +19,6 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-        arch:
-          - x86_64
 
     steps:
       - name: Checkout
