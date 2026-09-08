@@ -42,7 +42,7 @@ jobs:
         with:
           msystem: mingw64
           update: true
-          install: mingw-w64-efl mingw-w64-rust mingw-w64-pkg-config
+          install: mingw-w64-ucrt-x86_64-efl mingw-w64-ucrt-x86_64-rust mingw-w64-ucrt-x86_64-pkg-config
 
       - name: Build on Windows
         if: runner.os == 'Windows'
