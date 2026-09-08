@@ -43,10 +43,10 @@ jobs:
           msystem: mingw64
           update: true
           install: |
-            mingw-w64-x86_64-efl
-            mingw-w64-x86_64-rust
-            mingw-w64-x86_64-pkg-config
-            mingw-w64-x86_64-cargo-msrv
+            mingw-w64-clang-x86_64-efl
+            mingw-w64-clang-x86_64-rust
+            mingw-w64-clang-x86_64-pkg-config
+            mingw-w64-clang-x86_64-cargo-msrv
 
       - name: Build on Windows
         if: runner.os == 'Windows'
