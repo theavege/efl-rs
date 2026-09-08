@@ -1,12 +1,33 @@
+#!/usr/bin/env bash
+
+function _setup
+(
+    if [[ -f '/etc/os-release' ]]; then
+        source '/etc/os-release'
+        if ! command -v efl-config >/dev/null; then
+            declare -ra DEPS=(sh{fmt,ell}check)
+            case ${ID:?} in
+                debian | ubuntu) sudo bash -c '
+                    apt-get update
+                    apt-get install -y "${DEPS[@]}" libefl-all-dev
+                ';;
+                fedora | alma) sudo dnf install -y "${DEPS[@]}" efl-devel ;;
+            esac 1>/dev/null
+            shellcheck --external-sources "${0}"
+            shfmt -ci -fn -i 4 -d "${0}"
+        fi
+    fi
+)
+
 set -euo pipefail
-source '/etc/os-release'
-case ${ID:?} in
-    debian | ubuntu) sudo bash -c '
-        apt-get update
-        apt-get install -y libefl-all-dev
-    ';;
-    fedora | alma) sudo dnf install -y efl-devel ;;
-esac 1> /dev/null
-cargo clippy --quiet --features="all" --examples
-cargo build --release --features="all" --examples
-cargo fmt --check --all
+if ((${#})); then
+    case ${1} in
+        setup) _setup ;;
+        build)
+            cargo clippy --quiet --features="all" --examples
+            cargo build --release --features="all" --examples
+            cargo fmt --check --all
+            ;;
+    esac
+fi
+
