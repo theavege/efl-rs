@@ -107,9 +107,9 @@ pub struct Tm {
     pub wday: i32,
     pub yday: i32,
     pub isdst: i32,
-#[cfg(target_os = "linux")]
+    #[cfg(target_os = "linux")]
     pub gmtoff: i64,
-#[cfg(target_os = "linux")]
+    #[cfg(target_os = "linux")]
     pub zone: String,
 }
 
