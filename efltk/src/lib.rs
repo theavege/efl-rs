@@ -2,6 +2,8 @@
 
 pub mod error;
 pub mod prelude;
+#[cfg(test)]
+mod tests;
 
 use {
     efltk_sys::*,
@@ -379,11 +381,12 @@ impl InputExt<i32> for SegmentControl {
 }
 impl SelectorExt for SegmentControl {
     fn add(&self, label: &str) -> WidgetItem {
+        let c_label = std::ffi::CString::new(label).expect("Label contains null byte");
         WidgetItem::from_raw(unsafe {
             elm_segment_control_item_add(
                 self.as_raw(),
                 Icon::new(self).with_standard(label).as_raw(),
-                std::ffi::CString::new(label).unwrap().as_ptr(),
+                c_label.as_ptr(),
             )
         })
     }
@@ -421,7 +424,7 @@ impl RangerExt for Slider {
         unsafe { elm_slider_step_set(self.as_raw(), value) };
     }
     fn with_format(self, value: &str) -> Self {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = std::ffi::CString::new(value).expect("Format string contains null byte");
         unsafe { elm_slider_unit_format_set(self.as_raw(), ctext.as_ptr()) };
         self
     }
@@ -439,7 +442,7 @@ impl InputExt<f64> for Spinner {
 }
 impl RangerExt for Spinner {
     fn with_format(self, format: &str) -> Self {
-        let cformat = std::ffi::CString::new(format).unwrap();
+        let cformat = std::ffi::CString::new(format).expect("Format string contains null byte");
         unsafe { elm_spinner_label_format_set(self.as_raw(), cformat.as_ptr()) };
         self
     }
