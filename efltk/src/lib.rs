@@ -2,6 +2,8 @@
 
 pub mod error;
 pub mod prelude;
+#[cfg(test)]
+mod tests;
 
 use {
     efltk_sys::*,
