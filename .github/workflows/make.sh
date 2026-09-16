@@ -5,12 +5,12 @@ function _setup
     if [[ -f '/etc/os-release' ]]; then
         source '/etc/os-release'
         if ! command -v efl-config >/dev/null; then
-            declare -ra DEPS=(sh{fmt,ell}check)
+            declare -ra DEPS=(sh{fmt,ellcheck})
             case ${ID:?} in
-                debian | ubuntu) sudo bash -c '
-                    apt-get update
-                    apt-get install -y "${DEPS[@]}" libefl-all-dev
-                ';;
+                debian | ubuntu)
+                    sudo apt-get update
+                    sudo apt-get install -y "${DEPS[@]}" libefl-all-dev
+                    ;;
                 fedora | alma) sudo dnf install -y "${DEPS[@]}" efl-devel ;;
             esac 1>/dev/null
             shellcheck --external-sources "${0}"
