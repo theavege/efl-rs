@@ -107,7 +107,7 @@ impl AsRef<str> for Cursor {
 fn run(func: impl Fn() -> super::Window) {
     let c_args: Vec<CString> = std::env::args()
         .map(|arg| {
-            CString::new(arg).expect("Command-line argument contains null byte")
+            CString::new(arg).expect_cstring("command-line argument conversion")
         })
         .collect();
     
@@ -239,14 +239,14 @@ pub trait InputExt<T>: WidgetExt {
         self
     }
     fn set_tooltip(&self, value: &str) {
-        let ctext = CString::new(value).expect("Tooltip text contains null byte");
+        let ctext = value.expect_cstring("tooltip text");
         unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
     }
     fn set_cursor(&self, cursor: Cursor) -> bool {
         unsafe {
             elm_object_cursor_set(
                 self.as_raw(),
-                CString::new(cursor.as_ref()).expect("Cursor name contains null byte").as_ptr(),
+                cursor.as_ref().expect_cstring("cursor name").as_ptr(),
             ) != 0
         }
     }
@@ -273,7 +273,7 @@ pub trait InputExt<T>: WidgetExt {
         unsafe {
             evas_object_smart_callback_add(
                 self.as_raw(),
-                CString::new(sign.as_ref()).expect("Signal name contains null byte").as_ptr(),
+                sign.as_ref().expect_cstring("signal name").as_ptr(),
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             );
@@ -283,7 +283,7 @@ pub trait InputExt<T>: WidgetExt {
         unsafe {
             evas_object_smart_callback_call(
                 self.as_raw(),
-                CString::new(sign.as_ref()).expect("Signal name contains null byte").as_ptr(),
+                sign.as_ref().expect_cstring("signal name").as_ptr(),
                 std::ptr::null_mut(),
             );
         }
@@ -367,8 +367,8 @@ pub trait WidgetExt: Sized {
             .with_focus(false)
     }
     fn set_part(&self, part: &str, text: &str) {
-        let c_part = CString::new(part).expect("Part name contains null byte");
-        let c_text = CString::new(text).expect("Text contains null byte");
+        let c_part = part.expect_cstring("part name");
+        let c_text = text.expect_cstring("text");
         let c_part_ptr = match part.is_empty() {
             true => std::ptr::null(),
             false => c_part.as_ptr(),
@@ -396,12 +396,12 @@ pub trait WidgetExt: Sized {
         self
     }
     fn set_content(&self, obj: &impl WidgetExt, value: &str) {
-        let ctext = CString::new(value).expect("Content value contains null byte");
+        let ctext = value.expect_cstring("content value");
         unsafe { elm_object_part_content_set(self.as_raw(), ctext.as_ptr(), obj.as_raw()) }
         obj.show();
     }
     fn content(&self, value: &str) -> Option<super::WidgetItem> {
-        let ctext = CString::new(value).expect("Content value contains null byte");
+        let ctext = value.expect_cstring("content value");
         let ptr = unsafe { elm_object_part_content_get(self.as_raw(), ctext.as_ptr()) };
         match ptr.is_null() {
             true => None,
@@ -417,7 +417,7 @@ pub trait LabelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe {
             let ptr = elm_label_add(prt.as_raw());
-            elm_object_style_set(ptr, CString::new("marker").expect("Style name contains null byte").as_ptr());
+            elm_object_style_set(ptr, "marker".expect_cstring("style name").as_ptr());
             elm_label_line_wrap_set(ptr, Elm_Wrap_Type_ELM_WRAP_WORD);
             ptr
         })
@@ -523,8 +523,8 @@ pub trait MenuExt: SelectorExt {
         func: F,
     ) -> super::WidgetItem {
         let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
-        let c_icon = CString::new(icon).expect("Icon name contains null byte");
-        let c_label = CString::new(label).expect("Label contains null byte");
+        let c_icon = icon.expect_cstring("icon name");
+        let c_label = label.expect_cstring("label");
         super::WidgetItem::from_raw(unsafe {
             elm_menu_item_add(
                 self.as_raw(),
@@ -573,7 +573,7 @@ pub trait FileEntryExt: WidgetExt {
         unsafe { elm_fileselector_entry_folder_only_set(self.as_raw(), mode as Eina_Bool) };
     }
     fn set_path(&self, path: &str) {
-        let c = CString::new(path).expect("Path contains null byte");
+        let c = path.expect_cstring("path");
         unsafe { elm_fileselector_current_name_set(self.as_raw(), c.as_ptr()) };
     }
 }
@@ -703,7 +703,7 @@ pub trait EntryExt: InputExt<String> {
         self
     }
     fn set_file(&self, file_: &str) {
-        let file = CString::new(file_).expect("File path contains null byte");
+        let file = file_.expect_cstring("file path");
         unsafe {
             elm_entry_file_set(
                 self.as_raw(),
@@ -724,7 +724,7 @@ pub trait IconExt: WidgetExt {
         elm
     }
     fn with_standard(self, value: &str) -> Self {
-        unsafe { elm_icon_standard_set(self.as_raw(), CString::new(value).expect("Icon name contains null byte").as_ptr()) };
+        unsafe { elm_icon_standard_set(self.as_raw(), value.expect_cstring("icon name").as_ptr()) };
         self
     }
 }
@@ -770,7 +770,7 @@ pub trait ListExt: SelectorExt {
         func: F,
     ) -> super::WidgetItem {
         let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
-        let c_icon = CString::new(icon_).expect("Icon name contains null byte");
+        let c_icon = icon_.expect_cstring("icon name");
         super::WidgetItem::from_raw(unsafe {
             elm_list_item_append(
                 self.as_raw(),
@@ -953,7 +953,7 @@ pub trait ProgressBarExt: WidgetExt {
         unsafe { elm_progressbar_value_set(self.as_raw(), value) };
     }
     fn with_format(self, value: &str) -> Self {
-        let ctext = CString::new(value).expect("Format string contains null byte");
+        let ctext = value.expect_cstring("format string");
         unsafe { elm_progressbar_unit_format_set(self.as_raw(), ctext.as_ptr()) };
         self
     }
@@ -1025,8 +1025,8 @@ pub trait SegmentControlExt: SelectorExt {
 /// Provides methods for creating and configuring window widgets.
 pub trait WindowExt: WidgetExt {
     fn new(id: &str, title: &str) -> Self {
-        let c_id = CString::new(id).expect("Window ID contains null byte");
-        let c_title = CString::new(title).expect("Window title contains null byte");
+        let c_id = id.expect_cstring("window ID");
+        let c_title = title.expect_cstring("window title");
         Self::from_raw(unsafe {
             let ptr = elm_win_util_standard_add(c_id.as_ptr(), c_title.as_ptr());
             elm_win_autodel_set(ptr, true as Eina_Bool);
@@ -1101,7 +1101,7 @@ pub trait FileSelExt: WidgetExt {
         elm
     }
     fn set_path(&self, path: &str) {
-        let c = CString::new(path).expect("Path contains null byte");
+        let c = path.expect_cstring("path");
         unsafe { elm_fileselector_path_set(self.as_raw(), c.as_ptr()) };
     }
     fn with_path(self, path: &str) -> Self {
@@ -1127,7 +1127,7 @@ pub trait FileSelExt: WidgetExt {
         }
     }
     fn set_selected(&self, path: &str) -> bool {
-        let c = CString::new(path).expect("Path contains null byte");
+        let c = path.expect_cstring("selected path");
         unsafe { elm_fileselector_selected_set(self.as_raw(), c.as_ptr()) != 0 }
     }
     fn with_folder_only(self, value: bool) -> Self {
