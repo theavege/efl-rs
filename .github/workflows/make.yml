@@ -14,10 +14,11 @@ on:
 jobs:
   make:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 5
     strategy:
       matrix:
         os:
+          - ubuntu-latest
           - windows-latest
 
     steps:
@@ -43,6 +44,7 @@ jobs:
           msystem: ucrt64
           update: true
           pacboy: |
+            efl:p
             rust:p
             pkg-config:p
             clang:p
@@ -54,4 +56,3 @@ jobs:
           set -euo pipefail
           cargo clippy --quiet --features="all" --examples
           cargo build --release --features="all" --examples
-
