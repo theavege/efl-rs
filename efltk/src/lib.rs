@@ -1,9 +1,11 @@
 #![doc = include_str!("../README.md")]
 
+pub mod error;
 pub mod prelude;
 
 use {
     efltk_sys::*,
+    error::{EflError, EflResult},
     prelude::*,
     std::{cell::RefCell, ptr::NonNull, rc::Rc},
 };
