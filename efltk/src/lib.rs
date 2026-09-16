@@ -107,8 +107,6 @@ pub struct Tm {
     pub wday: i32,
     pub yday: i32,
     pub isdst: i32,
-    pub gmtoff: i64,
-    pub zone: String,
 }
 
 impl Tm {
