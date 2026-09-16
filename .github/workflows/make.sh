@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function _setup
-(
+{
     if [[ -f '/etc/os-release' ]]; then
         source '/etc/os-release'
         if ! command -v efl-config >/dev/null; then
@@ -17,7 +17,7 @@ function _setup
             shfmt -ci -fn -i 4 -d "${0}"
         fi
     fi
-)
+}
 
 set -euo pipefail
 if ((${#})); then
@@ -30,4 +30,3 @@ if ((${#})); then
             ;;
     esac
 fi
-
