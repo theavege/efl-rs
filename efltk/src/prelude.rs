@@ -99,20 +99,18 @@ impl AsRef<str> for Cursor {
 ///
 /// This function initializes the EFL libraries, creates the window using the provided
 /// function, and starts the main event loop.
-/// 
+///
 /// # Panics
-/// 
+///
 /// Panics if any command-line argument contains a null byte, which should never happen
 /// in normal circumstances.
 fn run(func: impl Fn() -> super::Window) {
     let c_args: Vec<CString> = std::env::args()
-        .map(|arg| {
-            CString::new(arg).expect("Command-line argument contains null byte")
-        })
+        .map(|arg| CString::new(arg).expect("Command-line argument contains null byte"))
         .collect();
-    
+
     let c_args_ptr: Vec<*const i8> = c_args.iter().map(|arg| arg.as_ptr()).collect();
-    
+
     unsafe {
         elm_init(c_args_ptr.len() as i32, c_args_ptr.as_ptr() as *mut *mut i8);
         elm_policy_set(
@@ -246,7 +244,9 @@ pub trait InputExt<T>: WidgetExt {
         unsafe {
             elm_object_cursor_set(
                 self.as_raw(),
-                CString::new(cursor.as_ref()).expect("Cursor name contains null byte").as_ptr(),
+                CString::new(cursor.as_ref())
+                    .expect("Cursor name contains null byte")
+                    .as_ptr(),
             ) != 0
         }
     }
@@ -273,7 +273,9 @@ pub trait InputExt<T>: WidgetExt {
         unsafe {
             evas_object_smart_callback_add(
                 self.as_raw(),
-                CString::new(sign.as_ref()).expect("Signal name contains null byte").as_ptr(),
+                CString::new(sign.as_ref())
+                    .expect("Signal name contains null byte")
+                    .as_ptr(),
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             );
@@ -283,7 +285,9 @@ pub trait InputExt<T>: WidgetExt {
         unsafe {
             evas_object_smart_callback_call(
                 self.as_raw(),
-                CString::new(sign.as_ref()).expect("Signal name contains null byte").as_ptr(),
+                CString::new(sign.as_ref())
+                    .expect("Signal name contains null byte")
+                    .as_ptr(),
                 std::ptr::null_mut(),
             );
         }
@@ -417,7 +421,12 @@ pub trait LabelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe {
             let ptr = elm_label_add(prt.as_raw());
-            elm_object_style_set(ptr, CString::new("marker").expect("Style name contains null byte").as_ptr());
+            elm_object_style_set(
+                ptr,
+                CString::new("marker")
+                    .expect("Style name contains null byte")
+                    .as_ptr(),
+            );
             elm_label_line_wrap_set(ptr, Elm_Wrap_Type_ELM_WRAP_WORD);
             ptr
         })
@@ -724,7 +733,14 @@ pub trait IconExt: WidgetExt {
         elm
     }
     fn with_standard(self, value: &str) -> Self {
-        unsafe { elm_icon_standard_set(self.as_raw(), CString::new(value).expect("Icon name contains null byte").as_ptr()) };
+        unsafe {
+            elm_icon_standard_set(
+                self.as_raw(),
+                CString::new(value)
+                    .expect("Icon name contains null byte")
+                    .as_ptr(),
+            )
+        };
         self
     }
 }

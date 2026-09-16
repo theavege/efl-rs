@@ -6,8 +6,10 @@
 #[cfg(test)]
 mod widget_tests {
     use crate::prelude::*;
-    use crate::{Box, Button, Check, Entry, Frame, Icon, Label, List, Menu, Naviframe, 
-                Panes, Popup, ProgressBar, Radio, SegmentControl, Slider, Spinner, Window};
+    use crate::{
+        Box, Button, Check, Entry, Frame, Icon, Label, List, Menu, Naviframe, Panes, Popup,
+        ProgressBar, Radio, SegmentControl, Slider, Spinner, Window,
+    };
 
     // Note: These tests verify type safety and trait implementations.
     // Full functional tests require an EFL display environment.
@@ -39,7 +41,7 @@ mod widget_tests {
     fn test_widget_ext_trait_bounds() {
         // Verify all widgets implement WidgetExt
         fn requires_widget_ext<T: WidgetExt>(_: &T) {}
-        
+
         let box_widget = Box::default();
         let button = Button::default();
         let check = Check::default();
@@ -83,7 +85,7 @@ mod widget_tests {
     fn test_container_ext_implementations() {
         // Verify container widgets implement ContainerExt
         fn requires_container_ext<T: ContainerExt>(_: &T) {}
-        
+
         let box_widget = Box::default();
         let frame = Frame::default();
         let naviframe = Naviframe::default();
@@ -103,7 +105,7 @@ mod widget_tests {
     fn test_orient_ext_implementations() {
         // Verify orientable widgets implement OrientExt
         fn requires_orient_ext<T: OrientExt>(_: &T) {}
-        
+
         let box_widget = Box::default();
         let panes = Panes::default();
         let separator = Separator::default();
@@ -119,7 +121,7 @@ mod widget_tests {
     fn test_text_ext_implementations() {
         // Verify text widgets implement TextExt
         fn requires_text_ext<T: TextExt>(_: &T) {}
-        
+
         let button = Button::default();
         let check = Check::default();
         let entry = Entry::default();
@@ -142,30 +144,30 @@ mod widget_tests {
         fn requires_input_ext_i32<T: InputExt<i32>>(_: &T) {}
         fn requires_input_ext_f64<T: InputExt<f64>>(_: &T) {}
         fn requires_input_ext_string<T: InputExt<String>>(_: &T) {}
-        
+
         let button = Button::default();
         let check = Check::default();
         let frame = Frame::default();
-        
+
         let menu = Menu::default();
         let radio = Radio::default();
         let segment_control = SegmentControl::default();
-        
+
         let entry = Entry::default();
-        
+
         let slider = Slider::default();
         let spinner = Spinner::default();
 
         requires_input_ext_bool(&button);
         requires_input_ext_bool(&check);
         requires_input_ext_bool(&frame);
-        
+
         requires_input_ext_i32(&menu);
         requires_input_ext_i32(&radio);
         requires_input_ext_i32(&segment_control);
-        
+
         requires_input_ext_string(&entry);
-        
+
         requires_input_ext_f64(&slider);
         requires_input_ext_f64(&spinner);
     }
@@ -174,7 +176,7 @@ mod widget_tests {
     fn test_selector_ext_implementations() {
         // Verify selector widgets implement SelectorExt
         fn requires_selector_ext<T: SelectorExt>(_: &T) {}
-        
+
         let list = List::default();
         let menu = Menu::default();
         let segment_control = SegmentControl::default();
@@ -188,7 +190,7 @@ mod widget_tests {
     fn test_ranger_ext_implementations() {
         // Verify range widgets implement RangerExt
         fn requires_ranger_ext<T: RangerExt>(_: &T) {}
-        
+
         let slider = Slider::default();
         let spinner = Spinner::default();
 
@@ -218,7 +220,7 @@ mod widget_tests {
         fn requires_slider_ext<T: SliderExt>(_: &T) {}
         fn requires_spinner_ext<T: SpinnerExt>(_: &T) {}
         fn requires_window_ext<T: WindowExt>(_: &T) {}
-        
+
         let box_widget = Box::default();
         let button = Button::default();
         let check = Check::default();
@@ -263,8 +265,8 @@ mod widget_tests {
 
 #[cfg(test)]
 mod trait_method_tests {
-    use crate::prelude::*;
     use crate::error::CStringExt;
+    use crate::prelude::*;
 
     #[test]
     fn test_signal_enum() {
@@ -334,7 +336,7 @@ mod trait_method_tests {
         let bottom = PanelOrient::Bottom as i32;
         let left = PanelOrient::Left as i32;
         let right = PanelOrient::Right as i32;
-        
+
         assert_eq!(top, 0);
         assert!(bottom > top);
         assert!(left > bottom);
@@ -344,8 +346,8 @@ mod trait_method_tests {
 
 #[cfg(test)]
 mod timer_tests {
-    use crate::prelude::*;
     use crate::Timer;
+    use crate::prelude::*;
 
     #[test]
     fn test_timer_creation() {
@@ -365,8 +367,8 @@ mod timer_tests {
 
 #[cfg(test)]
 mod widget_item_tests {
-    use crate::prelude::*;
     use crate::WidgetItem;
+    use crate::prelude::*;
 
     #[test]
     fn test_widget_item_default() {
@@ -481,7 +483,7 @@ mod tm_struct_tests {
         let original = Tm::default();
         let c_tm = original.to_tm();
         let converted = Tm::from_tm(c_tm);
-        
+
         assert_eq!(original.sec, converted.sec);
         assert_eq!(original.min, converted.min);
         assert_eq!(original.hour, converted.hour);
@@ -525,7 +527,7 @@ mod integration_tests {
     fn test_widget_chain_methods() {
         // Test method chaining on widgets
         let widget = Button::default();
-        
+
         // Chain multiple builder methods
         let _chained = widget
             .with_defaults()
@@ -538,14 +540,14 @@ mod integration_tests {
         // Test container.add() pattern (without actual EFL initialization)
         let container = Box::default();
         let child = Button::default();
-        
+
         // Verify the types are compatible (actual add requires EFL init)
         // This test ensures trait bounds are correct
         fn test_container_pattern<T: ContainerExt, U: WidgetExt>(container: &T, child: &U) {
             // Type checking only - actual add requires EFL
             let _ = (container, child);
         }
-        
+
         test_container_pattern(&container, &child);
     }
 
@@ -556,22 +558,22 @@ mod integration_tests {
             let _ = widget.value();
             widget.set_value(true);
         }
-        
+
         fn test_i32_input<T: InputExt<i32>>(widget: &T) {
             let _ = widget.value();
             widget.set_value(42);
         }
-        
+
         fn test_f64_input<T: InputExt<f64>>(widget: &T) {
             let _ = widget.value();
             widget.set_value(3.14);
         }
-        
+
         fn test_string_input<T: InputExt<String>>(widget: &T) {
             let _ = widget.value();
             widget.set_value(String::from("test"));
         }
-        
+
         test_bool_input(&Check::default());
         test_i32_input(&Radio::default());
         test_f64_input(&Slider::default());
@@ -585,7 +587,7 @@ mod integration_tests {
             let widget = T::default();
             let _ = widget.with_horizontal(true);
         }
-        
+
         test_orient::<Box>();
         test_orient::<Panes>();
         test_orient::<Separator>();
@@ -599,7 +601,7 @@ mod integration_tests {
             let widget = T::default();
             let _ = widget.with_text("test label");
         }
-        
+
         test_text::<Button>();
         test_text::<Label>();
         test_text::<Check>();
@@ -615,7 +617,7 @@ mod integration_tests {
             widget.set_range(0.0, 100.0);
             widget.set_step(1.0);
         }
-        
+
         test_ranger::<Slider>();
         test_ranger::<Spinner>();
     }
@@ -623,19 +625,19 @@ mod integration_tests {
 
 #[cfg(test)]
 mod callback_tests {
-    use crate::prelude::*;
     use crate::Button;
+    use crate::prelude::*;
 
     #[test]
     fn test_callback_type_safety() {
         // Test that callbacks can be attached (type checking only)
         let button = Button::default();
-        
+
         // Verify callback signatures compile correctly
         let _with_callback = button.with_callback(|_w| {
             // Callback body
         });
-        
+
         let _with_signal = button.with_signal(Signal::Clicked, |_w| {
             // Signal handler body
         });
@@ -645,7 +647,7 @@ mod callback_tests {
     fn test_signal_call_compiles() {
         // Test that signal calling compiles correctly
         let button = Button::default();
-        
+
         // These should compile without errors
         button.call_signal(Signal::Changed);
         button.call_signal(Signal::Clicked);
@@ -655,14 +657,14 @@ mod callback_tests {
 
 #[cfg(test)]
 mod geometry_tests {
-    use crate::prelude::*;
     use crate::Button;
+    use crate::prelude::*;
 
     #[test]
     fn test_geometry_method_exists() {
         // Test that geometry method exists and returns correct type
         let button = Button::default();
-        
+
         // Without EFL init, geometry will be (0,0,0,0)
         let (x, y, w, h) = button.geometry();
         assert_eq!(x, 0);
@@ -675,7 +677,7 @@ mod geometry_tests {
     fn test_size_hints() {
         // Test size hint methods
         let button = Button::default();
-        
+
         let _chained = button
             .with_size(100, 50)
             .with_min_size(80, 40)
@@ -694,10 +696,10 @@ mod content_tests {
         // Test that content methods compile correctly
         let button = Button::default();
         let icon = Icon::default();
-        
+
         // These should compile (actual setting requires EFL init)
         let _chained = button.with_content(&icon, "default");
-        
+
         // Content retrieval should return Option
         let _content: Option<crate::WidgetItem> = button.content("default");
     }
@@ -706,38 +708,38 @@ mod content_tests {
     fn test_part_methods_compile() {
         // Test that part methods compile correctly
         let button = Button::default();
-        
+
         let _chained = button.with_part("default", "button text");
     }
 }
 
 #[cfg(test)]
 mod focus_tests {
-    use crate::prelude::*;
     use crate::Button;
+    use crate::prelude::*;
 
     #[test]
     fn test_focus_methods() {
         // Test focus methods
         let button = Button::default();
-        
+
         // Without EFL init, focus should be false
         assert!(!button.focus());
-        
+
         let _chained = button.with_focus(true);
     }
 }
 
 #[cfg(test)]
 mod tooltip_tests {
-    use crate::prelude::*;
     use crate::Button;
+    use crate::prelude::*;
 
     #[test]
     fn test_tooltip_methods() {
         // Test tooltip methods
         let button = Button::default();
-        
+
         let _chained = button.with_tooltip("This is a tooltip");
     }
 
@@ -745,24 +747,24 @@ mod tooltip_tests {
     fn test_cursor_methods() {
         // Test cursor methods
         let button = Button::default();
-        
+
         let _chained = button.with_cursor(Cursor::Hand1);
     }
 }
 
 #[cfg(test)]
 mod disabled_tests {
-    use crate::prelude::*;
     use crate::Button;
+    use crate::prelude::*;
 
     #[test]
     fn test_disabled_methods() {
         // Test disabled methods
         let button = Button::default();
-        
+
         // Without EFL init, should be false
         assert!(!button.disabled());
-        
+
         let _chained = button.with_disabled(true);
         assert!(button.disabled());
     }
@@ -779,7 +781,7 @@ mod selector_tests {
         let list = List::default();
         let menu = Menu::default();
         let segment = SegmentControl::default();
-        
+
         assert_eq!(list.length(), 0);
         assert_eq!(menu.length(), 0);
         assert_eq!(segment.length(), 0);
@@ -791,7 +793,7 @@ mod selector_tests {
         let list = List::default();
         let menu = Menu::default();
         let segment = SegmentControl::default();
-        
+
         list.clear();
         menu.clear();
         segment.clear();
@@ -800,14 +802,14 @@ mod selector_tests {
 
 #[cfg(test)]
 mod icon_tests {
-    use crate::prelude::*;
     use crate::Icon;
+    use crate::prelude::*;
 
     #[test]
     fn test_icon_with_standard() {
         // Test Icon::with_standard method signature
         let icon = Icon::default();
-        
+
         // This should compile (actual icon setting requires EFL)
         let _chained = icon.with_standard("icon-name");
     }
@@ -815,8 +817,8 @@ mod icon_tests {
 
 #[cfg(test)]
 mod list_tests {
-    use crate::prelude::*;
     use crate::List;
+    use crate::prelude::*;
 
     #[test]
     fn test_list_selected() {
@@ -844,8 +846,8 @@ mod list_tests {
 
 #[cfg(test)]
 mod menu_tests {
-    use crate::prelude::*;
     use crate::Menu;
+    use crate::prelude::*;
 
     #[test]
     fn test_menu_selected() {
@@ -873,8 +875,8 @@ mod menu_tests {
 
 #[cfg(test)]
 mod segment_control_tests {
-    use crate::prelude::*;
     use crate::SegmentControl;
+    use crate::prelude::*;
 
     #[test]
     fn test_segment_control_selected() {
@@ -887,18 +889,18 @@ mod segment_control_tests {
 
 #[cfg(test)]
 mod panes_tests {
-    use crate::prelude::*;
     use crate::Panes;
+    use crate::prelude::*;
 
     #[test]
     fn test_panes_content_parts() {
         // Test panes content parts
         let panes = Panes::default();
-        
+
         // Initially both parts should be None
         let left = panes.content("left");
         let right = panes.content("right");
-        
+
         assert!(left.is_none());
         assert!(right.is_none());
     }
@@ -906,7 +908,7 @@ mod panes_tests {
 
 #[cfg(test)]
 mod error_handling_tests {
-    use crate::error::{EflError, EflResult, CStringExt};
+    use crate::error::{CStringExt, EflError, EflResult};
     use std::ffi::CString;
 
     #[test]
@@ -929,7 +931,7 @@ mod error_handling_tests {
         let bad = "bad\0string";
         let result: EflResult<CString> = bad.to_cstring();
         assert!(result.is_err());
-        
+
         if let Err(EflError::NullByte(_)) = result {
             // Expected
         } else {
@@ -941,7 +943,7 @@ mod error_handling_tests {
     fn test_nonnull_from_ptr_success() {
         use crate::error::nonnull_from_ptr;
         use std::ptr;
-        
+
         let mut value = 42;
         let result = nonnull_from_ptr(&mut value, "test context");
         assert!(result.is_ok());
@@ -950,11 +952,11 @@ mod error_handling_tests {
     #[test]
     fn test_nonnull_from_ptr_failure() {
         use crate::error::nonnull_from_ptr;
-        
+
         let ptr: *mut i32 = std::ptr::null_mut();
         let result = nonnull_from_ptr(ptr, "test context");
         assert!(result.is_err());
-        
+
         if let Err(EflError::NullWidget(ctx)) = result {
             assert_eq!(ctx, "test context");
         } else {
@@ -966,7 +968,7 @@ mod error_handling_tests {
     fn test_nonnull_from_option_success() {
         use crate::error::nonnull_from_option;
         use std::ptr::NonNull;
-        
+
         let mut value = 42;
         let opt = NonNull::new(&mut value);
         let result = nonnull_from_option(opt, "test context");
@@ -977,11 +979,11 @@ mod error_handling_tests {
     fn test_nonnull_from_option_failure() {
         use crate::error::nonnull_from_option;
         use std::ptr::NonNull;
-        
+
         let opt: Option<NonNull<i32>> = None;
         let result = nonnull_from_option(opt, "test context");
         assert!(result.is_err());
-        
+
         if let Err(EflError::EmptyWidget(ctx)) = result {
             assert_eq!(ctx, "test context");
         } else {
