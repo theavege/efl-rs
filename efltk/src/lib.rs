@@ -123,20 +123,9 @@ impl Tm {
             tm_wday: self.wday,
             tm_yday: self.yday,
             tm_isdst: self.isdst,
-            tm_gmtoff: self.gmtoff,
-            tm_zone: std::ptr::null_mut(),
         }
     }
     pub fn from_tm(value: tm) -> Self {
-        let zone = unsafe {
-            if !value.tm_zone.is_null() {
-                std::ffi::CStr::from_ptr(value.tm_zone)
-                    .to_string_lossy()
-                    .into_owned()
-            } else {
-                String::new()
-            }
-        };
         Self {
             sec: value.tm_sec,
             min: value.tm_min,
@@ -147,8 +136,6 @@ impl Tm {
             wday: value.tm_wday,
             yday: value.tm_yday,
             isdst: value.tm_isdst,
-            gmtoff: value.tm_gmtoff,
-            zone,
         }
     }
 }
