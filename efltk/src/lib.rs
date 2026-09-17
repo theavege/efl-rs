@@ -1,9 +1,13 @@
 #![doc = include_str!("../README.md")]
 
+pub mod error;
 pub mod prelude;
+#[cfg(test)]
+mod tests;
 
 use {
     efltk_sys::*,
+    error::{EflError, EflResult},
     prelude::*,
     std::{cell::RefCell, ptr::NonNull, rc::Rc},
 };
@@ -107,7 +111,9 @@ pub struct Tm {
     pub wday: i32,
     pub yday: i32,
     pub isdst: i32,
+    #[cfg(target_os = "linux")]
     pub gmtoff: i64,
+    #[cfg(target_os = "linux")]
     pub zone: String,
 }
 
@@ -123,11 +129,14 @@ impl Tm {
             tm_wday: self.wday,
             tm_yday: self.yday,
             tm_isdst: self.isdst,
+            #[cfg(target_os = "linux")]
             tm_gmtoff: self.gmtoff,
+            #[cfg(target_os = "linux")]
             tm_zone: std::ptr::null_mut(),
         }
     }
     pub fn from_tm(value: tm) -> Self {
+        #[cfg(target_os = "linux")]
         let zone = unsafe {
             if !value.tm_zone.is_null() {
                 std::ffi::CStr::from_ptr(value.tm_zone)
@@ -147,7 +156,9 @@ impl Tm {
             wday: value.tm_wday,
             yday: value.tm_yday,
             isdst: value.tm_isdst,
+            #[cfg(target_os = "linux")]
             gmtoff: value.tm_gmtoff,
+            #[cfg(target_os = "linux")]
             zone,
         }
     }
@@ -370,11 +381,12 @@ impl InputExt<i32> for SegmentControl {
 }
 impl SelectorExt for SegmentControl {
     fn add(&self, label: &str) -> WidgetItem {
+        let c_label = std::ffi::CString::new(label).expect("Label contains null byte");
         WidgetItem::from_raw(unsafe {
             elm_segment_control_item_add(
                 self.as_raw(),
                 Icon::new(self).with_standard(label).as_raw(),
-                std::ffi::CString::new(label).unwrap().as_ptr(),
+                c_label.as_ptr(),
             )
         })
     }
@@ -412,7 +424,7 @@ impl RangerExt for Slider {
         unsafe { elm_slider_step_set(self.as_raw(), value) };
     }
     fn with_format(self, value: &str) -> Self {
-        let ctext = std::ffi::CString::new(value).unwrap();
+        let ctext = std::ffi::CString::new(value).expect("Format string contains null byte");
         unsafe { elm_slider_unit_format_set(self.as_raw(), ctext.as_ptr()) };
         self
     }
@@ -430,7 +442,7 @@ impl InputExt<f64> for Spinner {
 }
 impl RangerExt for Spinner {
     fn with_format(self, format: &str) -> Self {
-        let cformat = std::ffi::CString::new(format).unwrap();
+        let cformat = std::ffi::CString::new(format).expect("Format string contains null byte");
         unsafe { elm_spinner_label_format_set(self.as_raw(), cformat.as_ptr()) };
         self
     }
