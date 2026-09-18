@@ -8,6 +8,7 @@ description = "Enlightenment Foundation Libraries bindings in Rust"
 keywords = ["EFL", "enlightenment"]
 categories = ["external-ffi-bindings"]
 edition = "2024"
+rust-version = "1.85"
 exclude = ["use"]
 
 [build-dependencies]

@@ -9,6 +9,8 @@ description = "Enlightenment Foundation Libraries bindings in Rust"
 keywords = ["EFL", "enlightenment"]
 categories = ["api-bindings", "gui"]
 edition = "2024"
+rust-version = "1.85"
+readme = "../README.md"
 exclude = ["examples"]
 
 [dependencies]

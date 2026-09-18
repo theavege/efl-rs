@@ -28,7 +28,7 @@ The check widget is similar to the radio widget, except that it does not work as
         .with_tooltip("HOME")
         .with_cursor(Cursor::Hand1)
         .with_size(90, 45)
-        .with_callback(CheckSignal::Changed, move |wgt| println!("{} is Changed", wgt.text()));
+        .with_callback(move |wgt| println!("{} is Changed", wgt.text()));
 ```
 
 # [Entry](https://www.enlightenment.org/develop/legacy/program_guide/widgets/entry)
@@ -49,5 +49,5 @@ The entry widget is a box where the user can enter text. It supports the followi
 ```rust
     efltk::Entry::new(parent)
         .with_tooltip("HOME")
-        .with_callback(EntrySignal::Changed, move |wgt| println!("{} is Changed", wgt.text()));
+        .with_callback(move |wgt| println!("{} is Changed", wgt.text()));
 ```

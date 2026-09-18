@@ -5,9 +5,10 @@ pub mod prelude;
 #[cfg(test)]
 mod tests;
 
+pub use error::{CStringExt, EflError, EflResult};
+
 use {
     efltk_sys::*,
-    error::{EflError, EflResult},
     prelude::*,
     std::{cell::RefCell, ptr::NonNull, rc::Rc},
 };
@@ -26,6 +27,10 @@ macro_rules! impl_widget {
 
             fn from_raw(obj: *mut Evas_Object) -> Self {
                 Self(std::ptr::NonNull::new(obj))
+            }
+
+            fn is_set(&self) -> bool {
+                self.0.is_some()
             }
         }
 
@@ -53,24 +58,42 @@ impl_widget!(Menu);
 
 impl Menu {
     pub fn selected(&self) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
         WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
         WidgetItem::from_raw(unsafe { elm_menu_first_item_get(self.as_raw()) })
     }
 }
 
 impl InputExt<i32> for Menu {
     fn value(&self) -> i32 {
-        unsafe { elm_menu_item_index_get(self.selected().as_raw()) as i32 }
+        let selected = self.selected();
+        if selected.0.is_none() {
+            return -1;
+        }
+        unsafe { elm_menu_item_index_get(selected.as_raw()) as i32 }
     }
     fn set_value(&self, value: i32) {
+        if !self.is_set() {
+            return;
+        }
         if (0..self.length()).contains(&(value as u32)) {
             let mut temp = self.first().as_raw();
             for _ in 0..value {
+                if temp.is_null() {
+                    return;
+                }
                 temp = unsafe { elm_menu_item_next_get(temp) };
             }
-            unsafe { elm_menu_item_selected_set(temp, true as Eina_Bool) }
+            if !temp.is_null() {
+                unsafe { elm_menu_item_selected_set(temp, true as Eina_Bool) }
+            }
         }
     }
 }
@@ -80,6 +103,9 @@ impl SelectorExt for Menu {
         self.append(label, label, |wgt| wgt.call_signal(Signal::Selected))
     }
     fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
         let mut count = 0;
         let mut temp = self.first();
         while temp.0.is_some() {
@@ -89,6 +115,9 @@ impl SelectorExt for Menu {
         count
     }
     fn clear(&self) {
+        if !self.is_set() {
+            return;
+        }
         let mut temp = self.first();
         while temp.0.is_some() {
             let next = WidgetItem::from_raw(unsafe { elm_menu_item_next_get(temp.as_raw()) });
@@ -100,7 +129,7 @@ impl SelectorExt for Menu {
 
 impl MenuExt for Menu {}
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Tm {
     pub sec: i32,
     pub min: i32,
@@ -214,34 +243,52 @@ impl_widget!(List);
 
 impl List {
     pub fn selected(&self) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
         WidgetItem::from_raw(unsafe { elm_list_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
         WidgetItem::from_raw(unsafe { elm_list_first_item_get(self.as_raw()) })
     }
 }
 
 impl InputExt<i32> for List {
     fn value(&self) -> i32 {
-        if self.length() > 0 {
-            let mut count = 0;
-            let mut temp = self.first().as_raw();
-            while temp != self.selected().as_raw() {
-                count += 1;
-                temp = unsafe { elm_list_item_next(temp) };
-            }
-            count
-        } else {
-            -1
+        if self.length() == 0 {
+            return -1;
         }
+        let selected = self.selected();
+        if selected.0.is_none() {
+            return -1;
+        }
+        let selected_ptr = selected.as_raw();
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while !temp.is_null() && temp != selected_ptr {
+            count += 1;
+            temp = unsafe { elm_list_item_next(temp) };
+        }
+        if temp.is_null() { -1 } else { count }
     }
     fn set_value(&self, value: i32) {
+        if !self.is_set() {
+            return;
+        }
         if (0..self.length()).contains(&(value as u32)) {
             let mut temp = self.first().as_raw();
             for _ in 0..value {
+                if temp.is_null() {
+                    return;
+                }
                 temp = unsafe { elm_list_item_next(temp) };
             }
-            unsafe { elm_list_item_selected_set(temp, true as Eina_Bool) }
+            if !temp.is_null() {
+                unsafe { elm_list_item_selected_set(temp, true as Eina_Bool) }
+            }
         }
     }
 }
@@ -250,6 +297,9 @@ impl SelectorExt for List {
         self.add_item(label, label, |_| {})
     }
     fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
         let mut count = 0;
         let mut temp = self.first();
         while temp.0.is_some() {
@@ -259,6 +309,9 @@ impl SelectorExt for List {
         count
     }
     fn clear(&self) {
+        if !self.is_set() {
+            return;
+        }
         unsafe { elm_list_clear(self.as_raw()) };
     }
 }
@@ -272,17 +325,23 @@ pub struct Naviframe {
 
 impl Naviframe {
     pub fn set_top(&self, value: usize) {
-        if self.lst.borrow_mut().len() > value {
+        if self.lst.borrow().len() > value {
             self.to_top(&self.lst.borrow()[value]);
         };
     }
     pub fn promote(&self) {
+        if !self.is_set() {
+            return;
+        }
         self.to_top(&self.bottom())
     }
     fn bottom(&self) -> WidgetItem {
         WidgetItem::from_raw(unsafe { elm_naviframe_bottom_item_get(self.as_raw()) })
     }
     fn to_top(&self, item: &WidgetItem) {
+        if item.0.is_none() {
+            return;
+        }
         unsafe { elm_naviframe_item_promote(item.as_raw()) };
     }
 }
@@ -296,6 +355,9 @@ impl WidgetExt for Naviframe {
             obj: NonNull::new(obj),
             lst: Rc::default(),
         }
+    }
+    fn is_set(&self) -> bool {
+        self.obj.is_some()
     }
 }
 impl ContainerExt for Naviframe {
@@ -336,6 +398,9 @@ impl WidgetExt for Popup {
     fn from_raw(obj: *mut Evas_Object) -> Self {
         Self(NonNull::new(obj))
     }
+    fn is_set(&self) -> bool {
+        self.0.is_some()
+    }
 }
 impl PopupExt for Popup {}
 impl ContainerExt for Popup {}
@@ -361,6 +426,9 @@ impl_widget!(SegmentControl);
 
 impl SegmentControl {
     fn selected(&self) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
         WidgetItem::from_raw(unsafe { elm_segment_control_item_selected_get(self.as_raw()) })
     }
 }
@@ -368,9 +436,16 @@ impl SegmentControl {
 impl SegmentControlExt for SegmentControl {}
 impl InputExt<i32> for SegmentControl {
     fn value(&self) -> i32 {
-        unsafe { elm_segment_control_item_index_get(self.selected().as_raw()) as i32 }
+        let selected = self.selected();
+        if selected.0.is_none() {
+            return -1;
+        }
+        unsafe { elm_segment_control_item_index_get(selected.as_raw()) as i32 }
     }
     fn set_value(&self, value: i32) {
+        if !self.is_set() {
+            return;
+        }
         unsafe {
             elm_segment_control_item_selected_set(
                 elm_segment_control_item_get(self.as_raw(), value),
@@ -381,7 +456,7 @@ impl InputExt<i32> for SegmentControl {
 }
 impl SelectorExt for SegmentControl {
     fn add(&self, label: &str) -> WidgetItem {
-        let c_label = std::ffi::CString::new(label).expect("Label contains null byte");
+        let c_label = label.expect_cstring("SegmentControl::add");
         WidgetItem::from_raw(unsafe {
             elm_segment_control_item_add(
                 self.as_raw(),
@@ -391,11 +466,23 @@ impl SelectorExt for SegmentControl {
         })
     }
     fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
         unsafe { elm_segment_control_item_count_get(self.as_raw()) as u32 }
     }
 
     fn clear(&self) {
-        unsafe { elm_diskselector_clear(self.as_raw()) };
+        if !self.is_set() {
+            return;
+        }
+        while self.length() > 0 {
+            let item = unsafe { elm_segment_control_item_get(self.as_raw(), 0) };
+            if item.is_null() {
+                break;
+            }
+            unsafe { elm_object_item_del(item) };
+        }
     }
 }
 
@@ -424,7 +511,7 @@ impl RangerExt for Slider {
         unsafe { elm_slider_step_set(self.as_raw(), value) };
     }
     fn with_format(self, value: &str) -> Self {
-        let ctext = std::ffi::CString::new(value).expect("Format string contains null byte");
+        let ctext = value.expect_cstring("Slider::with_format");
         unsafe { elm_slider_unit_format_set(self.as_raw(), ctext.as_ptr()) };
         self
     }
@@ -442,7 +529,7 @@ impl InputExt<f64> for Spinner {
 }
 impl RangerExt for Spinner {
     fn with_format(self, format: &str) -> Self {
-        let cformat = std::ffi::CString::new(format).expect("Format string contains null byte");
+        let cformat = format.expect_cstring("Spinner::with_format");
         unsafe { elm_spinner_label_format_set(self.as_raw(), cformat.as_ptr()) };
         self
     }
@@ -508,3 +595,34 @@ impl InputExt<bool> for Check {
 }
 impl TextExt for Check {}
 impl CheckExt for Check {}
+
+impl_widget!(Calendar);
+impl CalendarExt for Calendar {}
+
+impl_widget!(Clock);
+impl ClockExt for Clock {}
+
+impl_widget!(FileSelector);
+impl FileSelExt for FileSelector {}
+
+impl_widget!(FileEntry);
+impl FileEntryExt for FileEntry {}
+
+impl_widget!(ColorSelector);
+impl ColorSelExt for ColorSelector {}
+impl InputExt<(i32, i32, i32, i32)> for ColorSelector {
+    fn value(&self) -> (i32, i32, i32, i32) {
+        let (mut r, mut g, mut b, mut a) = (0, 0, 0, 0);
+        if self.is_set() {
+            unsafe { elm_colorselector_color_get(self.as_raw(), &mut r, &mut g, &mut b, &mut a) };
+        }
+        (r, g, b, a)
+    }
+    fn set_value(&self, value: (i32, i32, i32, i32)) {
+        if self.is_set() {
+            unsafe {
+                elm_colorselector_color_set(self.as_raw(), value.0, value.1, value.2, value.3)
+            };
+        }
+    }
+}
