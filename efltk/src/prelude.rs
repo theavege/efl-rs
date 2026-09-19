@@ -170,7 +170,9 @@ fn box_callback<T: WidgetExt + 'static, F: FnMut(T) + 'static>(func: F) -> *mut 
 
 unsafe fn drop_boxed_callback<T>(data: *mut c_void) {
     if !data.is_null() {
-        drop(Box::from_raw(data as *mut Callback<T>));
+        unsafe {
+            drop(Box::from_raw(data as *mut Callback<T>));
+        }
     }
 }
 
@@ -344,7 +346,7 @@ pub trait InputExt<T>: WidgetExt {
 /// Trait for all EFL widgets.
 ///
 /// This is the base trait that all widgets implement.
-pub trait WidgetExt: Sized {
+pub trait WidgetExt: Sized + 'static {
     fn as_raw(&self) -> *mut Evas_Object;
     fn from_raw(obj: *mut Evas_Object) -> Self;
     /// Returns `true` when this wrapper holds a live EFL object.
