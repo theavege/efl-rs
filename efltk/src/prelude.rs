@@ -4,9 +4,9 @@
 //! All widget-specific functionality is defined through traits that can be
 //! implemented by widget types.
 
+pub use crate::error::{CStringExt, EflError, EflResult};
 pub use std::sync::mpsc::Sender;
 use {
-    crate::error::{EflError, EflResult},
     efltk_sys::*,
     std::{
         ffi::{CStr, CString, c_void},
@@ -18,7 +18,7 @@ use {
 /// Signals that can be emitted by widgets.
 ///
 /// Widgets emit signals when certain events occur, such as user interaction.
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Signal {
     #[default]
     Changed,
@@ -41,7 +41,7 @@ impl AsRef<str> for Signal {
 /// Horizontal and vertical alignment options for widgets.
 ///
 /// Used to control how widgets are positioned within their parent containers.
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Align {
     #[default]
     Fill,
@@ -61,7 +61,7 @@ impl From<Align> for f64 {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum PanelOrient {
     #[default]
     Top = 0,
@@ -73,7 +73,7 @@ pub enum PanelOrient {
 /// Cursor styles that can be set on widgets.
 ///
 /// Controls the mouse cursor appearance when hovering over a widget.
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Cursor {
     #[default]
     Hand2,
@@ -106,7 +106,7 @@ impl AsRef<str> for Cursor {
 /// in normal circumstances.
 fn run(func: impl Fn() -> super::Window) {
     let c_args: Vec<CString> = std::env::args()
-        .map(|arg| CString::new(arg).expect("Command-line argument contains null byte"))
+        .map(|arg| arg.expect_cstring("command-line argument"))
         .collect();
 
     let c_args_ptr: Vec<*const i8> = c_args.iter().map(|arg| arg.as_ptr()).collect();
@@ -140,11 +140,41 @@ impl super::Timer {
     pub fn as_ptr(&self) -> *mut Ecore_Timer {
         self.0.expect("Empty Ecore_Timer!").as_ptr()
     }
+    pub fn is_set(&self) -> bool {
+        self.0.is_some()
+    }
+    /// Stop the timer and free its callback.
+    ///
+    /// No-op on an empty wrapper. If the timer already fired its last tick
+    /// (`FnMut` returned `false`), the callback was freed then.
+    pub fn del(&mut self) {
+        let Some(timer) = self.0.take() else {
+            return;
+        };
+        unsafe {
+            let data = ecore_timer_del(timer.as_ptr());
+            if !data.is_null() {
+                drop(Box::from_raw(data as *mut Box<EcoreCb>));
+            }
+        }
+    }
 }
 
 type EcoreCb = dyn FnMut() -> bool;
 
 struct Callback<T>(Box<dyn FnMut(T)>);
+
+fn box_callback<T: WidgetExt + 'static, F: FnMut(T) + 'static>(func: F) -> *mut Callback<T> {
+    Box::into_raw(Box::new(Callback(Box::new(func))))
+}
+
+unsafe fn drop_boxed_callback<T>(data: *mut c_void) {
+    if !data.is_null() {
+        unsafe {
+            drop(Box::from_raw(data as *mut Callback<T>));
+        }
+    }
+}
 
 unsafe extern "C" fn smart_cb<T: WidgetExt>(
     data: *mut c_void,
@@ -157,10 +187,67 @@ unsafe extern "C" fn smart_cb<T: WidgetExt>(
     }
 }
 
+unsafe extern "C" fn drop_smart_cb<T>(
+    data: *mut c_void,
+    _object: *mut Evas_Object,
+    _event_info: *mut c_void,
+) {
+    unsafe { drop_boxed_callback::<T>(data) }
+}
+
+unsafe extern "C" fn drop_smart_cb_on_del<T>(
+    data: *mut c_void,
+    _e: *mut Evas,
+    _object: *mut Evas_Object,
+    _event_info: *mut c_void,
+) {
+    unsafe { drop_boxed_callback::<T>(data) }
+}
+
+fn install_widget_callback<T: WidgetExt + 'static, F: FnMut(T) + 'static>(
+    obj: *mut Evas_Object,
+    sign: Signal,
+    func: F,
+) {
+    if obj.is_null() {
+        return;
+    }
+    let raw_ptr = box_callback(func);
+    let event = sign.as_ref().expect_cstring("set_callback");
+    unsafe {
+        evas_object_smart_callback_add(
+            obj,
+            event.as_ptr(),
+            Some(smart_cb::<T>),
+            raw_ptr as *mut c_void,
+        );
+        evas_object_event_callback_add(
+            obj,
+            Evas_Callback_Type_EVAS_CALLBACK_DEL,
+            Some(drop_smart_cb_on_del::<T>),
+            raw_ptr as *mut c_void,
+        );
+    }
+}
+
+fn attach_item_del_cb<T>(item: *mut Evas_Object, data: *mut Callback<T>) {
+    if item.is_null() {
+        unsafe { drop_boxed_callback::<T>(data as *mut c_void) };
+        return;
+    }
+    unsafe { elm_object_item_del_cb_set(item, Some(drop_smart_cb::<T>)) };
+}
+
 pub(crate) unsafe extern "C" fn ecore_task_cb(data: *mut c_void) -> Eina_Bool {
     unsafe {
-        let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
-        func() as Eina_Bool
+        let keep = {
+            let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
+            func()
+        };
+        if !keep {
+            drop(Box::from_raw(data as *mut Box<EcoreCb>));
+        }
+        keep as Eina_Bool
     }
 }
 
@@ -170,6 +257,9 @@ impl super::WidgetItem {
     }
     pub fn from_raw(obj: *mut Evas_Object) -> Self {
         Self(NonNull::new(obj))
+    }
+    pub fn is_set(&self) -> bool {
+        self.0.is_some()
     }
     pub fn text(&self) -> String {
         unsafe {
@@ -186,9 +276,6 @@ impl super::WidgetItem {
     }
 }
 
-/// Trait for widgets that can have a horizontal or vertical orientation.
-///
-/// Widgets implementing this trait can be configured to display horizontally or vertically.
 /// Trait for widgets that can have a horizontal or vertical orientation.
 ///
 /// Widgets implementing this trait can be configured to display horizontally or vertically.
@@ -228,38 +315,6 @@ pub trait InputExt<T>: WidgetExt {
         self.set_value(value);
         self
     }
-    fn with_tooltip(self, value: &str) -> Self {
-        self.set_tooltip(value);
-        self
-    }
-    fn with_cursor(self, cursor: Cursor) -> Self {
-        self.set_cursor(cursor);
-        self
-    }
-    fn set_tooltip(&self, value: &str) {
-        let ctext = CString::new(value).expect("Tooltip text contains null byte");
-        unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
-    }
-    fn set_cursor(&self, cursor: Cursor) -> bool {
-        unsafe {
-            elm_object_cursor_set(
-                self.as_raw(),
-                CString::new(cursor.as_ref())
-                    .expect("Cursor name contains null byte")
-                    .as_ptr(),
-            ) != 0
-        }
-    }
-    fn with_disabled(self, disabled: bool) -> Self {
-        self.set_disabled(disabled);
-        self
-    }
-    fn set_disabled(&self, disabled: bool) {
-        unsafe { elm_object_disabled_set(self.as_raw(), disabled as Eina_Bool) }
-    }
-    fn disabled(&self) -> bool {
-        unsafe { elm_object_disabled_get(self.as_raw()) != 0 }
-    }
     fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
         self.set_callback(Signal::Changed, func);
         self
@@ -269,27 +324,18 @@ pub trait InputExt<T>: WidgetExt {
         self
     }
     fn set_callback<F: FnMut(Self) + 'static>(&self, sign: Signal, func: F) {
-        let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
-        unsafe {
-            evas_object_smart_callback_add(
-                self.as_raw(),
-                CString::new(sign.as_ref())
-                    .expect("Signal name contains null byte")
-                    .as_ptr(),
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            );
+        if !self.is_set() {
+            return;
         }
+        install_widget_callback::<Self, F>(self.as_raw(), sign, func);
     }
     fn call_signal(&self, sign: Signal) {
+        if !self.is_set() {
+            return;
+        }
+        let event = sign.as_ref().expect_cstring("InputExt::call_signal");
         unsafe {
-            evas_object_smart_callback_call(
-                self.as_raw(),
-                CString::new(sign.as_ref())
-                    .expect("Signal name contains null byte")
-                    .as_ptr(),
-                std::ptr::null_mut(),
-            );
+            evas_object_smart_callback_call(self.as_raw(), event.as_ptr(), std::ptr::null_mut());
         }
     }
     fn do_callback(&self) {
@@ -300,9 +346,11 @@ pub trait InputExt<T>: WidgetExt {
 /// Trait for all EFL widgets.
 ///
 /// This is the base trait that all widgets implement.
-pub trait WidgetExt: Sized {
+pub trait WidgetExt: Sized + 'static {
     fn as_raw(&self) -> *mut Evas_Object;
     fn from_raw(obj: *mut Evas_Object) -> Self;
+    /// Returns `true` when this wrapper holds a live EFL object.
+    fn is_set(&self) -> bool;
     fn show(&self) {
         unsafe {
             evas_object_show(self.as_raw());
@@ -365,14 +413,52 @@ pub trait WidgetExt: Sized {
         self.set_icon(value);
         self
     }
+    fn with_tooltip(self, value: &str) -> Self {
+        self.set_tooltip(value);
+        self
+    }
+    fn set_tooltip(&self, value: &str) {
+        if !self.is_set() {
+            return;
+        }
+        let ctext = value.expect_cstring("WidgetExt::set_tooltip");
+        unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
+    }
+    fn with_cursor(self, cursor: Cursor) -> Self {
+        self.set_cursor(cursor);
+        self
+    }
+    fn set_cursor(&self, cursor: Cursor) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let name = cursor.as_ref().expect_cstring("WidgetExt::set_cursor");
+        unsafe { elm_object_cursor_set(self.as_raw(), name.as_ptr()) != 0 }
+    }
+    fn with_disabled(self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+    fn set_disabled(&self, disabled: bool) {
+        if !self.is_set() {
+            return;
+        }
+        unsafe { elm_object_disabled_set(self.as_raw(), disabled as Eina_Bool) }
+    }
+    fn disabled(&self) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        unsafe { elm_object_disabled_get(self.as_raw()) != 0 }
+    }
     fn with_defaults(self) -> Self {
         self.with_align(Align::Fill, Align::Fill)
             .with_weight(true, true)
             .with_focus(false)
     }
     fn set_part(&self, part: &str, text: &str) {
-        let c_part = CString::new(part).expect("Part name contains null byte");
-        let c_text = CString::new(text).expect("Text contains null byte");
+        let c_part = part.expect_cstring("WidgetExt::set_part part");
+        let c_text = text.expect_cstring("WidgetExt::set_part text");
         let c_part_ptr = match part.is_empty() {
             true => std::ptr::null(),
             false => c_part.as_ptr(),
@@ -400,12 +486,15 @@ pub trait WidgetExt: Sized {
         self
     }
     fn set_content(&self, obj: &impl WidgetExt, value: &str) {
-        let ctext = CString::new(value).expect("Content value contains null byte");
+        let ctext = value.expect_cstring("WidgetExt::set_content");
         unsafe { elm_object_part_content_set(self.as_raw(), ctext.as_ptr(), obj.as_raw()) }
         obj.show();
     }
     fn content(&self, value: &str) -> Option<super::WidgetItem> {
-        let ctext = CString::new(value).expect("Content value contains null byte");
+        if !self.is_set() {
+            return None;
+        }
+        let ctext = value.expect_cstring("WidgetExt::content");
         let ptr = unsafe { elm_object_part_content_get(self.as_raw(), ctext.as_ptr()) };
         match ptr.is_null() {
             true => None,
@@ -421,12 +510,7 @@ pub trait LabelExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe {
             let ptr = elm_label_add(prt.as_raw());
-            elm_object_style_set(
-                ptr,
-                CString::new("marker")
-                    .expect("Style name contains null byte")
-                    .as_ptr(),
-            );
+            elm_object_style_set(ptr, "marker".expect_cstring("LabelExt::new").as_ptr());
             elm_label_line_wrap_set(ptr, Elm_Wrap_Type_ELM_WRAP_WORD);
             ptr
         })
@@ -470,9 +554,6 @@ pub trait ButtonExt: InputExt<bool> + TextExt {
     }
 }
 
-/// Trait for container widgets.
-///
-/// Provides methods for widgets that can contain other widgets.
 /// Trait for container widgets.
 ///
 /// Provides methods for widgets that can contain other widgets.
@@ -531,10 +612,10 @@ pub trait MenuExt: SelectorExt {
         label: &str,
         func: F,
     ) -> super::WidgetItem {
-        let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
-        let c_icon = CString::new(icon).expect("Icon name contains null byte");
-        let c_label = CString::new(label).expect("Label contains null byte");
-        super::WidgetItem::from_raw(unsafe {
+        let raw_ptr = box_callback(func);
+        let c_icon = icon.expect_cstring("MenuExt::append icon");
+        let c_label = label.expect_cstring("MenuExt::append label");
+        let item = super::WidgetItem::from_raw(unsafe {
             elm_menu_item_add(
                 self.as_raw(),
                 std::ptr::null_mut(),
@@ -543,7 +624,16 @@ pub trait MenuExt: SelectorExt {
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        })
+        });
+        attach_item_del_cb::<Self>(
+            if item.is_set() {
+                item.as_raw()
+            } else {
+                std::ptr::null_mut()
+            },
+            raw_ptr,
+        );
+        item
     }
     fn close(&self) {
         unsafe { elm_menu_close(self.as_raw()) }
@@ -556,19 +646,19 @@ pub trait MenuExt: SelectorExt {
     }
 }
 
+fn home_dir() -> String {
+    std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_default()
+}
+
 pub trait FileEntryExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_fileselector_entry_add(prt.as_raw()) });
         elm.set_inwin(true);
         elm.set_expandable(false);
         elm.set_folder_only(false);
-        elm.set_path(
-            &std::env::var(match cfg!(target_os = "windows") {
-                true => "%HOMEPATH%",
-                false => "HOME",
-            })
-            .expect("Failed to get home directory path"),
-        );
+        elm.set_path(&home_dir());
         prt.add(&elm);
         elm
     }
@@ -582,7 +672,7 @@ pub trait FileEntryExt: WidgetExt {
         unsafe { elm_fileselector_entry_folder_only_set(self.as_raw(), mode as Eina_Bool) };
     }
     fn set_path(&self, path: &str) {
-        let c = CString::new(path).expect("Path contains null byte");
+        let c = path.expect_cstring("FileEntryExt::set_path");
         unsafe { elm_fileselector_current_name_set(self.as_raw(), c.as_ptr()) };
     }
 }
@@ -603,9 +693,6 @@ pub trait CheckExt: WidgetExt {
 /// Trait for range-based input widgets (Slider, Spinner).
 ///
 /// Provides methods for widgets that have a numeric range and step values.
-/// Trait for range-based input widgets.
-///
-/// Provides methods for widgets that have a numeric range and step values.
 pub trait RangerExt: InputExt<f64> {
     fn set_step(&self, step: f64);
     fn set_range(&self, min: f64, max: f64);
@@ -621,9 +708,6 @@ pub trait RangerExt: InputExt<f64> {
 }
 
 /// Trait for selector widgets (List, SegmentControl, Menu, Radio).
-///
-/// Provides methods for widgets that allow selection from multiple items.
-/// Trait for selector widgets.
 ///
 /// Provides methods for widgets that allow selection from multiple items.
 pub trait SelectorExt: InputExt<i32> {
@@ -712,7 +796,7 @@ pub trait EntryExt: InputExt<String> {
         self
     }
     fn set_file(&self, file_: &str) {
-        let file = CString::new(file_).expect("File path contains null byte");
+        let file = file_.expect_cstring("EntryExt::set_file");
         unsafe {
             elm_entry_file_set(
                 self.as_raw(),
@@ -733,14 +817,8 @@ pub trait IconExt: WidgetExt {
         elm
     }
     fn with_standard(self, value: &str) -> Self {
-        unsafe {
-            elm_icon_standard_set(
-                self.as_raw(),
-                CString::new(value)
-                    .expect("Icon name contains null byte")
-                    .as_ptr(),
-            )
-        };
+        let name = value.expect_cstring("IconExt::with_standard");
+        unsafe { elm_icon_standard_set(self.as_raw(), name.as_ptr()) };
         self
     }
 }
@@ -785,9 +863,9 @@ pub trait ListExt: SelectorExt {
         label_: &str,
         func: F,
     ) -> super::WidgetItem {
-        let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
-        let c_icon = CString::new(icon_).expect("Icon name contains null byte");
-        super::WidgetItem::from_raw(unsafe {
+        let raw_ptr = box_callback(func);
+        let c_icon = icon_.expect_cstring("ListExt::add_item");
+        let item = super::WidgetItem::from_raw(unsafe {
             elm_list_item_append(
                 self.as_raw(),
                 c_icon.as_ptr(),
@@ -796,7 +874,16 @@ pub trait ListExt: SelectorExt {
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        })
+        });
+        attach_item_del_cb::<Self>(
+            if item.is_set() {
+                item.as_raw()
+            } else {
+                std::ptr::null_mut()
+            },
+            raw_ptr,
+        );
+        item
     }
 }
 
@@ -969,7 +1056,7 @@ pub trait ProgressBarExt: WidgetExt {
         unsafe { elm_progressbar_value_set(self.as_raw(), value) };
     }
     fn with_format(self, value: &str) -> Self {
-        let ctext = CString::new(value).expect("Format string contains null byte");
+        let ctext = value.expect_cstring("ProgressBarExt::with_format");
         unsafe { elm_progressbar_unit_format_set(self.as_raw(), ctext.as_ptr()) };
         self
     }
@@ -1041,8 +1128,8 @@ pub trait SegmentControlExt: SelectorExt {
 /// Provides methods for creating and configuring window widgets.
 pub trait WindowExt: WidgetExt {
     fn new(id: &str, title: &str) -> Self {
-        let c_id = CString::new(id).expect("Window ID contains null byte");
-        let c_title = CString::new(title).expect("Window title contains null byte");
+        let c_id = id.expect_cstring("WindowExt::new id");
+        let c_title = title.expect_cstring("WindowExt::new title");
         Self::from_raw(unsafe {
             let ptr = elm_win_util_standard_add(c_id.as_ptr(), c_title.as_ptr());
             elm_win_autodel_set(ptr, true as Eina_Bool);
@@ -1117,7 +1204,7 @@ pub trait FileSelExt: WidgetExt {
         elm
     }
     fn set_path(&self, path: &str) {
-        let c = CString::new(path).expect("Path contains null byte");
+        let c = path.expect_cstring("FileSelExt::set_path");
         unsafe { elm_fileselector_path_set(self.as_raw(), c.as_ptr()) };
     }
     fn with_path(self, path: &str) -> Self {
@@ -1143,7 +1230,7 @@ pub trait FileSelExt: WidgetExt {
         }
     }
     fn set_selected(&self, path: &str) -> bool {
-        let c = CString::new(path).expect("Path contains null byte");
+        let c = path.expect_cstring("FileSelExt::set_selected");
         unsafe { elm_fileselector_selected_set(self.as_raw(), c.as_ptr()) != 0 }
     }
     fn with_folder_only(self, value: bool) -> Self {
@@ -1202,14 +1289,6 @@ pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
         prt.add(&elm);
         elm
     }
-    //~ fn value(&self) -> (i32, i32, i32, i32) {
-    //~ let (mut r, mut g, mut b, mut a) = (0, 0, 0, 0);
-    //~ unsafe { elm_colorselector_color_get(self.as_raw(), &mut r, &mut g, &mut b, &mut a) };
-    //~ (r, g, b, a)
-    //~ }
-    //~ fn set_value(&self, r: i32, g: i32, b: i32, a: i32) {
-    //~ unsafe { elm_colorselector_color_set(self.as_raw(), r, g, b, a) };
-    //~ }
 }
 
 /// Trait for component-based UI patterns.
@@ -1223,9 +1302,6 @@ pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
 /// - `handle`: Function to process events and update state
 /// - `update`: Function to update the view based on state
 /// - `view`: Function to build the UI
-///   Trait for component-based UI patterns.
-///
-/// Provides a component architecture for building reactive UIs.
 pub trait Component: Default + 'static {
     type Event: 'static;
     type State: Default + 'static;

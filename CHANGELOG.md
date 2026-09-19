@@ -7,21 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Added `CONTRIBUTING.md` with contribution guidelines
-- Added `CHANGELOG.md` to track project changes
-- Added `Makefile` with common development tasks
-- Added comprehensive documentation to all widget extension traits
+## [0.0.7] - 2026-09-17
 
-## [0.0.5] - 2024-01-XX
+### Added
+- `WidgetExt::is_set()`, plus `is_set()` on `Timer` and `WidgetItem`, so empty wrappers can be detected without panicking
+- Widget types for existing traits: `Calendar`, `Clock`, `ColorSelector`, `FileSelector`, `FileEntry`
+- `InputExt<(i32, i32, i32, i32)>` for `ColorSelector`
+- `Copy` / `Clone` / `Debug` / `PartialEq` / `Eq` / `Hash` on `Signal`, `Align`, `Cursor`, and `PanelOrient`
+- Re-export of `EflError`, `EflResult`, and `CStringExt` from the crate root and prelude
+- CI coverage for `alpha/**` branches, bindgen dependencies, and `cargo test --lib`
+- `Timer::del()` stops a timer and frees its callback
 
 ### Fixed
-- Fixed typo: `lenght` → `length` throughout codebase (10 occurrences)
+- `SegmentControl::clear` no longer calls `elm_diskselector_clear` (wrong widget)
+- `List` / `Menu` / `SegmentControl` `value()`, `length()`, and `clear()` no longer panic on empty widgets or missing selection
+- `FileEntryExt` now reads `HOME` / `USERPROFILE` instead of the invalid `%HOMEPATH%` environment variable
+- `Naviframe::promote` is a no-op on an empty wrapper instead of panicking
+- README and widget docs: broken links (`elm_triggers.md`, `elm_ranges.md`, `make.ps1`) and copy-pasted examples
+- `.gitignore` no longer starts with a stray markdown fence
+- Tests compile again (`ProgressBarExt` typo, missing imports, `CStringExt` `?Sized` bound) and pass without a display
+- Smart callbacks, list/menu item callbacks, and timer closures are freed when the EFL object is deleted (or when a timer returns `false`)
+
+### Changed
+- C-string conversions go through `CStringExt::expect_cstring` for consistent panic messages
+- Windows setup docs now match the MSYS2 CI path
+- `tooltip`, `cursor`, and `disabled` live on `WidgetExt` (any widget, including `Label`), not only `InputExt`
+
+## [0.0.6] - 2026-09-17
 
 ### Added
-- Added comprehensive documentation to all public widget structs
-- Added module-level documentation to prelude
-- Added documentation to key enums (Signal, Align, Cursor)
+- `EflError` / `EflResult` and `CStringExt` for safer string conversion
+- Unit test suite for widget trait bounds, enums, and error helpers
 
-[Unreleased]: https://github.com/theavege/efl-rs/compare/v0.0.5...HEAD
+## [0.0.5] - 2026-07-13
+
+### Fixed
+- Typo: `lenght` → `length` throughout the codebase
+
+### Added
+- `CONTRIBUTING.md`, `CHANGELOG.md`, and `Makefile`
+- Documentation on core traits and widget types
+
+[Unreleased]: https://github.com/theavege/efl-rs/compare/v0.0.7...HEAD
+[0.0.7]: https://github.com/theavege/efl-rs/compare/v0.0.6...v0.0.7
+[0.0.6]: https://github.com/theavege/efl-rs/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/theavege/efl-rs/compare/v0.0.4...v0.0.5

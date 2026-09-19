@@ -2,6 +2,8 @@
 
 Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlightenment.org/about-efl).
 
+Published crates: [`efltk`](https://crates.io/crates/efltk) and [`efltk-sys`](https://crates.io/crates/efltk-sys).
+
 ## Other bindings for EFL
 
 - [Python](https://github.com/DaveMDS/python-efl)
@@ -14,10 +16,16 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
 - [RSTK](https://codeberg.org/peterlane/rstk)
 - [FoxTK-rs](https://github.com/theavege/foxtk-rs)
 
-## [Dependencies](https://www.enlightenment.org/docs/distros/start)
+## Dependencies
 
-- [Linux](.github/workflows/make.sh)
-- [Windows](.github/workflows/make.ps1)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for Linux, macOS, and Windows (MSYS2) setup.
+
+CI scripts: [Linux](.github/workflows/make.sh), [workflow](.github/workflows/make.yml).
+
+```toml
+[dependencies]
+efltk = "0.0.7"
+```
 
 ## Work in process
 
@@ -33,16 +41,17 @@ Rust bindings for the [Enlightenment Foundation Libraries](https://www.enlighten
     - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar) - Display progress
   - [x] [Inputs](docs/elm_inputs.md)
     - [x] [Button](docs/elm_inputs.md#Button)
-    - [x] [Check (bool)](docs/elm_triggers.md#Check) - Change option
+    - [x] [Check (bool)](docs/elm_inputs.md#Check) - Change option
     - [x] [Entry (String)](docs/elm_inputs.md#Entry) - Change text
-    - [x] [Rangers ((f64..=f64), f64)](docs/elm_outputs.md)
-      - [x] [Spinner](docs/elm_ranges.md#Spinner) - provides convenient ways to input data that can be seen as a value in a range.
-      - [x] [Slider](docs/elm_ranges.md#Slider) - is a way to select a value from a range. Slider can have marks to help pick special values, and they can also restrict the values that can be chosen.
+    - [x] [Rangers ((f64..=f64), f64)](docs/elm_rangers.md)
+      - [x] [Spinner](docs/elm_rangers.md#Spinner) - provides convenient ways to input data that can be seen as a value in a range.
+      - [x] [Slider](docs/elm_rangers.md#Slider) - is a way to select a value from a range. Slider can have marks to help pick special values, and they can also restrict the values that can be chosen.
     - [x] [Selectors (Vec<String>, u32)](docs/elm_selectors.md)  - Select variant
       - [x] [Radio](docs/elm_selectors.md#Radio) - Classic selector
       - [x] [List](docs/elm_selectors.md#List) - is used to store data in list form.
       - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Horizontal selector
       - [x] [Menu](docs/elm_selectors.md#Menu) - Popup selector
+  - [x] Extra widgets: Calendar, Clock, ColorSelector, FileSelector, FileEntry
 
 ## Transition Table
 
@@ -120,8 +129,12 @@ package "efl" #line.dashed {
         interface WidgetExt {
             #ptr as_raw()
             #from_raw(ptr)
+            #is_set()
             #del()
             #show()
+            +set_disabled(bool)
+            +Self with_tooltip()
+            +Self with_cursor()
         }
         interface TextExt {
             +str text()
@@ -137,7 +150,6 @@ package "efl" #line.dashed {
             +do_callback()
             +type value()
             +set_value(type)
-            +set_disabled(bool)
             +Self with_callback()
         }
         interface RangerExt {

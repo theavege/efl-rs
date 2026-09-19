@@ -23,3 +23,25 @@ This widget is a very simple type of a list widget. It is not to be used to mana
         .with_callback(move |wgt| println!("{} is Selected", wgt.value()));
 ```
 
+# [Radio](https://www.enlightenment.org/develop/legacy/program_guide/widgets/radio)
+
+Radio buttons belong to a group. Only one button in the group can be selected at a time.
+
+```rust
+    efltk::Radio::from_items(parent, &["home", "close"], move |wgt| {
+        println!("{} is Selected", wgt.value());
+    });
+```
+
+# [Menu](https://www.enlightenment.org/develop/legacy/program_guide/widgets/menu)
+
+A popup menu that can be opened from a button or other widget.
+
+```rust
+    efltk::Button::with_menu(
+        parent,
+        efltk::Menu::popup(parent)
+            .with_items(&["home", "close"])
+            .with_callback(move |wgt| println!("{} is Selected", wgt.value())),
+    );
+```

@@ -18,8 +18,8 @@ The spinner widget increases or decreases a numeric value with the arrow buttons
 ![Spinner](https://www.enlightenment.org/_media/widgets_spinner.png)
 
 ```rust
-    efltk::Slider::new(parent)
-        .with_tooltip("Slider")
+    efltk::Spinner::new(parent)
+        .with_tooltip("Spinner")
         .with_format("%1.2f")
         .with_callback(move |wgt| println!("{} is Changed", wgt.value()));
 ```

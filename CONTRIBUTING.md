@@ -7,7 +7,7 @@ Thank you for your interest in contributing to efl-rs! This document provides gu
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/your-username/efl-rs.git
+   git clone --recurse-submodules https://github.com/your-username/efl-rs.git
    cd efl-rs
    ```
 3. **Create a feature branch**:
@@ -19,40 +19,54 @@ Thank you for your interest in contributing to efl-rs! This document provides gu
 
 ### Dependencies
 
+The `efltk-sys` crate uses `pkg-config` and `bindgen`, so you need EFL development headers, pkg-config, and libclang.
+
 #### Linux (Debian/Ubuntu)
 ```bash
 sudo apt-get update
-sudo apt-get install -y libefl-all-dev pkg-config
+sudo apt-get install -y libefl-all-dev pkg-config clang libclang-dev
 ```
 
 #### Linux (Fedora)
 ```bash
-sudo dnf install -y efl-devel pkg-config
+sudo dnf install -y efl-devel pkg-config clang-devel
 ```
 
 #### macOS
 ```bash
-brew install efl pkg-config
+brew install efl pkg-config llvm
 ```
 
-#### Windows
-The build system will automatically download the required EFL libraries.
+#### Windows (MSYS2 clang64)
+
+CI builds Windows with [MSYS2](https://www.msys2.org/) `clang64`. From an MSYS2 clang64 shell:
+
+```bash
+pacboy -S efl:p rust:p pkg-config:p clang:p
+```
+
+Set `EFL_DIR` only if Elementary is installed outside the default MSYS2 prefix.
 
 ### Building
 
 ```bash
 # Check the code compiles
-cargo check
+cargo check --workspace
 
 # Build in release mode
-cargo build --release
+cargo build --release --workspace
+
+# Library tests (no display required)
+cargo test --workspace --lib
 
 # Run clippy (linter)
-cargo clippy
+cargo clippy --workspace --lib --examples
 
 # Format code
-cargo fmt
+cargo fmt --all
 ```
+
+`make check-all` runs format check, clippy, and tests.
 
 ## Code Style
 
@@ -74,8 +88,9 @@ cargo fmt
 
 ### Error Handling
 - Prefer `Result` over `expect()` and `unwrap()`
-- Use custom error types for library errors
+- Use `EflError` / `EflResult` and `CStringExt` for FFI strings
 - Document error conditions in doc comments
+- Empty widget wrappers should be detectable with `is_set()`; `as_raw()` still panics if misused
 
 ## Commit Guidelines
 
@@ -98,12 +113,16 @@ cargo fmt
 3. **Address Review Comments**
 4. **Wait for Approval**
 
+Target `alpha/*` for the current development cycle, or `main` for hotfixes.
+
 ## Testing
 
 ```bash
-cargo test
-cargo test --all-features
+cargo test --workspace --lib
+cargo test --workspace --lib --all-features
 ```
+
+Library tests must pass without a display server. Interactive examples still need a running EFL/Elementary install.
 
 ## Reporting Issues
 
