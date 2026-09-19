@@ -101,6 +101,27 @@ mod widget_tests {
     }
 
     #[test]
+    fn test_widget_ext_tooltip_cursor_disabled() {
+        fn uses_hygiene<T: WidgetExt>(w: &T) {
+            let _ = w.disabled();
+        }
+        uses_hygiene(&Label::default());
+        uses_hygiene(&Button::default());
+        uses_hygiene(&ProgressBar::default());
+        uses_hygiene(&Window::default());
+
+        let label = Label::default();
+        label.set_tooltip("hint");
+        assert!(!label.set_cursor(Cursor::Hand1));
+        label.set_disabled(true);
+        assert!(!label.disabled());
+        let _ = label
+            .with_tooltip("hint")
+            .with_cursor(Cursor::Xterm)
+            .with_disabled(false);
+    }
+
+    #[test]
     fn test_container_ext_implementations() {
         fn requires_container_ext<T: ContainerExt>(_: &T) {}
 
@@ -327,6 +348,11 @@ mod timer_tests {
         let timer = Timer::from(std::ptr::null_mut());
         assert!(timer.0.is_none());
         assert!(!timer.is_set());
+    }
+
+    #[test]
+    fn test_timer_del_on_empty_is_noop() {
+        Timer::default().del();
     }
 }
 
@@ -696,7 +722,7 @@ mod crate_exports {
     fn test_error_types_are_reexported() {
         let _: Option<crate::EflError> = None;
         let _: Option<crate::EflResult<()>> = None;
-        fn needs_cstring_ext<T: crate::CStringExt>(_: &T) {}
+        fn needs_cstring_ext<T: crate::CStringExt + ?Sized>(_: &T) {}
         needs_cstring_ext("ok");
     }
 }

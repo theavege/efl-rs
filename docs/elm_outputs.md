@@ -5,7 +5,9 @@ The label widget displays text with simple html-like markup.
 ![Label](https://www.enlightenment.org/_media/widgets_label.png)
 
 ```rust
-    efltk::Label::new(parent).with_text("Home");
+    efltk::Label::new(parent)
+        .with_text("Home")
+        .with_tooltip("HOME");
 ```
 
 # [Separator](https://www.enlightenment.org/develop/legacy/program_guide/widgets/separator)

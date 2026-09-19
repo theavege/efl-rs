@@ -104,7 +104,7 @@ impl From<NulError> for EflError {
 }
 
 /// Helper trait for converting strings to CStrings with proper error handling.
-pub trait CStringExt {
+pub trait CStringExt: ?Sized {
     /// Convert a string to CString, returning an EflResult.
     fn to_cstring(&self) -> EflResult<CString>;
 

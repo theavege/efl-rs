@@ -143,11 +143,36 @@ impl super::Timer {
     pub fn is_set(&self) -> bool {
         self.0.is_some()
     }
+    /// Stop the timer and free its callback.
+    ///
+    /// No-op on an empty wrapper. If the timer already fired its last tick
+    /// (`FnMut` returned `false`), the callback was freed then.
+    pub fn del(&mut self) {
+        let Some(timer) = self.0.take() else {
+            return;
+        };
+        unsafe {
+            let data = ecore_timer_del(timer.as_ptr());
+            if !data.is_null() {
+                drop(Box::from_raw(data as *mut Box<EcoreCb>));
+            }
+        }
+    }
 }
 
 type EcoreCb = dyn FnMut() -> bool;
 
 struct Callback<T>(Box<dyn FnMut(T)>);
+
+fn box_callback<T: WidgetExt + 'static, F: FnMut(T) + 'static>(func: F) -> *mut Callback<T> {
+    Box::into_raw(Box::new(Callback(Box::new(func))))
+}
+
+unsafe fn drop_boxed_callback<T>(data: *mut c_void) {
+    if !data.is_null() {
+        drop(Box::from_raw(data as *mut Callback<T>));
+    }
+}
 
 unsafe extern "C" fn smart_cb<T: WidgetExt>(
     data: *mut c_void,
@@ -160,10 +185,67 @@ unsafe extern "C" fn smart_cb<T: WidgetExt>(
     }
 }
 
+unsafe extern "C" fn drop_smart_cb<T>(
+    data: *mut c_void,
+    _object: *mut Evas_Object,
+    _event_info: *mut c_void,
+) {
+    unsafe { drop_boxed_callback::<T>(data) }
+}
+
+unsafe extern "C" fn drop_smart_cb_on_del<T>(
+    data: *mut c_void,
+    _e: *mut Evas,
+    _object: *mut Evas_Object,
+    _event_info: *mut c_void,
+) {
+    unsafe { drop_boxed_callback::<T>(data) }
+}
+
+fn install_widget_callback<T: WidgetExt + 'static, F: FnMut(T) + 'static>(
+    obj: *mut Evas_Object,
+    sign: Signal,
+    func: F,
+) {
+    if obj.is_null() {
+        return;
+    }
+    let raw_ptr = box_callback(func);
+    let event = sign.as_ref().expect_cstring("set_callback");
+    unsafe {
+        evas_object_smart_callback_add(
+            obj,
+            event.as_ptr(),
+            Some(smart_cb::<T>),
+            raw_ptr as *mut c_void,
+        );
+        evas_object_event_callback_add(
+            obj,
+            Evas_Callback_Type_EVAS_CALLBACK_DEL,
+            Some(drop_smart_cb_on_del::<T>),
+            raw_ptr as *mut c_void,
+        );
+    }
+}
+
+fn attach_item_del_cb<T>(item: *mut Evas_Object, data: *mut Callback<T>) {
+    if item.is_null() {
+        unsafe { drop_boxed_callback::<T>(data as *mut c_void) };
+        return;
+    }
+    unsafe { elm_object_item_del_cb_set(item, Some(drop_smart_cb::<T>)) };
+}
+
 pub(crate) unsafe extern "C" fn ecore_task_cb(data: *mut c_void) -> Eina_Bool {
     unsafe {
-        let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
-        func() as Eina_Bool
+        let keep = {
+            let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
+            func()
+        };
+        if !keep {
+            drop(Box::from_raw(data as *mut Box<EcoreCb>));
+        }
+        keep as Eina_Bool
     }
 }
 
@@ -231,32 +313,6 @@ pub trait InputExt<T>: WidgetExt {
         self.set_value(value);
         self
     }
-    fn with_tooltip(self, value: &str) -> Self {
-        self.set_tooltip(value);
-        self
-    }
-    fn with_cursor(self, cursor: Cursor) -> Self {
-        self.set_cursor(cursor);
-        self
-    }
-    fn set_tooltip(&self, value: &str) {
-        let ctext = value.expect_cstring("InputExt::set_tooltip");
-        unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
-    }
-    fn set_cursor(&self, cursor: Cursor) -> bool {
-        let name = cursor.as_ref().expect_cstring("InputExt::set_cursor");
-        unsafe { elm_object_cursor_set(self.as_raw(), name.as_ptr()) != 0 }
-    }
-    fn with_disabled(self, disabled: bool) -> Self {
-        self.set_disabled(disabled);
-        self
-    }
-    fn set_disabled(&self, disabled: bool) {
-        unsafe { elm_object_disabled_set(self.as_raw(), disabled as Eina_Bool) }
-    }
-    fn disabled(&self) -> bool {
-        unsafe { elm_object_disabled_get(self.as_raw()) != 0 }
-    }
     fn with_callback<F: FnMut(Self) + 'static>(self, func: F) -> Self {
         self.set_callback(Signal::Changed, func);
         self
@@ -266,18 +322,15 @@ pub trait InputExt<T>: WidgetExt {
         self
     }
     fn set_callback<F: FnMut(Self) + 'static>(&self, sign: Signal, func: F) {
-        let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
-        let event = sign.as_ref().expect_cstring("InputExt::set_callback");
-        unsafe {
-            evas_object_smart_callback_add(
-                self.as_raw(),
-                event.as_ptr(),
-                Some(smart_cb::<Self>),
-                raw_ptr as *mut c_void,
-            );
+        if !self.is_set() {
+            return;
         }
+        install_widget_callback::<Self, F>(self.as_raw(), sign, func);
     }
     fn call_signal(&self, sign: Signal) {
+        if !self.is_set() {
+            return;
+        }
         let event = sign.as_ref().expect_cstring("InputExt::call_signal");
         unsafe {
             evas_object_smart_callback_call(self.as_raw(), event.as_ptr(), std::ptr::null_mut());
@@ -357,6 +410,44 @@ pub trait WidgetExt: Sized {
     fn with_icon(self, value: &str) -> Self {
         self.set_icon(value);
         self
+    }
+    fn with_tooltip(self, value: &str) -> Self {
+        self.set_tooltip(value);
+        self
+    }
+    fn set_tooltip(&self, value: &str) {
+        if !self.is_set() {
+            return;
+        }
+        let ctext = value.expect_cstring("WidgetExt::set_tooltip");
+        unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
+    }
+    fn with_cursor(self, cursor: Cursor) -> Self {
+        self.set_cursor(cursor);
+        self
+    }
+    fn set_cursor(&self, cursor: Cursor) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let name = cursor.as_ref().expect_cstring("WidgetExt::set_cursor");
+        unsafe { elm_object_cursor_set(self.as_raw(), name.as_ptr()) != 0 }
+    }
+    fn with_disabled(self, disabled: bool) -> Self {
+        self.set_disabled(disabled);
+        self
+    }
+    fn set_disabled(&self, disabled: bool) {
+        if !self.is_set() {
+            return;
+        }
+        unsafe { elm_object_disabled_set(self.as_raw(), disabled as Eina_Bool) }
+    }
+    fn disabled(&self) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        unsafe { elm_object_disabled_get(self.as_raw()) != 0 }
     }
     fn with_defaults(self) -> Self {
         self.with_align(Align::Fill, Align::Fill)
@@ -519,10 +610,10 @@ pub trait MenuExt: SelectorExt {
         label: &str,
         func: F,
     ) -> super::WidgetItem {
-        let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
+        let raw_ptr = box_callback(func);
         let c_icon = icon.expect_cstring("MenuExt::append icon");
         let c_label = label.expect_cstring("MenuExt::append label");
-        super::WidgetItem::from_raw(unsafe {
+        let item = super::WidgetItem::from_raw(unsafe {
             elm_menu_item_add(
                 self.as_raw(),
                 std::ptr::null_mut(),
@@ -531,7 +622,16 @@ pub trait MenuExt: SelectorExt {
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        })
+        });
+        attach_item_del_cb::<Self>(
+            if item.is_set() {
+                item.as_raw()
+            } else {
+                std::ptr::null_mut()
+            },
+            raw_ptr,
+        );
+        item
     }
     fn close(&self) {
         unsafe { elm_menu_close(self.as_raw()) }
@@ -761,9 +861,9 @@ pub trait ListExt: SelectorExt {
         label_: &str,
         func: F,
     ) -> super::WidgetItem {
-        let raw_ptr = Box::into_raw(Box::new(Callback(Box::new(func))));
+        let raw_ptr = box_callback(func);
         let c_icon = icon_.expect_cstring("ListExt::add_item");
-        super::WidgetItem::from_raw(unsafe {
+        let item = super::WidgetItem::from_raw(unsafe {
             elm_list_item_append(
                 self.as_raw(),
                 c_icon.as_ptr(),
@@ -772,7 +872,16 @@ pub trait ListExt: SelectorExt {
                 Some(smart_cb::<Self>),
                 raw_ptr as *mut c_void,
             )
-        })
+        });
+        attach_item_del_cb::<Self>(
+            if item.is_set() {
+                item.as_raw()
+            } else {
+                std::ptr::null_mut()
+            },
+            raw_ptr,
+        );
+        item
     }
 }
 

@@ -132,6 +132,9 @@ package "efl" #line.dashed {
             #is_set()
             #del()
             #show()
+            +set_disabled(bool)
+            +Self with_tooltip()
+            +Self with_cursor()
         }
         interface TextExt {
             +str text()
@@ -147,7 +150,6 @@ package "efl" #line.dashed {
             +do_callback()
             +type value()
             +set_value(type)
-            +set_disabled(bool)
             +Self with_callback()
         }
         interface RangerExt {
