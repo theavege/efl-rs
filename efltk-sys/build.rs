@@ -34,6 +34,12 @@ fn compile() -> Vec<String> {
         }
         Err(e) => {
             eprintln!("Failed to find {library}: {e}");
+            eprintln!("Install EFL development packages, for example:");
+            eprintln!(
+                "  Debian/Ubuntu: sudo apt-get install libefl-all-dev pkg-config libclang-dev"
+            );
+            eprintln!("  Fedora:        sudo dnf install efl-devel pkg-config clang-devel");
+            eprintln!("  Windows MSYS2: pacboy -S efl:p pkg-config:p clang:p");
             std::process::exit(1);
         }
     }
@@ -41,6 +47,8 @@ fn compile() -> Vec<String> {
 }
 
 fn main() {
+    println!("cargo:rerun-if-changed=src/wrapper.h");
+    println!("cargo:rerun-if-changed=build.rs");
     bindgen::Builder::default()
         .header("src/wrapper.h")
         .clang_args(compile())

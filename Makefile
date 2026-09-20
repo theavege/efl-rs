@@ -24,10 +24,10 @@ check:
 
 # Run tests
 test:
-	cargo test
+	cargo test --workspace --lib
 
 test-all:
-	cargo test --all-features
+	cargo test --workspace --lib --all-features
 
 # Generate documentation
 doc:
