@@ -30,3 +30,13 @@ The progress bar is a widget for visually representing the progress status of a 
         .with_size(-1, 20);
     bar.set_value(0.42);
 ```
+
+# [Image](https://www.enlightenment.org/develop/legacy/program_guide/widgets/image)
+
+An image widget shows a file (or EET group). `Icon` is still the standard-icon helper; use `Image` when you have a path.
+
+```rust
+    efltk::Image::new(parent)
+        .with_file("photo.png")
+        .with_aspect_fixed(true);
+```

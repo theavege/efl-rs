@@ -223,6 +223,9 @@ impl FrameExt for Frame {}
 impl_widget!(Icon);
 impl IconExt for Icon {}
 
+impl_widget!(Image);
+impl ImageExt for Image {}
+
 impl_widget!(Label);
 
 impl TextExt for Label {}
@@ -569,6 +572,18 @@ impl OrientExt for Box {
     }
 }
 impl BoxExt for Box {}
+
+impl_widget!(Table);
+impl ContainerExt for Table {
+    fn add(&self, child: &impl WidgetExt) {
+        self.pack(child, 0, 0, 1, 1);
+    }
+}
+impl TableExt for Table {}
+
+impl_widget!(Scroller);
+impl ContainerExt for Scroller {}
+impl ScrollerExt for Scroller {}
 
 impl_widget!(Button);
 

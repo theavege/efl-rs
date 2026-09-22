@@ -24,3 +24,27 @@ A naviframe widget consists of a stack of views. New views are pushed on top of 
             parent.promote();
         });
 ```
+
+# [Table](https://www.enlightenment.org/develop/legacy/program_guide/containers/table)
+
+A table places children on a grid of cells. Use `pack` for column, row, and span; `add` is a shortcut that packs into cell `(0, 0)`.
+
+```rust
+    let table = efltk::Table::new(parent).with_padding(4);
+    table.pack(&efltk::Label::new(&table).with_text("Name"), 0, 0, 1, 1);
+    table.pack(&efltk::Entry::new(&table), 1, 0, 1, 1);
+```
+
+# [Scroller](https://www.enlightenment.org/develop/legacy/program_guide/widgets/scroller)
+
+A scroller is a single-child viewport. `add` sets that child; scrollbars follow `ScrollPolicy`.
+
+```rust
+    efltk::Scroller::new(parent)
+        .with_policy(efltk::prelude::ScrollPolicy::Auto, efltk::prelude::ScrollPolicy::Auto)
+        .inside(|scroller| {
+            efltk::Box::new(scroller).inside(|parent| {
+                efltk::Label::new(parent).with_text("Tall content");
+            });
+        });
+```

@@ -95,6 +95,25 @@ impl AsRef<str> for Cursor {
     }
 }
 
+/// Scrollbar visibility for [`ScrollerExt`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum ScrollPolicy {
+    #[default]
+    Auto,
+    On,
+    Off,
+}
+
+impl From<ScrollPolicy> for Elm_Scroller_Policy {
+    fn from(policy: ScrollPolicy) -> Self {
+        match policy {
+            ScrollPolicy::Auto => Elm_Scroller_Policy_ELM_SCROLLER_POLICY_AUTO,
+            ScrollPolicy::On => Elm_Scroller_Policy_ELM_SCROLLER_POLICY_ON,
+            ScrollPolicy::Off => Elm_Scroller_Policy_ELM_SCROLLER_POLICY_OFF,
+        }
+    }
+}
+
 /// Start the EFL main loop with a window.
 ///
 /// This function initializes the EFL libraries, creates the window using the provided
@@ -589,6 +608,104 @@ pub trait BoxExt: ContainerExt + OrientExt {
     }
 }
 
+/// Trait for table widgets.
+///
+/// Grid layout: children occupy cells (`pack`), not a single `default` content slot.
+pub trait TableExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_table_add(prt.as_raw()) })
+            .with_homogeneous(false)
+            .with_padding(0)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_homogeneous(self, value: bool) -> Self {
+        if self.is_set() {
+            unsafe { elm_table_homogeneous_set(self.as_raw(), value as Eina_Bool) };
+        }
+        self
+    }
+    fn with_padding(self, padding: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_table_padding_set(self.as_raw(), padding, padding) };
+        }
+        self
+    }
+    fn pack(&self, child: &impl WidgetExt, col: i32, row: i32, colspan: i32, rowspan: i32) {
+        if !self.is_set() || !child.is_set() {
+            return;
+        }
+        unsafe { elm_table_pack(self.as_raw(), child.as_raw(), col, row, colspan, rowspan) };
+        child.show();
+    }
+    fn unpack(&self, child: &impl WidgetExt) {
+        if !self.is_set() || !child.is_set() {
+            return;
+        }
+        unsafe { elm_table_unpack(self.as_raw(), child.as_raw()) };
+    }
+    fn clear(&self, delete_children: bool) {
+        if !self.is_set() {
+            return;
+        }
+        unsafe { elm_table_clear(self.as_raw(), delete_children as Eina_Bool) };
+    }
+    fn child_at<T: WidgetExt>(&self, col: i32, row: i32) -> T {
+        if !self.is_set() {
+            return T::from_raw(std::ptr::null_mut());
+        }
+        T::from_raw(unsafe { elm_table_child_get(self.as_raw(), col, row) })
+    }
+}
+
+/// Trait for scroller widgets.
+///
+/// A single-child viewport. `ContainerExt::add` sets that child.
+pub trait ScrollerExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_scroller_add(prt.as_raw()) })
+            .with_policy(ScrollPolicy::Auto, ScrollPolicy::Auto)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_policy(self, horizontal: ScrollPolicy, vertical: ScrollPolicy) -> Self {
+        self.set_policy(horizontal, vertical);
+        self
+    }
+    fn set_policy(&self, horizontal: ScrollPolicy, vertical: ScrollPolicy) {
+        if !self.is_set() {
+            return;
+        }
+        unsafe {
+            elm_scroller_policy_set(
+                self.as_raw(),
+                Elm_Scroller_Policy::from(horizontal),
+                Elm_Scroller_Policy::from(vertical),
+            )
+        };
+    }
+    fn with_bounce(self, horizontal: bool, vertical: bool) -> Self {
+        if self.is_set() {
+            unsafe {
+                elm_scroller_bounce_set(
+                    self.as_raw(),
+                    horizontal as Eina_Bool,
+                    vertical as Eina_Bool,
+                )
+            };
+        }
+        self
+    }
+    fn region_show(&self, x: i32, y: i32, w: i32, h: i32) {
+        if !self.is_set() {
+            return;
+        }
+        unsafe { elm_scroller_region_show(self.as_raw(), x, y, w, h) };
+    }
+}
+
 /// Trait for menu widgets.
 ///
 /// Provides methods for creating and configuring popup menu widgets.
@@ -820,6 +937,47 @@ pub trait IconExt: WidgetExt {
         let name = value.expect_cstring("IconExt::with_standard");
         unsafe { elm_icon_standard_set(self.as_raw(), name.as_ptr()) };
         self
+    }
+}
+
+/// Trait for image widgets.
+///
+/// Loads a file (or EET group) into an Elementary image.
+pub trait ImageExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_image_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("ImageExt::set_file");
+        unsafe { elm_image_file_set(self.as_raw(), cfile.as_ptr(), std::ptr::null()) != 0 }
+    }
+    fn with_prescale(self, size: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_image_prescale_set(self.as_raw(), size) };
+        }
+        self
+    }
+    fn with_aspect_fixed(self, fixed: bool) -> Self {
+        if self.is_set() {
+            unsafe { elm_image_aspect_fixed_set(self.as_raw(), fixed as Eina_Bool) };
+        }
+        self
+    }
+    fn object_size(&self) -> (i32, i32) {
+        let (mut w, mut h) = (0, 0);
+        if self.is_set() {
+            unsafe { elm_image_object_size_get(self.as_raw(), &mut w, &mut h) };
+        }
+        (w, h)
     }
 }
 

@@ -35,10 +35,13 @@ efltk = "0.0.7"
     - [x] [NaviFrame](docs/elm_containers.md#NaviFrame) - is a container that shows a single child at a time.
     - [x] [Frame](docs/elm_containers.md#Frame) - allows to provide additional content that is initially hidden.
     - [x] [Panes](docs/elm_containers.md#Panes) - divides its content area into two panes with a divider in between that the user can adjust.
+    - [x] [Table](docs/elm_containers.md#Table) - grid of cells (`pack` col/row/span).
+    - [x] [Scroller](docs/elm_containers.md#Scroller) - single-child viewport with scrollbars.
   - [x] [Outputs](docs/elm_outputs.md)
     - [x] [Label](docs/elm_outputs.md#Label) - Display text
     - [x] [Separator](docs/elm_outputs.md#Separator) - Display horizontal/vertical line
     - [x] [ProgressBar](docs/elm_outputs.md#ProgressBar) - Display progress
+    - [x] [Image](docs/elm_outputs.md#Image) - Display a file
   - [x] [Inputs](docs/elm_inputs.md)
     - [x] [Button](docs/elm_inputs.md#Button)
     - [x] [Check (bool)](docs/elm_inputs.md#Check) - Change option
@@ -87,6 +90,12 @@ package "efl" #line.dashed {
         struct Panes {
             -ptr : Pointer
         }
+        struct Table {
+            -ptr : Pointer
+        }
+        struct Scroller {
+            -ptr : Pointer
+        }
     }
     package outputs #line.dotted {
         struct Label {
@@ -96,6 +105,9 @@ package "efl" #line.dashed {
             -ptr : Pointer
         }
         struct Separator {
+            -ptr : Pointer
+        }
+        struct Image {
             -ptr : Pointer
         }
     }
@@ -182,6 +194,8 @@ package "efl" #line.dashed {
     struct containers.Panes implements prelude.OrientationExt
 
     struct containers.Window implements prelude.ContainerExt
+    struct containers.Table implements prelude.ContainerExt
+    struct containers.Scroller implements prelude.ContainerExt
 
     struct inputs.Button implements prelude.TextExt
     struct inputs.Check implements prelude.TextExt

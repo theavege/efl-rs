@@ -8,8 +8,8 @@ mod widget_tests {
     use crate::prelude::*;
     use crate::{
         Box, Button, Calendar, Check, Clock, ColorSelector, Entry, FileEntry, FileSelector, Frame,
-        Icon, Label, List, Menu, Naviframe, Panes, Popup, ProgressBar, Radio, SegmentControl,
-        Separator, Slider, Spinner, Window,
+        Icon, Image, Label, List, Menu, Naviframe, Panes, Popup, ProgressBar, Radio, Scroller,
+        SegmentControl, Separator, Slider, Spinner, Table, Window,
     };
 
     #[test]
@@ -26,6 +26,7 @@ mod widget_tests {
             FileSelector::default(),
             Frame::default(),
             Icon::default(),
+            Image::default(),
             Label::default(),
             List::default(),
             Menu::default(),
@@ -34,10 +35,12 @@ mod widget_tests {
             Popup::default(),
             ProgressBar::default(),
             Radio::default(),
+            Scroller::default(),
             SegmentControl::default(),
             Separator::default(),
             Slider::default(),
             Spinner::default(),
+            Table::default(),
             Window::default(),
         );
     }
@@ -55,6 +58,7 @@ mod widget_tests {
         assert!(!FileSelector::default().is_set());
         assert!(!Frame::default().is_set());
         assert!(!Icon::default().is_set());
+        assert!(!Image::default().is_set());
         assert!(!Label::default().is_set());
         assert!(!List::default().is_set());
         assert!(!Menu::default().is_set());
@@ -63,10 +67,12 @@ mod widget_tests {
         assert!(!Popup::default().is_set());
         assert!(!ProgressBar::default().is_set());
         assert!(!Radio::default().is_set());
+        assert!(!Scroller::default().is_set());
         assert!(!SegmentControl::default().is_set());
         assert!(!Separator::default().is_set());
         assert!(!Slider::default().is_set());
         assert!(!Spinner::default().is_set());
+        assert!(!Table::default().is_set());
         assert!(!Window::default().is_set());
     }
 
@@ -85,6 +91,7 @@ mod widget_tests {
         requires_widget_ext(&FileSelector::default());
         requires_widget_ext(&Frame::default());
         requires_widget_ext(&Icon::default());
+        requires_widget_ext(&Image::default());
         requires_widget_ext(&Label::default());
         requires_widget_ext(&List::default());
         requires_widget_ext(&Menu::default());
@@ -93,10 +100,12 @@ mod widget_tests {
         requires_widget_ext(&Popup::default());
         requires_widget_ext(&ProgressBar::default());
         requires_widget_ext(&Radio::default());
+        requires_widget_ext(&Scroller::default());
         requires_widget_ext(&SegmentControl::default());
         requires_widget_ext(&Separator::default());
         requires_widget_ext(&Slider::default());
         requires_widget_ext(&Spinner::default());
+        requires_widget_ext(&Table::default());
         requires_widget_ext(&Window::default());
     }
 
@@ -130,7 +139,25 @@ mod widget_tests {
         requires_container_ext(&Naviframe::default());
         requires_container_ext(&Panes::default());
         requires_container_ext(&Popup::default());
+        requires_container_ext(&Scroller::default());
+        requires_container_ext(&Table::default());
         requires_container_ext(&Window::default());
+    }
+
+    #[test]
+    fn test_empty_table_scroller_image_are_noop() {
+        let table = Table::default();
+        table.pack(&Button::default(), 0, 0, 1, 1);
+        table.unpack(&Button::default());
+        table.clear(false);
+        assert!(!table.child_at::<Button>(0, 0).is_set());
+
+        Scroller::default().set_policy(ScrollPolicy::Off, ScrollPolicy::Off);
+        Scroller::default().region_show(0, 0, 1, 1);
+        let _ = Scroller::default().with_bounce(false, false);
+
+        assert!(!Image::default().set_file("missing.png"));
+        assert_eq!(Image::default().object_size(), (0, 0));
     }
 
     #[test]
@@ -210,6 +237,7 @@ mod widget_tests {
         fn requires_file_sel_ext<T: FileSelExt>(_: &T) {}
         fn requires_frame_ext<T: FrameExt>(_: &T) {}
         fn requires_icon_ext<T: IconExt>(_: &T) {}
+        fn requires_image_ext<T: ImageExt>(_: &T) {}
         fn requires_label_ext<T: LabelExt>(_: &T) {}
         fn requires_list_ext<T: ListExt>(_: &T) {}
         fn requires_menu_ext<T: MenuExt>(_: &T) {}
@@ -218,10 +246,12 @@ mod widget_tests {
         fn requires_popup_ext<T: PopupExt>(_: &T) {}
         fn requires_progress_bar_ext<T: ProgressBarExt>(_: &T) {}
         fn requires_radio_ext<T: RadioExt>(_: &T) {}
+        fn requires_scroller_ext<T: ScrollerExt>(_: &T) {}
         fn requires_segment_control_ext<T: SegmentControlExt>(_: &T) {}
         fn requires_separator_ext<T: SeparatorExt>(_: &T) {}
         fn requires_slider_ext<T: SliderExt>(_: &T) {}
         fn requires_spinner_ext<T: SpinnerExt>(_: &T) {}
+        fn requires_table_ext<T: TableExt>(_: &T) {}
         fn requires_window_ext<T: WindowExt>(_: &T) {}
 
         requires_box_ext(&Box::default());
@@ -235,6 +265,7 @@ mod widget_tests {
         requires_file_sel_ext(&FileSelector::default());
         requires_frame_ext(&Frame::default());
         requires_icon_ext(&Icon::default());
+        requires_image_ext(&Image::default());
         requires_label_ext(&Label::default());
         requires_list_ext(&List::default());
         requires_menu_ext(&Menu::default());
@@ -243,10 +274,12 @@ mod widget_tests {
         requires_popup_ext(&Popup::default());
         requires_progress_bar_ext(&ProgressBar::default());
         requires_radio_ext(&Radio::default());
+        requires_scroller_ext(&Scroller::default());
         requires_segment_control_ext(&SegmentControl::default());
         requires_separator_ext(&Separator::default());
         requires_slider_ext(&Slider::default());
         requires_spinner_ext(&Spinner::default());
+        requires_table_ext(&Table::default());
         requires_window_ext(&Window::default());
     }
 }
@@ -286,6 +319,13 @@ mod trait_method_tests {
         assert_eq!(Cursor::Bogocity.as_ref(), "bogocity");
         assert_eq!(Cursor::Xterm.as_ref(), "xterm");
         assert_eq!(Cursor::default(), Cursor::Hand2);
+    }
+
+    #[test]
+    fn test_scroll_policy_enum() {
+        assert_eq!(ScrollPolicy::default(), ScrollPolicy::Auto);
+        assert_ne!(ScrollPolicy::Auto, ScrollPolicy::On);
+        assert_ne!(ScrollPolicy::On, ScrollPolicy::Off);
     }
 
     #[test]
