@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Table` / `TableExt`: grid `pack(col, row, colspan, rowspan)`, padding, homogeneous, `child_at`
+- `Scroller` / `ScrollerExt` with `ScrollPolicy` (Auto/On/Off), bounce, and `region_show`
+- `Image` / `ImageExt`: load a file, prescale, aspect-fixed, `object_size`
+
+### Fixed
+- Example `dialect`: redundant `format!` reference (clippy)
+
 ## [0.0.7] - 2026-09-17
 
 ### Added
