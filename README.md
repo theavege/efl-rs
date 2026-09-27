@@ -54,7 +54,11 @@ efltk = "0.0.7"
       - [x] [List](docs/elm_selectors.md#List) - is used to store data in list form.
       - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Horizontal selector
       - [x] [Menu](docs/elm_selectors.md#Menu) - Popup selector
-  - [x] Extra widgets: Calendar, Clock, ColorSelector, FileSelector, FileEntry
+      - [x] [Hoversel](docs/elm_selectors.md#Hoversel) - Dropdown selector
+      - [x] [Diskselector](docs/elm_selectors.md#Diskselector) - Rotary selector
+      - [x] [Toolbar](docs/elm_selectors.md#Toolbar) - Item bar
+      - [x] [Genlist](docs/elm_selectors.md#Genlist) - Virtualized list
+  - [x] Extra widgets: Calendar, Clock, ColorSelector, FileSelector, FileEntry, Bg, Panel, Notify, Photo, Datetime
 
 ## Transition Table
 

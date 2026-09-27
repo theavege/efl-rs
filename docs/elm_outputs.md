@@ -40,3 +40,24 @@ An image widget shows a file (or EET group). `Icon` is still the standard-icon h
         .with_file("photo.png")
         .with_aspect_fixed(true);
 ```
+
+# [Bg](https://www.enlightenment.org/develop/legacy/program_guide/widgets/bg)
+
+A window or container background: solid color or image.
+
+```rust
+    efltk::Bg::new(parent)
+        .with_color(32, 32, 32)
+        .with_option(efltk::prelude::BgOption::Scale);
+```
+
+# [Photo](https://www.enlightenment.org/develop/legacy/program_guide/widgets/photo)
+
+A framed portrait image.
+
+```rust
+    efltk::Photo::new(parent)
+        .with_file("avatar.png")
+        .with_thumb_size(64);
+```
+

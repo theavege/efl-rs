@@ -10,7 +10,7 @@ pub use error::{CStringExt, EflError, EflResult};
 use {
     efltk_sys::*,
     prelude::*,
-    std::{cell::RefCell, ptr::NonNull, rc::Rc},
+    std::{cell::RefCell, ffi::c_void, ptr::NonNull, rc::Rc},
 };
 
 macro_rules! impl_widget {
@@ -641,3 +641,272 @@ impl InputExt<(i32, i32, i32, i32)> for ColorSelector {
         }
     }
 }
+
+impl_widget!(Bg);
+impl BgExt for Bg {}
+
+impl_widget!(Panel);
+impl ContainerExt for Panel {}
+impl PanelExt for Panel {}
+
+impl_widget!(Notify);
+impl ContainerExt for Notify {}
+impl NotifyExt for Notify {}
+
+impl_widget!(Photo);
+impl PhotoExt for Photo {}
+
+impl_widget!(Datetime);
+impl DatetimeExt for Datetime {}
+impl InputExt<Tm> for Datetime {
+    fn value(&self) -> Tm {
+        DatetimeExt::value(self)
+    }
+    fn set_value(&self, value: Tm) {
+        DatetimeExt::set_value(self, value);
+    }
+}
+
+impl_widget!(Hoversel);
+impl TextExt for Hoversel {}
+impl HoverselExt for Hoversel {}
+
+impl_widget!(Diskselector);
+
+impl Diskselector {
+    fn selected(&self) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        WidgetItem::from_raw(unsafe { elm_diskselector_selected_item_get(self.as_raw()) })
+    }
+    fn first(&self) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        WidgetItem::from_raw(unsafe { elm_diskselector_first_item_get(self.as_raw()) })
+    }
+}
+
+impl InputExt<i32> for Diskselector {
+    fn value(&self) -> i32 {
+        if self.length() == 0 {
+            return -1;
+        }
+        let selected = self.selected();
+        if selected.0.is_none() {
+            return -1;
+        }
+        let selected_ptr = selected.as_raw();
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while !temp.is_null() && temp != selected_ptr {
+            count += 1;
+            temp = unsafe { elm_diskselector_item_next_get(temp) };
+        }
+        if temp.is_null() { -1 } else { count }
+    }
+    fn set_value(&self, value: i32) {
+        if !self.is_set() {
+            return;
+        }
+        if (0..self.length()).contains(&(value as u32)) {
+            let mut temp = self.first().as_raw();
+            for _ in 0..value {
+                if temp.is_null() {
+                    return;
+                }
+                temp = unsafe { elm_diskselector_item_next_get(temp) };
+            }
+            if !temp.is_null() {
+                unsafe { elm_diskselector_item_selected_set(temp, true as Eina_Bool) };
+            }
+        }
+    }
+}
+impl SelectorExt for Diskselector {
+    fn add(&self, label: &str) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        let c_label = label.expect_cstring("Diskselector::add");
+        WidgetItem::from_raw(unsafe {
+            elm_diskselector_item_append(
+                self.as_raw(),
+                c_label.as_ptr(),
+                std::ptr::null_mut(),
+                None,
+                std::ptr::null(),
+            )
+        })
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        let mut count = 0;
+        let mut temp = self.first();
+        while temp.0.is_some() {
+            count += 1;
+            temp = WidgetItem::from_raw(unsafe { elm_diskselector_item_next_get(temp.as_raw()) });
+        }
+        count
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_diskselector_clear(self.as_raw()) };
+        }
+    }
+}
+impl DiskselectorExt for Diskselector {}
+
+impl_widget!(Toolbar);
+
+impl Toolbar {
+    fn selected(&self) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        WidgetItem::from_raw(unsafe { elm_toolbar_selected_item_get(self.as_raw()) })
+    }
+    fn first(&self) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        WidgetItem::from_raw(unsafe { elm_toolbar_first_item_get(self.as_raw()) })
+    }
+}
+
+impl InputExt<i32> for Toolbar {
+    fn value(&self) -> i32 {
+        if self.length() == 0 {
+            return -1;
+        }
+        let selected = self.selected();
+        if selected.0.is_none() {
+            return -1;
+        }
+        let selected_ptr = selected.as_raw();
+        let mut count = 0;
+        let mut temp = self.first().as_raw();
+        while !temp.is_null() && temp != selected_ptr {
+            count += 1;
+            temp = unsafe { elm_toolbar_item_next_get(temp) };
+        }
+        if temp.is_null() { -1 } else { count }
+    }
+    fn set_value(&self, value: i32) {
+        if !self.is_set() {
+            return;
+        }
+        if (0..self.length()).contains(&(value as u32)) {
+            let mut temp = self.first().as_raw();
+            for _ in 0..value {
+                if temp.is_null() {
+                    return;
+                }
+                temp = unsafe { elm_toolbar_item_next_get(temp) };
+            }
+            if !temp.is_null() {
+                unsafe { elm_toolbar_item_selected_set(temp, true as Eina_Bool) };
+            }
+        }
+    }
+}
+impl SelectorExt for Toolbar {
+    fn add(&self, label: &str) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        let c_label = label.expect_cstring("Toolbar::add");
+        WidgetItem::from_raw(unsafe {
+            elm_toolbar_item_append(
+                self.as_raw(),
+                std::ptr::null(),
+                c_label.as_ptr(),
+                None,
+                std::ptr::null(),
+            )
+        })
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        unsafe { elm_toolbar_items_count(self.as_raw()) }
+    }
+    fn clear(&self) {
+        if !self.is_set() {
+            return;
+        }
+        loop {
+            let item = unsafe { elm_toolbar_first_item_get(self.as_raw()) };
+            if item.is_null() {
+                break;
+            }
+            unsafe { elm_object_item_del(item) };
+        }
+    }
+}
+impl ToolbarExt for Toolbar {}
+
+impl_widget!(Genlist);
+
+impl InputExt<i32> for Genlist {
+    fn value(&self) -> i32 {
+        if !self.is_set() {
+            return -1;
+        }
+        let item = unsafe { elm_genlist_selected_item_get(self.as_raw()) };
+        if item.is_null() {
+            return -1;
+        }
+        unsafe { elm_genlist_item_index_get(item) - 1 }
+    }
+    fn set_value(&self, value: i32) {
+        if !self.is_set() || value < 0 {
+            return;
+        }
+        let item = unsafe { elm_genlist_nth_item_get(self.as_raw(), value as u32) };
+        if !item.is_null() {
+            unsafe { elm_genlist_item_selected_set(item, true as Eina_Bool) };
+        }
+    }
+}
+impl SelectorExt for Genlist {
+    fn add(&self, label: &str) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        let itc = genlist_label_class();
+        if itc.is_null() {
+            return WidgetItem::default();
+        }
+        let data = label.expect_cstring("Genlist::add").into_raw();
+        let item = unsafe {
+            elm_genlist_item_append(
+                self.as_raw(),
+                itc,
+                data as *const c_void,
+                std::ptr::null_mut(),
+                Elm_Genlist_Item_Type_ELM_GENLIST_ITEM_NONE,
+                None,
+                std::ptr::null(),
+            )
+        };
+        unsafe { elm_genlist_item_class_unref(itc) };
+        WidgetItem::from_raw(item)
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        unsafe { elm_genlist_items_count(self.as_raw()) }
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_genlist_clear(self.as_raw()) };
+        }
+    }
+}
+impl GenlistExt for Genlist {}

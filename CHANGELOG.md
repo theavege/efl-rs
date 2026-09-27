@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Remaining Elementary wrappers: `Bg`, `Panel`, `Notify`, `Photo`, `Datetime`, `Hoversel`, `Diskselector`, `Toolbar`, `Genlist`
+- `BgOption` for background image display; `PanelOrient` now converts to the EFL panel enum
+- `Genlist` appends label items through a default item class (`text_get` / `del`)
+
 ## [0.0.7] - 2026-09-17
 
 ### Added

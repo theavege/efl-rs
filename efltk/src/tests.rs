@@ -7,9 +7,10 @@
 mod widget_tests {
     use crate::prelude::*;
     use crate::{
-        Box, Button, Calendar, Check, Clock, ColorSelector, Entry, FileEntry, FileSelector, Frame,
-        Icon, Image, Label, List, Menu, Naviframe, Panes, Popup, ProgressBar, Radio, Scroller,
-        SegmentControl, Separator, Slider, Spinner, Table, Window,
+        Bg, Box, Button, Calendar, Check, Clock, ColorSelector, Datetime, Diskselector, Entry,
+        FileEntry, FileSelector, Frame, Genlist, Hoversel, Icon, Image, Label, List, Menu,
+        Naviframe, Notify, Panel, Panes, Photo, Popup, ProgressBar, Radio, Scroller,
+        SegmentControl, Separator, Slider, Spinner, Table, Toolbar, Window,
     };
 
     #[test]
@@ -282,6 +283,77 @@ mod widget_tests {
         requires_table_ext(&Table::default());
         requires_window_ext(&Window::default());
     }
+
+    #[test]
+    fn test_alpha8_remaining_widgets() {
+        fn requires_widget_ext<T: WidgetExt>(_: &T) {}
+        fn requires_container_ext<T: ContainerExt>(_: &T) {}
+        fn requires_selector_ext<T: SelectorExt>(_: &T) {}
+        fn requires_bg_ext<T: BgExt>(_: &T) {}
+        fn requires_panel_ext<T: PanelExt>(_: &T) {}
+        fn requires_notify_ext<T: NotifyExt>(_: &T) {}
+        fn requires_photo_ext<T: PhotoExt>(_: &T) {}
+        fn requires_datetime_ext<T: DatetimeExt>(_: &T) {}
+        fn requires_hoversel_ext<T: HoverselExt>(_: &T) {}
+        fn requires_diskselector_ext<T: DiskselectorExt>(_: &T) {}
+        fn requires_toolbar_ext<T: ToolbarExt>(_: &T) {}
+        fn requires_genlist_ext<T: GenlistExt>(_: &T) {}
+        fn requires_input_tm<T: InputExt<crate::Tm>>(_: &T) {}
+
+        let widgets = (
+            Bg::default(),
+            Datetime::default(),
+            Diskselector::default(),
+            Genlist::default(),
+            Hoversel::default(),
+            Notify::default(),
+            Panel::default(),
+            Photo::default(),
+            Toolbar::default(),
+        );
+        assert!(!widgets.0.is_set());
+        assert!(!widgets.1.is_set());
+        assert!(!widgets.2.is_set());
+        assert!(!widgets.3.is_set());
+        assert!(!widgets.4.is_set());
+        assert!(!widgets.5.is_set());
+        assert!(!widgets.6.is_set());
+        assert!(!widgets.7.is_set());
+        assert!(!widgets.8.is_set());
+
+        requires_widget_ext(&widgets.0);
+        requires_container_ext(&Notify::default());
+        requires_container_ext(&Panel::default());
+        requires_selector_ext(&Diskselector::default());
+        requires_selector_ext(&Genlist::default());
+        requires_selector_ext(&Toolbar::default());
+        requires_bg_ext(&Bg::default());
+        requires_panel_ext(&Panel::default());
+        requires_notify_ext(&Notify::default());
+        requires_photo_ext(&Photo::default());
+        requires_datetime_ext(&Datetime::default());
+        requires_hoversel_ext(&Hoversel::default());
+        requires_diskselector_ext(&Diskselector::default());
+        requires_toolbar_ext(&Toolbar::default());
+        requires_genlist_ext(&Genlist::default());
+        requires_input_tm(&Datetime::default());
+
+        assert!(!Bg::default().set_file("missing.png"));
+        Panel::default().toggle();
+        assert!(!Panel::default().hidden());
+        Notify::default().set_timeout(1.0);
+        assert!(!Photo::default().set_file("missing.png"));
+        DatetimeExt::set_value(&Datetime::default(), crate::Tm::default());
+        Diskselector::default().clear();
+        Hoversel::default().clear();
+        Toolbar::default().clear();
+        Genlist::default().clear();
+        assert_eq!(Genlist::default().length(), 0);
+        assert_eq!(Hoversel::default().length(), 0);
+        assert_eq!(Diskselector::default().value(), -1);
+        assert_eq!(Toolbar::default().value(), -1);
+        assert_eq!(Genlist::default().value(), -1);
+    }
 }
 
 #[cfg(test)]
@@ -326,6 +398,13 @@ mod trait_method_tests {
         assert_eq!(ScrollPolicy::default(), ScrollPolicy::Auto);
         assert_ne!(ScrollPolicy::Auto, ScrollPolicy::On);
         assert_ne!(ScrollPolicy::On, ScrollPolicy::Off);
+    }
+
+    #[test]
+    fn test_bg_option_enum() {
+        assert_eq!(BgOption::default(), BgOption::Scale);
+        assert_ne!(BgOption::Center, BgOption::Stretch);
+        assert_ne!(BgOption::Tile, BgOption::Scale);
     }
 
     #[test]

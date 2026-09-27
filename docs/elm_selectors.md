@@ -45,3 +45,41 @@ A popup menu that can be opened from a button or other widget.
             .with_callback(move |wgt| println!("{} is Selected", wgt.value())),
     );
 ```
+
+# [Hoversel](https://www.enlightenment.org/develop/legacy/program_guide/widgets/hoversel)
+
+A button that pops a list of items.
+
+```rust
+    efltk::Hoversel::new(parent)
+        .with_text("Choose")
+        .with_items(&["home", "close"]);
+```
+
+# [Diskselector](https://www.enlightenment.org/develop/legacy/program_guide/widgets/diskselector)
+
+A rotary selector. Use it like other `SelectorExt` widgets.
+
+```rust
+    efltk::Diskselector::new(parent)
+        .with_items(&["Jan", "Feb", "Mar"])
+        .with_callback(move |wgt| println!("{}", wgt.value()));
+```
+
+# [Toolbar](https://www.enlightenment.org/develop/legacy/program_guide/widgets/toolbar)
+
+A horizontal bar of selectable items.
+
+```rust
+    efltk::Toolbar::new(parent).with_items(&["home", "close"]);
+```
+
+# [Genlist](https://www.enlightenment.org/develop/legacy/program_guide/widgets/genlist)
+
+A virtualized list. This wrapper appends plain label items (`text_get` / `del`).
+
+```rust
+    efltk::Genlist::new(parent)
+        .with_items(&["one", "two", "three"])
+        .with_callback(move |wgt| println!("{}", wgt.value()));
+```

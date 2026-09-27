@@ -9,7 +9,7 @@ pub use std::sync::mpsc::Sender;
 use {
     efltk_sys::*,
     std::{
-        ffi::{CStr, CString, c_void},
+        ffi::{CStr, CString, c_char, c_void},
         ptr::NonNull,
         sync::mpsc::channel,
     },
@@ -68,6 +68,38 @@ pub enum PanelOrient {
     Bottom,
     Left,
     Right,
+}
+
+impl From<PanelOrient> for Elm_Panel_Orient {
+    fn from(orient: PanelOrient) -> Self {
+        match orient {
+            PanelOrient::Top => Elm_Panel_Orient_ELM_PANEL_ORIENT_TOP,
+            PanelOrient::Bottom => Elm_Panel_Orient_ELM_PANEL_ORIENT_BOTTOM,
+            PanelOrient::Left => Elm_Panel_Orient_ELM_PANEL_ORIENT_LEFT,
+            PanelOrient::Right => Elm_Panel_Orient_ELM_PANEL_ORIENT_RIGHT,
+        }
+    }
+}
+
+/// How [`BgExt`] displays its image.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum BgOption {
+    Center,
+    #[default]
+    Scale,
+    Stretch,
+    Tile,
+}
+
+impl From<BgOption> for Elm_Bg_Option {
+    fn from(option: BgOption) -> Self {
+        match option {
+            BgOption::Center => Elm_Bg_Option_ELM_BG_OPTION_CENTER,
+            BgOption::Scale => Elm_Bg_Option_ELM_BG_OPTION_SCALE,
+            BgOption::Stretch => Elm_Bg_Option_ELM_BG_OPTION_STRETCH,
+            BgOption::Tile => Elm_Bg_Option_ELM_BG_OPTION_TILE,
+        }
+    }
 }
 
 /// Cursor styles that can be set on widgets.
@@ -255,6 +287,47 @@ fn attach_item_del_cb<T>(item: *mut Evas_Object, data: *mut Callback<T>) {
         return;
     }
     unsafe { elm_object_item_del_cb_set(item, Some(drop_smart_cb::<T>)) };
+}
+
+fn eina_list_len(mut list: *const Eina_List) -> u32 {
+    let mut count = 0;
+    while !list.is_null() {
+        count += 1;
+        list = unsafe { (*list).next };
+    }
+    count
+}
+
+unsafe extern "C" fn genlist_text_get(
+    data: *mut c_void,
+    _obj: *mut Evas_Object,
+    _part: *const c_char,
+) -> *mut c_char {
+    if data.is_null() {
+        return std::ptr::null_mut();
+    }
+    let bytes = unsafe { CStr::from_ptr(data as *const c_char) }.to_bytes();
+    CString::new(bytes)
+        .map(CString::into_raw)
+        .unwrap_or(std::ptr::null_mut())
+}
+
+unsafe extern "C" fn genlist_label_del(data: *mut c_void, _obj: *mut Evas_Object) {
+    if !data.is_null() {
+        unsafe { drop(CString::from_raw(data as *mut c_char)) };
+    }
+}
+
+pub(crate) fn genlist_label_class() -> *mut Elm_Genlist_Item_Class {
+    let itc = unsafe { elm_genlist_item_class_new() };
+    if !itc.is_null() {
+        unsafe {
+            (*itc).item_style = c"default".as_ptr();
+            (*itc).func.text_get = Some(genlist_text_get);
+            (*itc).func.del = Some(genlist_label_del);
+        }
+    }
+    itc
 }
 
 pub(crate) unsafe extern "C" fn ecore_task_cb(data: *mut c_void) -> Eina_Bool {
@@ -1444,6 +1517,223 @@ pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
         let elm = Self::from_raw(unsafe { elm_colorselector_add(prt.as_raw()) })
             .with_defaults()
             .with_signal(Signal::Changed, |wgt| wgt.call_signal(Signal::Selected));
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for background widgets.
+pub trait BgExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_bg_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_color(self, r: i32, g: i32, b: i32) -> Self {
+        self.set_color(r, g, b);
+        self
+    }
+    fn set_color(&self, r: i32, g: i32, b: i32) {
+        if self.is_set() {
+            unsafe { elm_bg_color_set(self.as_raw(), r, g, b) };
+        }
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("BgExt::set_file");
+        unsafe { elm_bg_file_set(self.as_raw(), cfile.as_ptr(), std::ptr::null()) != 0 }
+    }
+    fn with_option(self, option: BgOption) -> Self {
+        if self.is_set() {
+            unsafe { elm_bg_option_set(self.as_raw(), Elm_Bg_Option::from(option)) };
+        }
+        self
+    }
+}
+
+/// Trait for sliding panel widgets.
+pub trait PanelExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_panel_add(prt.as_raw()) })
+            .with_orient(PanelOrient::Left)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_orient(self, orient: PanelOrient) -> Self {
+        if self.is_set() {
+            unsafe { elm_panel_orient_set(self.as_raw(), Elm_Panel_Orient::from(orient)) };
+        }
+        self
+    }
+    fn set_hidden(&self, hidden: bool) {
+        if self.is_set() {
+            unsafe { elm_panel_hidden_set(self.as_raw(), hidden as Eina_Bool) };
+        }
+    }
+    fn hidden(&self) -> bool {
+        self.is_set() && unsafe { elm_panel_hidden_get(self.as_raw()) != 0 }
+    }
+    fn toggle(&self) {
+        if self.is_set() {
+            unsafe { elm_panel_toggle(self.as_raw()) };
+        }
+    }
+}
+
+/// Trait for notify (toast) widgets.
+pub trait NotifyExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_notify_add(prt.as_raw()) })
+            .with_timeout(3.0)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_timeout(self, timeout: f64) -> Self {
+        self.set_timeout(timeout);
+        self
+    }
+    fn set_timeout(&self, timeout: f64) {
+        if self.is_set() {
+            unsafe { elm_notify_timeout_set(self.as_raw(), timeout) };
+        }
+    }
+    fn with_align(self, horizontal: Align, vertical: Align) -> Self {
+        if self.is_set() {
+            unsafe {
+                elm_notify_align_set(self.as_raw(), f64::from(horizontal), f64::from(vertical))
+            };
+        }
+        self
+    }
+}
+
+/// Trait for photo widgets.
+pub trait PhotoExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_photo_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("PhotoExt::set_file");
+        unsafe { elm_photo_file_set(self.as_raw(), cfile.as_ptr()) != 0 }
+    }
+    fn with_thumb_size(self, size: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_photo_size_set(self.as_raw(), size) };
+        }
+        self
+    }
+}
+
+/// Trait for datetime widgets.
+pub trait DatetimeExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_datetime_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn value(&self) -> super::Tm {
+        let mut tm_ = unsafe { std::mem::zeroed() };
+        if self.is_set() {
+            unsafe { elm_datetime_value_get(self.as_raw(), &mut tm_) };
+        }
+        super::Tm::from_tm(tm_)
+    }
+    fn set_value(&self, value: super::Tm) {
+        if !self.is_set() {
+            return;
+        }
+        let tm_ = value.to_tm();
+        unsafe { elm_datetime_value_set(self.as_raw(), &tm_) };
+    }
+}
+
+/// Trait for hoversel (dropdown) widgets.
+pub trait HoverselExt: WidgetExt + TextExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_hoversel_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn add_item(&self, label: &str) -> super::WidgetItem {
+        if !self.is_set() {
+            return super::WidgetItem::default();
+        }
+        let c_label = label.expect_cstring("HoverselExt::add_item");
+        super::WidgetItem::from_raw(unsafe {
+            elm_hoversel_item_add(
+                self.as_raw(),
+                c_label.as_ptr(),
+                std::ptr::null(),
+                Elm_Icon_Type_ELM_ICON_NONE,
+                None,
+                std::ptr::null(),
+            )
+        })
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        eina_list_len(unsafe { elm_hoversel_items_get(self.as_raw()) })
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_hoversel_clear(self.as_raw()) };
+        }
+    }
+    fn with_items(self, items: &[&str]) -> Self {
+        for item in items {
+            self.add_item(item);
+        }
+        self
+    }
+}
+
+/// Trait for diskselector widgets.
+pub trait DiskselectorExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_diskselector_add(prt.as_raw()) })
+            .with_defaults()
+            .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for toolbar widgets.
+pub trait ToolbarExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_toolbar_add(prt.as_raw()) })
+            .with_defaults()
+            .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for genlist widgets (virtualized list, label items).
+pub trait GenlistExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_genlist_add(prt.as_raw()) })
+            .with_defaults()
+            .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
         elm
     }
