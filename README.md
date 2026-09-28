@@ -58,7 +58,7 @@ efltk = "0.0.7"
       - [x] [Diskselector](docs/elm_selectors.md#Diskselector) - Rotary selector
       - [x] [Toolbar](docs/elm_selectors.md#Toolbar) - Item bar
       - [x] [Genlist](docs/elm_selectors.md#Genlist) - Virtualized list
-  - [x] Extra widgets: Calendar, Clock, ColorSelector, FileSelector, FileEntry, Bg, Panel, Notify, Photo, Datetime
+  - [x] Extra widgets: Calendar, Clock, ColorSelector, FileSelector, FileEntry, Bg, Panel, Notify, Photo, Datetime, Grid, Flip, Hover, Ctxpopup, Index, Dayselector, Actionslider, Bubble, Photocam
 
 ## Transition Table
 

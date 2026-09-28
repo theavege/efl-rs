@@ -910,3 +910,48 @@ impl SelectorExt for Genlist {
     }
 }
 impl GenlistExt for Genlist {}
+
+impl_widget!(Grid);
+impl ContainerExt for Grid {
+    fn add(&self, child: &impl WidgetExt) {
+        self.pack(child, 0, 0, 100, 100);
+    }
+}
+impl GridExt for Grid {}
+
+impl_widget!(Flip);
+impl ContainerExt for Flip {
+    fn add(&self, child: &impl WidgetExt) {
+        match self.content("front") {
+            None => self.set_content(child, "front"),
+            _ => self.set_content(child, "back"),
+        }
+        child.show();
+    }
+}
+impl FlipExt for Flip {}
+
+impl_widget!(Hover);
+impl ContainerExt for Hover {}
+impl HoverExt for Hover {}
+
+impl_widget!(Ctxpopup);
+impl CtxpopupExt for Ctxpopup {}
+
+impl_widget!(Index);
+impl IndexExt for Index {}
+
+impl_widget!(Dayselector);
+impl DayselectorExt for Dayselector {}
+
+impl_widget!(Actionslider);
+impl TextExt for Actionslider {}
+impl ActionsliderExt for Actionslider {}
+
+impl_widget!(Bubble);
+impl TextExt for Bubble {}
+impl ContainerExt for Bubble {}
+impl BubbleExt for Bubble {}
+
+impl_widget!(Photocam);
+impl PhotocamExt for Photocam {}

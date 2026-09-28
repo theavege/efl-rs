@@ -102,6 +102,100 @@ impl From<BgOption> for Elm_Bg_Option {
     }
 }
 
+/// Day of week for [`DayselectorExt`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Weekday {
+    #[default]
+    Sun,
+    Mon,
+    Tue,
+    Wed,
+    Thu,
+    Fri,
+    Sat,
+}
+
+impl From<Weekday> for Elm_Dayselector_Day {
+    fn from(day: Weekday) -> Self {
+        match day {
+            Weekday::Sun => Elm_Dayselector_Day_ELM_DAYSELECTOR_SUN,
+            Weekday::Mon => Elm_Dayselector_Day_ELM_DAYSELECTOR_MON,
+            Weekday::Tue => Elm_Dayselector_Day_ELM_DAYSELECTOR_TUE,
+            Weekday::Wed => Elm_Dayselector_Day_ELM_DAYSELECTOR_WED,
+            Weekday::Thu => Elm_Dayselector_Day_ELM_DAYSELECTOR_THU,
+            Weekday::Fri => Elm_Dayselector_Day_ELM_DAYSELECTOR_FRI,
+            Weekday::Sat => Elm_Dayselector_Day_ELM_DAYSELECTOR_SAT,
+        }
+    }
+}
+
+/// Indicator/magnet position for [`ActionsliderExt`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum ActionPos {
+    None,
+    Left,
+    #[default]
+    Center,
+    Right,
+    All,
+}
+
+impl From<ActionPos> for Elm_Actionslider_Pos {
+    fn from(pos: ActionPos) -> Self {
+        match pos {
+            ActionPos::None => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_NONE,
+            ActionPos::Left => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_LEFT,
+            ActionPos::Center => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_CENTER,
+            ActionPos::Right => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_RIGHT,
+            ActionPos::All => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_ALL,
+        }
+    }
+}
+
+/// Arrow corner for [`BubbleExt`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum BubblePos {
+    #[default]
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+impl From<BubblePos> for Elm_Bubble_Pos {
+    fn from(pos: BubblePos) -> Self {
+        match pos {
+            BubblePos::TopLeft => Elm_Bubble_Pos_ELM_BUBBLE_POS_TOP_LEFT,
+            BubblePos::TopRight => Elm_Bubble_Pos_ELM_BUBBLE_POS_TOP_RIGHT,
+            BubblePos::BottomLeft => Elm_Bubble_Pos_ELM_BUBBLE_POS_BOTTOM_LEFT,
+            BubblePos::BottomRight => Elm_Bubble_Pos_ELM_BUBBLE_POS_BOTTOM_RIGHT,
+        }
+    }
+}
+
+/// Animation used by [`FlipExt::go`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum FlipMode {
+    #[default]
+    RotateY,
+    RotateX,
+    CubeLeft,
+    PageLeft,
+    CrossFade,
+}
+
+impl From<FlipMode> for Elm_Flip_Mode {
+    fn from(mode: FlipMode) -> Self {
+        match mode {
+            FlipMode::RotateY => Elm_Flip_Mode_ELM_FLIP_ROTATE_Y_CENTER_AXIS,
+            FlipMode::RotateX => Elm_Flip_Mode_ELM_FLIP_ROTATE_X_CENTER_AXIS,
+            FlipMode::CubeLeft => Elm_Flip_Mode_ELM_FLIP_CUBE_LEFT,
+            FlipMode::PageLeft => Elm_Flip_Mode_ELM_FLIP_PAGE_LEFT,
+            FlipMode::CrossFade => Elm_Flip_Mode_ELM_FLIP_CROSS_FADE,
+        }
+    }
+}
+
 /// Cursor styles that can be set on widgets.
 ///
 /// Controls the mouse cursor appearance when hovering over a widget.
@@ -1736,6 +1830,232 @@ pub trait GenlistExt: SelectorExt {
             .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
         prt.add(&elm);
         elm
+    }
+}
+
+/// Trait for virtual-coordinate grid widgets.
+pub trait GridExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_grid_add(prt.as_raw()) })
+            .with_grid_size(100, 100)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_grid_size(self, w: i32, h: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_grid_size_set(self.as_raw(), w, h) };
+        }
+        self
+    }
+    fn pack(&self, child: &impl WidgetExt, x: i32, y: i32, w: i32, h: i32) {
+        if !self.is_set() || !child.is_set() {
+            return;
+        }
+        unsafe { elm_grid_pack(self.as_raw(), child.as_raw(), x, y, w, h) };
+        child.show();
+    }
+    fn unpack(&self, child: &impl WidgetExt) {
+        if self.is_set() && child.is_set() {
+            unsafe { elm_grid_unpack(self.as_raw(), child.as_raw()) };
+        }
+    }
+    fn clear(&self, delete_children: bool) {
+        if self.is_set() {
+            unsafe { elm_grid_clear(self.as_raw(), delete_children as Eina_Bool) };
+        }
+    }
+}
+
+/// Trait for flip widgets (two faces).
+pub trait FlipExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_flip_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn go(&self, mode: FlipMode) {
+        if self.is_set() {
+            unsafe { elm_flip_go(self.as_raw(), Elm_Flip_Mode::from(mode)) };
+        }
+    }
+}
+
+/// Trait for hover widgets.
+pub trait HoverExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_hover_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn set_target(&self, target: &impl WidgetExt) {
+        if self.is_set() && target.is_set() {
+            unsafe { elm_hover_target_set(self.as_raw(), target.as_raw()) };
+        }
+    }
+}
+
+/// Trait for context-popup widgets.
+pub trait CtxpopupExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        Self::from_raw(unsafe { elm_ctxpopup_add(prt.as_raw()) }).with_defaults()
+    }
+    fn add_item(&self, label: &str) -> super::WidgetItem {
+        if !self.is_set() {
+            return super::WidgetItem::default();
+        }
+        let c_label = label.expect_cstring("CtxpopupExt::add_item");
+        super::WidgetItem::from_raw(unsafe {
+            elm_ctxpopup_item_append(
+                self.as_raw(),
+                c_label.as_ptr(),
+                std::ptr::null_mut(),
+                None,
+                std::ptr::null(),
+            )
+        })
+    }
+    fn dismiss(&self) {
+        if self.is_set() {
+            unsafe { elm_ctxpopup_dismiss(self.as_raw()) };
+        }
+    }
+    fn with_items(self, items: &[&str]) -> Self {
+        for item in items {
+            self.add_item(item);
+        }
+        self
+    }
+}
+
+/// Trait for index (fast-scroll letter) widgets.
+pub trait IndexExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_index_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn add_item(&self, letter: &str) -> super::WidgetItem {
+        if !self.is_set() {
+            return super::WidgetItem::default();
+        }
+        let c_letter = letter.expect_cstring("IndexExt::add_item");
+        super::WidgetItem::from_raw(unsafe {
+            elm_index_item_append(self.as_raw(), c_letter.as_ptr(), None, std::ptr::null())
+        })
+    }
+    fn go(&self) {
+        if self.is_set() {
+            unsafe { elm_index_level_go(self.as_raw(), 0) };
+        }
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_index_item_clear(self.as_raw()) };
+        }
+    }
+    fn with_items(self, items: &[&str]) -> Self {
+        for item in items {
+            self.add_item(item);
+        }
+        self.go();
+        self
+    }
+}
+
+/// Trait for dayselector widgets.
+pub trait DayselectorExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_dayselector_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn set_day(&self, day: Weekday, selected: bool) {
+        if self.is_set() {
+            unsafe {
+                elm_dayselector_day_selected_set(
+                    self.as_raw(),
+                    Elm_Dayselector_Day::from(day),
+                    selected as Eina_Bool,
+                )
+            };
+        }
+    }
+    fn day_selected(&self, day: Weekday) -> bool {
+        self.is_set()
+            && unsafe {
+                elm_dayselector_day_selected_get(self.as_raw(), Elm_Dayselector_Day::from(day)) != 0
+            }
+    }
+}
+
+/// Trait for actionslider widgets.
+pub trait ActionsliderExt: TextExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_actionslider_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_indicator(self, pos: ActionPos) -> Self {
+        if self.is_set() {
+            unsafe {
+                elm_actionslider_indicator_pos_set(self.as_raw(), Elm_Actionslider_Pos::from(pos))
+            };
+        }
+        self
+    }
+    fn set_magnet(&self, pos: ActionPos) {
+        if self.is_set() {
+            unsafe {
+                elm_actionslider_magnet_pos_set(self.as_raw(), Elm_Actionslider_Pos::from(pos))
+            };
+        }
+    }
+}
+
+/// Trait for bubble widgets.
+pub trait BubbleExt: TextExt + ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_bubble_add(prt.as_raw()) })
+            .with_pos(BubblePos::TopLeft)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_pos(self, pos: BubblePos) -> Self {
+        if self.is_set() {
+            unsafe { elm_bubble_pos_set(self.as_raw(), Elm_Bubble_Pos::from(pos)) };
+        }
+        self
+    }
+}
+
+/// Trait for photocam (pannable photo) widgets.
+pub trait PhotocamExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_photocam_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("PhotocamExt::set_file");
+        unsafe {
+            elm_photocam_file_set(self.as_raw(), cfile.as_ptr())
+                == Evas_Load_Error_EVAS_LOAD_ERROR_NONE
+        }
+    }
+    fn with_zoom(self, zoom: f64) -> Self {
+        if self.is_set() {
+            unsafe { elm_photocam_zoom_set(self.as_raw(), zoom) };
+        }
+        self
     }
 }
 

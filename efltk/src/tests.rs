@@ -7,10 +7,11 @@
 mod widget_tests {
     use crate::prelude::*;
     use crate::{
-        Bg, Box, Button, Calendar, Check, Clock, ColorSelector, Datetime, Diskselector, Entry,
-        FileEntry, FileSelector, Frame, Genlist, Hoversel, Icon, Image, Label, List, Menu,
-        Naviframe, Notify, Panel, Panes, Photo, Popup, ProgressBar, Radio, Scroller,
-        SegmentControl, Separator, Slider, Spinner, Table, Toolbar, Window,
+        Actionslider, Bg, Box, Bubble, Button, Calendar, Check, Clock, ColorSelector, Ctxpopup,
+        Datetime, Dayselector, Diskselector, Entry, FileEntry, FileSelector, Flip, Frame, Genlist,
+        Grid, Hover, Hoversel, Icon, Image, Index, Label, List, Menu, Naviframe, Notify, Panel,
+        Panes, Photo, Photocam, Popup, ProgressBar, Radio, Scroller, SegmentControl, Separator,
+        Slider, Spinner, Table, Toolbar, Window,
     };
 
     #[test]
@@ -354,6 +355,56 @@ mod widget_tests {
         assert_eq!(Toolbar::default().value(), -1);
         assert_eq!(Genlist::default().value(), -1);
     }
+
+    #[test]
+    fn test_alpha8_more_widgets() {
+        fn requires_widget_ext<T: WidgetExt>(_: &T) {}
+        fn requires_container_ext<T: ContainerExt>(_: &T) {}
+        fn requires_grid_ext<T: GridExt>(_: &T) {}
+        fn requires_flip_ext<T: FlipExt>(_: &T) {}
+        fn requires_hover_ext<T: HoverExt>(_: &T) {}
+        fn requires_ctxpopup_ext<T: CtxpopupExt>(_: &T) {}
+        fn requires_index_ext<T: IndexExt>(_: &T) {}
+        fn requires_dayselector_ext<T: DayselectorExt>(_: &T) {}
+        fn requires_actionslider_ext<T: ActionsliderExt>(_: &T) {}
+        fn requires_bubble_ext<T: BubbleExt>(_: &T) {}
+        fn requires_photocam_ext<T: PhotocamExt>(_: &T) {}
+
+        assert!(!Actionslider::default().is_set());
+        assert!(!Bubble::default().is_set());
+        assert!(!Ctxpopup::default().is_set());
+        assert!(!Dayselector::default().is_set());
+        assert!(!Flip::default().is_set());
+        assert!(!Grid::default().is_set());
+        assert!(!Hover::default().is_set());
+        assert!(!Index::default().is_set());
+        assert!(!Photocam::default().is_set());
+
+        requires_widget_ext(&Index::default());
+        requires_container_ext(&Grid::default());
+        requires_container_ext(&Flip::default());
+        requires_container_ext(&Hover::default());
+        requires_container_ext(&Bubble::default());
+        requires_grid_ext(&Grid::default());
+        requires_flip_ext(&Flip::default());
+        requires_hover_ext(&Hover::default());
+        requires_ctxpopup_ext(&Ctxpopup::default());
+        requires_index_ext(&Index::default());
+        requires_dayselector_ext(&Dayselector::default());
+        requires_actionslider_ext(&Actionslider::default());
+        requires_bubble_ext(&Bubble::default());
+        requires_photocam_ext(&Photocam::default());
+
+        Grid::default().pack(&Button::default(), 0, 0, 50, 50);
+        Grid::default().clear(false);
+        Flip::default().go(FlipMode::RotateY);
+        Hover::default().set_target(&Button::default());
+        Ctxpopup::default().dismiss();
+        Index::default().clear();
+        assert!(!Dayselector::default().day_selected(Weekday::Mon));
+        Actionslider::default().set_magnet(ActionPos::All);
+        assert!(!Photocam::default().set_file("missing.png"));
+    }
 }
 
 #[cfg(test)]
@@ -405,6 +456,14 @@ mod trait_method_tests {
         assert_eq!(BgOption::default(), BgOption::Scale);
         assert_ne!(BgOption::Center, BgOption::Stretch);
         assert_ne!(BgOption::Tile, BgOption::Scale);
+    }
+
+    #[test]
+    fn test_weekday_action_bubble_flip_enums() {
+        assert_eq!(Weekday::default(), Weekday::Sun);
+        assert_eq!(ActionPos::default(), ActionPos::Center);
+        assert_eq!(BubblePos::default(), BubblePos::TopLeft);
+        assert_eq!(FlipMode::default(), FlipMode::RotateY);
     }
 
     #[test]
