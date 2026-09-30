@@ -10,13 +10,17 @@ pub use error::{CStringExt, EflError, EflResult};
 use {
     efltk_sys::*,
     prelude::*,
-    std::{cell::RefCell, ffi::c_void, ptr::NonNull, rc::Rc},
+    std::{cell::RefCell, ffi::c_void, marker::PhantomData, ptr::NonNull, rc::Rc},
 };
 
 macro_rules! impl_widget {
     ($name:ident) => {
+        /// EFL object wrapper. Not `Send`/`Sync`: the widget lives on the EFL main thread.
         #[derive(Default)]
-        pub struct $name(Option<std::ptr::NonNull<Evas_Object>>);
+        pub struct $name(
+            Option<std::ptr::NonNull<Evas_Object>>,
+            PhantomData<*const ()>,
+        );
 
         impl WidgetExt for $name {
             fn as_raw(&self) -> *mut Evas_Object {
@@ -26,7 +30,7 @@ macro_rules! impl_widget {
             }
 
             fn from_raw(obj: *mut Evas_Object) -> Self {
-                Self(std::ptr::NonNull::new(obj))
+                Self(std::ptr::NonNull::new(obj), PhantomData)
             }
 
             fn is_set(&self) -> bool {
@@ -36,23 +40,23 @@ macro_rules! impl_widget {
 
         impl From<*mut Evas_Object> for $name {
             fn from(obj: *mut Evas_Object) -> Self {
-                Self(NonNull::new(obj))
+                Self(NonNull::new(obj), PhantomData)
             }
         }
     };
 }
 
 #[derive(Default)]
-pub struct Timer(Option<NonNull<Ecore_Timer>>);
+pub struct Timer(Option<NonNull<Ecore_Timer>>, PhantomData<*const ()>);
 
 impl From<*mut Ecore_Timer> for Timer {
     fn from(obj: *mut Ecore_Timer) -> Self {
-        Self(NonNull::new(obj))
+        Self(NonNull::new(obj), PhantomData)
     }
 }
 
 #[derive(Default)]
-pub struct WidgetItem(Option<NonNull<Evas_Object>>);
+pub struct WidgetItem(Option<NonNull<Evas_Object>>, PhantomData<*const ()>);
 
 impl_widget!(Menu);
 
@@ -392,14 +396,14 @@ impl OrientExt for Panes {
 impl PanesExt for Panes {}
 
 #[derive(Default, Clone)]
-pub struct Popup(Option<NonNull<Evas_Object>>);
+pub struct Popup(Option<NonNull<Evas_Object>>, PhantomData<*const ()>);
 
 impl WidgetExt for Popup {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
     }
     fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
+        Self(NonNull::new(obj), PhantomData)
     }
     fn is_set(&self) -> bool {
         self.0.is_some()

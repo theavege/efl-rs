@@ -970,3 +970,48 @@ mod crate_exports {
         needs_cstring_ext("ok");
     }
 }
+
+#[cfg(test)]
+mod ffi_hygiene {
+    fn assert_not_send<T>() {
+        trait AmbiguousIfSend<A> {
+            fn check() {}
+        }
+        impl<T> AmbiguousIfSend<()> for T {}
+        impl<T: Send> AmbiguousIfSend<u8> for T {}
+        let _ = <T as AmbiguousIfSend<_>>::check;
+    }
+
+    fn assert_not_sync<T>() {
+        trait AmbiguousIfSync<A> {
+            fn check() {}
+        }
+        impl<T> AmbiguousIfSync<()> for T {}
+        impl<T: Sync> AmbiguousIfSync<u8> for T {}
+        let _ = <T as AmbiguousIfSync<_>>::check;
+    }
+
+    #[test]
+    fn wrappers_are_neither_send_nor_sync() {
+        assert_not_send::<crate::Button>();
+        assert_not_sync::<crate::Button>();
+        assert_not_send::<crate::Window>();
+        assert_not_sync::<crate::Window>();
+        assert_not_send::<crate::Timer>();
+        assert_not_sync::<crate::Timer>();
+        assert_not_send::<crate::WidgetItem>();
+        assert_not_sync::<crate::WidgetItem>();
+        assert_not_send::<crate::Popup>();
+        assert_not_sync::<crate::Popup>();
+        assert_not_send::<crate::Genlist>();
+        assert_not_sync::<crate::Genlist>();
+    }
+
+    #[test]
+    fn catch_unwind_does_not_escape() {
+        let panicked = std::panic::catch_unwind(|| {
+            panic!("user callback");
+        });
+        assert!(panicked.is_err());
+    }
+}

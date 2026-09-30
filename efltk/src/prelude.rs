@@ -10,6 +10,8 @@ use {
     efltk_sys::*,
     std::{
         ffi::{CStr, CString, c_char, c_void},
+        marker::PhantomData,
+        panic::{AssertUnwindSafe, catch_unwind},
         ptr::NonNull,
         sync::{OnceLock, mpsc::channel},
     },
@@ -299,7 +301,9 @@ impl super::Timer {
         unsafe {
             let data = ecore_timer_del(timer.as_ptr());
             if !data.is_null() {
-                drop(Box::from_raw(data as *mut Box<EcoreCb>));
+                let _ = catch_unwind(AssertUnwindSafe(|| {
+                    drop(Box::from_raw(data as *mut Box<EcoreCb>));
+                }));
             }
         }
     }
@@ -314,11 +318,12 @@ fn box_callback<T: WidgetExt + 'static, F: FnMut(T) + 'static>(func: F) -> *mut 
 }
 
 unsafe fn drop_boxed_callback<T>(data: *mut c_void) {
-    if !data.is_null() {
-        unsafe {
-            drop(Box::from_raw(data as *mut Callback<T>));
-        }
+    if data.is_null() {
+        return;
     }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        drop(Box::from_raw(data as *mut Callback<T>));
+    }));
 }
 
 unsafe extern "C" fn smart_cb<T: WidgetExt>(
@@ -326,10 +331,13 @@ unsafe extern "C" fn smart_cb<T: WidgetExt>(
     object: *mut Evas_Object,
     _event_info: *mut c_void,
 ) {
-    unsafe {
+    if data.is_null() || object.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
         let callback = &mut *(data as *mut Callback<T>);
         (callback.0)(T::from_raw(object));
-    }
+    }));
 }
 
 unsafe extern "C" fn drop_smart_cb<T>(
@@ -400,16 +408,22 @@ unsafe extern "C" fn genlist_text_get(
     if data.is_null() {
         return std::ptr::null_mut();
     }
-    let bytes = unsafe { CStr::from_ptr(data as *const c_char) }.to_bytes();
-    CString::new(bytes)
-        .map(CString::into_raw)
-        .unwrap_or(std::ptr::null_mut())
+    catch_unwind(AssertUnwindSafe(|| {
+        let bytes = unsafe { CStr::from_ptr(data as *const c_char) }.to_bytes();
+        CString::new(bytes)
+            .map(CString::into_raw)
+            .unwrap_or(std::ptr::null_mut())
+    }))
+    .unwrap_or(std::ptr::null_mut())
 }
 
 unsafe extern "C" fn genlist_label_del(data: *mut c_void, _obj: *mut Evas_Object) {
-    if !data.is_null() {
-        unsafe { drop(CString::from_raw(data as *mut c_char)) };
+    if data.is_null() {
+        return;
     }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        drop(CString::from_raw(data as *mut c_char));
+    }));
 }
 
 pub(crate) fn genlist_label_class() -> *mut Elm_Genlist_Item_Class {
@@ -443,12 +457,15 @@ unsafe extern "C" fn slideshow_item_get(
     if data.is_null() || obj.is_null() {
         return std::ptr::null_mut();
     }
-    let img = unsafe { elm_image_add(obj) };
-    if img.is_null() {
-        return std::ptr::null_mut();
-    }
-    unsafe { elm_image_file_set(img, data as *const c_char, std::ptr::null()) };
-    img
+    catch_unwind(AssertUnwindSafe(|| {
+        let img = unsafe { elm_image_add(obj) };
+        if img.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe { elm_image_file_set(img, data as *const c_char, std::ptr::null()) };
+        img
+    }))
+    .unwrap_or(std::ptr::null_mut())
 }
 
 pub(crate) fn slideshow_image_class() -> *const Elm_Slideshow_Item_Class {
@@ -462,16 +479,20 @@ pub(crate) fn slideshow_image_class() -> *const Elm_Slideshow_Item_Class {
 }
 
 pub(crate) unsafe extern "C" fn ecore_task_cb(data: *mut c_void) -> Eina_Bool {
-    unsafe {
-        let keep = {
-            let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
-            func()
-        };
-        if !keep {
-            drop(Box::from_raw(data as *mut Box<EcoreCb>));
-        }
-        keep as Eina_Bool
+    if data.is_null() {
+        return false as Eina_Bool;
     }
+    let keep = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
+        func()
+    }))
+    .unwrap_or(false);
+    if !keep {
+        let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+            drop(Box::from_raw(data as *mut Box<EcoreCb>));
+        }));
+    }
+    keep as Eina_Bool
 }
 
 impl super::WidgetItem {
@@ -479,7 +500,7 @@ impl super::WidgetItem {
         self.0.expect("Empty Evas_Object!").as_ptr()
     }
     pub fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
+        Self(NonNull::new(obj), PhantomData)
     }
     pub fn is_set(&self) -> bool {
         self.0.is_some()
