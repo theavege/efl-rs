@@ -11,7 +11,7 @@ use {
     std::{
         ffi::{CStr, CString, c_char, c_void},
         ptr::NonNull,
-        sync::mpsc::channel,
+        sync::{OnceLock, mpsc::channel},
     },
 };
 
@@ -383,7 +383,7 @@ fn attach_item_del_cb<T>(item: *mut Evas_Object, data: *mut Callback<T>) {
     unsafe { elm_object_item_del_cb_set(item, Some(drop_smart_cb::<T>)) };
 }
 
-fn eina_list_len(mut list: *const Eina_List) -> u32 {
+pub(crate) fn eina_list_len(mut list: *const Eina_List) -> u32 {
     let mut count = 0;
     while !list.is_null() {
         count += 1;
@@ -422,6 +422,43 @@ pub(crate) fn genlist_label_class() -> *mut Elm_Genlist_Item_Class {
         }
     }
     itc
+}
+
+pub(crate) fn gengrid_label_class() -> *mut Elm_Gengrid_Item_Class {
+    let itc = unsafe { elm_gengrid_item_class_new() };
+    if !itc.is_null() {
+        unsafe {
+            (*itc).item_style = c"default".as_ptr();
+            (*itc).func.text_get = Some(genlist_text_get);
+            (*itc).func.del = Some(genlist_label_del);
+        }
+    }
+    itc
+}
+
+unsafe extern "C" fn slideshow_item_get(
+    data: *mut c_void,
+    obj: *mut Evas_Object,
+) -> *mut Evas_Object {
+    if data.is_null() || obj.is_null() {
+        return std::ptr::null_mut();
+    }
+    let img = unsafe { elm_image_add(obj) };
+    if img.is_null() {
+        return std::ptr::null_mut();
+    }
+    unsafe { elm_image_file_set(img, data as *const c_char, std::ptr::null()) };
+    img
+}
+
+pub(crate) fn slideshow_image_class() -> *const Elm_Slideshow_Item_Class {
+    static ITC: OnceLock<Elm_Slideshow_Item_Class> = OnceLock::new();
+    ITC.get_or_init(|| Elm_Slideshow_Item_Class {
+        func: Elm_Slideshow_Item_Class_Func {
+            get: Some(slideshow_item_get),
+            del: Some(genlist_label_del),
+        },
+    })
 }
 
 pub(crate) unsafe extern "C" fn ecore_task_cb(data: *mut c_void) -> Eina_Bool {
@@ -2056,6 +2093,229 @@ pub trait PhotocamExt: WidgetExt {
             unsafe { elm_photocam_zoom_set(self.as_raw(), zoom) };
         }
         self
+    }
+}
+
+/// Trait for gengrid widgets (virtualized grid, label items).
+pub trait GengridExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_gengrid_add(prt.as_raw()) })
+            .with_defaults()
+            .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for slideshow widgets (image-file items).
+pub trait SlideshowExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_slideshow_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn add_item(&self, file: &str) -> super::WidgetItem {
+        if !self.is_set() {
+            return super::WidgetItem::default();
+        }
+        let data = file.expect_cstring("SlideshowExt::add_item").into_raw();
+        super::WidgetItem::from_raw(unsafe {
+            elm_slideshow_item_add(
+                self.as_raw(),
+                slideshow_image_class(),
+                data as *const c_void,
+            )
+        })
+    }
+    fn next(&self) {
+        if self.is_set() {
+            unsafe { elm_slideshow_next(self.as_raw()) };
+        }
+    }
+    fn previous(&self) {
+        if self.is_set() {
+            unsafe { elm_slideshow_previous(self.as_raw()) };
+        }
+    }
+    fn with_timeout(self, timeout: f64) -> Self {
+        if self.is_set() {
+            unsafe { elm_slideshow_timeout_set(self.as_raw(), timeout) };
+        }
+        self
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_slideshow_clear(self.as_raw()) };
+        }
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        unsafe { elm_slideshow_count_get(self.as_raw()) }
+    }
+}
+
+/// Trait for map widgets.
+pub trait MapExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_map_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_zoom(self, zoom: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_map_zoom_set(self.as_raw(), zoom) };
+        }
+        self
+    }
+    fn zoom(&self) -> i32 {
+        if !self.is_set() {
+            return 0;
+        }
+        unsafe { elm_map_zoom_get(self.as_raw()) }
+    }
+    fn set_paused(&self, paused: bool) {
+        if self.is_set() {
+            unsafe { elm_map_paused_set(self.as_raw(), paused as Eina_Bool) };
+        }
+    }
+}
+
+/// Trait for video widgets.
+pub trait VideoExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_video_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("VideoExt::set_file");
+        unsafe { elm_video_file_set(self.as_raw(), cfile.as_ptr()) != 0 }
+    }
+    fn play(&self) {
+        if self.is_set() {
+            unsafe { elm_video_play(self.as_raw()) };
+        }
+    }
+    fn pause(&self) {
+        if self.is_set() {
+            unsafe { elm_video_pause(self.as_raw()) };
+        }
+    }
+    fn stop(&self) {
+        if self.is_set() {
+            unsafe { elm_video_stop(self.as_raw()) };
+        }
+    }
+}
+
+/// Trait for web widgets.
+pub trait WebExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_web_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_url(self, url: &str) -> Self {
+        self.set_url(url);
+        self
+    }
+    fn set_url(&self, url: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let curl = url.expect_cstring("WebExt::set_url");
+        unsafe { elm_web_url_set(self.as_raw(), curl.as_ptr()) != 0 }
+    }
+}
+
+/// Trait for OpenGL view widgets.
+pub trait GlviewExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_glview_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_gl_size(self, w: i32, h: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_glview_size_set(self.as_raw(), w, h) };
+        }
+        self
+    }
+    fn changed(&self) {
+        if self.is_set() {
+            unsafe { elm_glview_changed_set(self.as_raw()) };
+        }
+    }
+}
+
+/// Trait for conformant widgets (keyboard/indicator-aware container).
+pub trait ConformantExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_conformant_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for layout (Edje) widgets.
+pub trait LayoutExt: TextExt + ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_layout_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn set_file(&self, file: &str, group: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("LayoutExt::set_file");
+        let cgroup = group.expect_cstring("LayoutExt::set_file group");
+        let group_ptr = if group.is_empty() {
+            std::ptr::null()
+        } else {
+            cgroup.as_ptr()
+        };
+        unsafe { elm_layout_file_set(self.as_raw(), cfile.as_ptr(), group_ptr) != 0 }
+    }
+}
+
+/// Trait for multibuttonentry widgets.
+pub trait MultibuttonentryExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_multibuttonentry_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for combobox widgets.
+pub trait ComboboxExt: SelectorExt + TextExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_combobox_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn hover_begin(&self) {
+        if self.is_set() {
+            unsafe { elm_combobox_hover_begin(self.as_raw()) };
+        }
+    }
+    fn hover_end(&self) {
+        if self.is_set() {
+            unsafe { elm_combobox_hover_end(self.as_raw()) };
+        }
+    }
+    fn expanded(&self) -> bool {
+        self.is_set() && unsafe { elm_combobox_expanded_get(self.as_raw()) != 0 }
     }
 }
 

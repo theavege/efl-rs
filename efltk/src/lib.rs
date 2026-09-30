@@ -955,3 +955,212 @@ impl BubbleExt for Bubble {}
 
 impl_widget!(Photocam);
 impl PhotocamExt for Photocam {}
+
+impl_widget!(Gengrid);
+
+impl InputExt<i32> for Gengrid {
+    fn value(&self) -> i32 {
+        if !self.is_set() {
+            return -1;
+        }
+        let item = unsafe { elm_gengrid_selected_item_get(self.as_raw()) };
+        if item.is_null() {
+            return -1;
+        }
+        unsafe { elm_gengrid_item_index_get(item) - 1 }
+    }
+    fn set_value(&self, value: i32) {
+        if !self.is_set() || value < 0 {
+            return;
+        }
+        let item = unsafe { elm_gengrid_nth_item_get(self.as_raw(), value as u32) };
+        if !item.is_null() {
+            unsafe { elm_gengrid_item_selected_set(item, true as Eina_Bool) };
+        }
+    }
+}
+impl SelectorExt for Gengrid {
+    fn add(&self, label: &str) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        let itc = gengrid_label_class();
+        if itc.is_null() {
+            return WidgetItem::default();
+        }
+        let data = label.expect_cstring("Gengrid::add").into_raw();
+        let item = unsafe {
+            elm_gengrid_item_append(
+                self.as_raw(),
+                itc,
+                data as *const c_void,
+                None,
+                std::ptr::null(),
+            )
+        };
+        unsafe { elm_gengrid_item_class_unref(itc) };
+        WidgetItem::from_raw(item)
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        unsafe { elm_gengrid_items_count(self.as_raw()) }
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_gengrid_clear(self.as_raw()) };
+        }
+    }
+}
+impl GengridExt for Gengrid {}
+
+impl_widget!(Slideshow);
+impl SlideshowExt for Slideshow {}
+
+impl_widget!(Map);
+impl MapExt for Map {}
+
+impl_widget!(Video);
+impl VideoExt for Video {}
+
+impl_widget!(Web);
+impl WebExt for Web {}
+
+impl_widget!(Glview);
+impl GlviewExt for Glview {}
+
+impl_widget!(Conformant);
+impl ContainerExt for Conformant {}
+impl ConformantExt for Conformant {}
+
+impl_widget!(Layout);
+impl TextExt for Layout {}
+impl ContainerExt for Layout {}
+impl LayoutExt for Layout {}
+
+impl_widget!(Multibuttonentry);
+
+impl InputExt<i32> for Multibuttonentry {
+    fn value(&self) -> i32 {
+        if !self.is_set() {
+            return -1;
+        }
+        let selected = unsafe { elm_multibuttonentry_selected_item_get(self.as_raw()) };
+        if selected.is_null() {
+            return -1;
+        }
+        let mut count = 0;
+        let mut temp = unsafe { elm_multibuttonentry_first_item_get(self.as_raw()) };
+        while !temp.is_null() && temp != selected {
+            count += 1;
+            temp = unsafe { elm_multibuttonentry_item_next_get(temp) };
+        }
+        if temp.is_null() { -1 } else { count }
+    }
+    fn set_value(&self, value: i32) {
+        if !self.is_set() || value < 0 {
+            return;
+        }
+        let mut temp = unsafe { elm_multibuttonentry_first_item_get(self.as_raw()) };
+        for _ in 0..value {
+            if temp.is_null() {
+                return;
+            }
+            temp = unsafe { elm_multibuttonentry_item_next_get(temp) };
+        }
+        if !temp.is_null() {
+            unsafe { elm_multibuttonentry_item_selected_set(temp, true as Eina_Bool) };
+        }
+    }
+}
+impl SelectorExt for Multibuttonentry {
+    fn add(&self, label: &str) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        let c_label = label.expect_cstring("Multibuttonentry::add");
+        WidgetItem::from_raw(unsafe {
+            elm_multibuttonentry_item_append(
+                self.as_raw(),
+                c_label.as_ptr(),
+                None,
+                std::ptr::null_mut(),
+            )
+        })
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        eina_list_len(unsafe { elm_multibuttonentry_items_get(self.as_raw()) })
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_multibuttonentry_clear(self.as_raw()) };
+        }
+    }
+}
+impl MultibuttonentryExt for Multibuttonentry {}
+
+impl_widget!(Combobox);
+impl TextExt for Combobox {}
+
+impl InputExt<i32> for Combobox {
+    fn value(&self) -> i32 {
+        if !self.is_set() {
+            return -1;
+        }
+        let item = unsafe { elm_genlist_selected_item_get(self.as_raw()) };
+        if item.is_null() {
+            return -1;
+        }
+        unsafe { elm_genlist_item_index_get(item) - 1 }
+    }
+    fn set_value(&self, value: i32) {
+        if !self.is_set() || value < 0 {
+            return;
+        }
+        let item = unsafe { elm_genlist_nth_item_get(self.as_raw(), value as u32) };
+        if !item.is_null() {
+            unsafe { elm_genlist_item_selected_set(item, true as Eina_Bool) };
+        }
+    }
+}
+impl SelectorExt for Combobox {
+    fn add(&self, label: &str) -> WidgetItem {
+        if !self.is_set() {
+            return WidgetItem::default();
+        }
+        let itc = genlist_label_class();
+        if itc.is_null() {
+            return WidgetItem::default();
+        }
+        let data = label.expect_cstring("Combobox::add").into_raw();
+        let item = unsafe {
+            elm_genlist_item_append(
+                self.as_raw(),
+                itc,
+                data as *const c_void,
+                std::ptr::null_mut(),
+                Elm_Genlist_Item_Type_ELM_GENLIST_ITEM_NONE,
+                None,
+                std::ptr::null(),
+            )
+        };
+        unsafe { elm_genlist_item_class_unref(itc) };
+        WidgetItem::from_raw(item)
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        unsafe { elm_genlist_items_count(self.as_raw()) }
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_genlist_clear(self.as_raw()) };
+        }
+    }
+}
+impl ComboboxExt for Combobox {}
