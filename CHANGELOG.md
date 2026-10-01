@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Weekday`, `ActionPos`, `BubblePos`, `FlipMode` for the new widgets
 - `GlApi` plus `GlviewExt::{with_init, with_render, with_key_down, with_tick}` for a LÖVE-style GL loop
 - `examples/snake.rs` — Snake on `GLView` (`love.load` / `update` / `draw` / `keypressed`)
+- `examples/floppy_bird.rs` — Floppy Bird on `GLView` (same LÖVE loop)
 
 ### Changed
 - Widget, `Timer`, and `WidgetItem` wrappers are `!Send`/`!Sync` (`PhantomData<*const ()>`); EFL objects stay on the main thread
