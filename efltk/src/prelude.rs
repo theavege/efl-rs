@@ -244,14 +244,15 @@ impl From<ScrollPolicy> for Elm_Scroller_Policy {
 
 /// Start the EFL main loop with a window.
 ///
-/// This function initializes the EFL libraries, creates the window using the provided
-/// function, and starts the main event loop.
+/// Initializes EFL, creates the window from `func`, then runs until the last
+/// window closes. Used by [`Component::run`] and standalone examples such as
+/// `examples/snake.rs`.
 ///
 /// # Panics
 ///
 /// Panics if any command-line argument contains a null byte, which should never happen
 /// in normal circumstances.
-fn run(func: impl Fn() -> super::Window) {
+pub fn run(func: impl Fn() -> super::Window) {
     let c_args: Vec<CString> = std::env::args()
         .map(|arg| arg.expect_cstring("command-line argument"))
         .collect();
@@ -2262,6 +2263,13 @@ pub trait WebExt: WidgetExt {
 pub trait GlviewExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = Self::from_raw(unsafe { elm_glview_add(prt.as_raw()) }).with_defaults();
+        if elm.is_set() {
+            unsafe {
+                elm_glview_mode_set(elm.as_raw(), Elm_GLView_Mode_ELM_GLVIEW_ALPHA);
+                elm_object_focus_allow_set(elm.as_raw(), true as Eina_Bool);
+                evas_object_focus_set(elm.as_raw(), true as Eina_Bool);
+            };
+        }
         prt.add(&elm);
         elm
     }
@@ -2271,9 +2279,224 @@ pub trait GlviewExt: WidgetExt {
         }
         self
     }
+    fn gl_size(&self) -> (i32, i32) {
+        let mut w = 0;
+        let mut h = 0;
+        if self.is_set() {
+            unsafe { elm_glview_size_get(self.as_raw(), &mut w, &mut h) };
+        }
+        (w, h)
+    }
+    fn gl_api(&self) -> Option<GlApi> {
+        if !self.is_set() {
+            return None;
+        }
+        GlApi::from_raw(unsafe { elm_glview_gl_api_get(self.as_raw()) })
+    }
     fn changed(&self) {
         if self.is_set() {
             unsafe { elm_glview_changed_set(self.as_raw()) };
+        }
+    }
+    /// `love.load` — GL context is ready.
+    fn with_init<F: FnMut() + 'static>(self, func: F) -> Self {
+        if self.is_set() {
+            glview_hooks(self.as_raw()).init = Some(Box::new(func));
+        }
+        self
+    }
+    /// `love.draw` — called with the Evas GL API and surface size.
+    fn with_render<F: FnMut(&GlApi, i32, i32) + 'static>(self, func: F) -> Self {
+        if self.is_set() {
+            glview_hooks(self.as_raw()).render = Some(Box::new(func));
+        }
+        self
+    }
+    /// `love.keypressed` — EFL keyname (`Up`, `a`, `space`, …).
+    fn with_key_down<F: FnMut(&str) + 'static>(self, func: F) -> Self {
+        if self.is_set() {
+            glview_hooks(self.as_raw()).key = Some(Box::new(func));
+        }
+        self
+    }
+    /// `love.update(dt)` plus a redraw request each tick.
+    fn with_tick<F: FnMut(f64) + 'static>(self, dt: f64, mut func: F) -> Self {
+        if self.is_set() {
+            let ptr = self.as_raw();
+            super::Timer::new(dt, move || {
+                func(dt);
+                if !ptr.is_null() {
+                    unsafe { elm_glview_changed_set(ptr) };
+                }
+                true
+            });
+        }
+        self
+    }
+}
+
+const GLVIEW_HOOKS_KEY: &CStr = c"efltk.glview.hooks";
+
+type GlInitCb = Box<dyn FnMut()>;
+type GlRenderCb = Box<dyn FnMut(&GlApi, i32, i32)>;
+type GlKeyCb = Box<dyn FnMut(&str)>;
+
+struct GlviewHooks {
+    init: Option<GlInitCb>,
+    render: Option<GlRenderCb>,
+    key: Option<GlKeyCb>,
+    wired: bool,
+}
+
+fn glview_hooks(obj: *mut Evas_Object) -> &'static mut GlviewHooks {
+    let key = GLVIEW_HOOKS_KEY.as_ptr();
+    unsafe {
+        let existing = evas_object_data_get(obj, key) as *mut GlviewHooks;
+        if !existing.is_null() {
+            return &mut *existing;
+        }
+        let hooks = Box::into_raw(Box::new(GlviewHooks {
+            init: None,
+            render: None,
+            key: None,
+            wired: false,
+        }));
+        evas_object_data_set(obj, key, hooks as *const c_void);
+        if !(*hooks).wired {
+            elm_glview_init_func_set(obj, Some(glview_init_cb));
+            elm_glview_render_func_set(obj, Some(glview_render_cb));
+            evas_object_event_callback_add(
+                obj,
+                Evas_Callback_Type_EVAS_CALLBACK_KEY_DOWN,
+                Some(glview_key_cb),
+                std::ptr::null_mut(),
+            );
+            evas_object_event_callback_add(
+                obj,
+                Evas_Callback_Type_EVAS_CALLBACK_DEL,
+                Some(glview_hooks_del),
+                hooks as *mut c_void,
+            );
+            (*hooks).wired = true;
+        }
+        &mut *hooks
+    }
+}
+
+unsafe extern "C" fn glview_init_cb(obj: *mut Evas_Object) {
+    if obj.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| {
+        if let Some(init) = glview_hooks(obj).init.as_mut() {
+            init();
+        }
+    }));
+}
+
+unsafe extern "C" fn glview_render_cb(obj: *mut Evas_Object) {
+    if obj.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let Some(api) = GlApi::from_raw(elm_glview_gl_api_get(obj)) else {
+            return;
+        };
+        let mut w = 0;
+        let mut h = 0;
+        elm_glview_size_get(obj, &mut w, &mut h);
+        if w <= 0 || h <= 0 {
+            evas_object_geometry_get(
+                obj,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &mut w,
+                &mut h,
+            );
+        }
+        if let Some(render) = glview_hooks(obj).render.as_mut() {
+            render(&api, w, h);
+        }
+    }));
+}
+
+unsafe extern "C" fn glview_key_cb(
+    _data: *mut c_void,
+    _e: *mut Evas,
+    obj: *mut Evas_Object,
+    event_info: *mut c_void,
+) {
+    if obj.is_null() || event_info.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let ev = event_info as *mut Evas_Event_Key_Down;
+        if (*ev).keyname.is_null() {
+            return;
+        }
+        let name = CStr::from_ptr((*ev).keyname).to_string_lossy();
+        if let Some(key) = glview_hooks(obj).key.as_mut() {
+            key(&name);
+        }
+    }));
+}
+
+unsafe extern "C" fn glview_hooks_del(
+    data: *mut c_void,
+    _e: *mut Evas,
+    _obj: *mut Evas_Object,
+    _event_info: *mut c_void,
+) {
+    if data.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        drop(Box::from_raw(data as *mut GlviewHooks));
+    }));
+}
+
+/// GLES helpers from `elm_glview_gl_api_get`. Safe to call only inside GL callbacks.
+pub struct GlApi(*mut Evas_GL_API);
+
+impl GlApi {
+    pub fn from_raw(api: *mut Evas_GL_API) -> Option<Self> {
+        if api.is_null() { None } else { Some(Self(api)) }
+    }
+    fn api(&self) -> &Evas_GL_API {
+        unsafe { &*self.0 }
+    }
+    pub fn clear_color(&self, r: f32, g: f32, b: f32, a: f32) {
+        if let Some(func) = self.api().glClearColor {
+            unsafe { func(r, g, b, a) };
+        }
+    }
+    pub fn clear(&self) {
+        if let Some(func) = self.api().glClear {
+            unsafe { func(GL_COLOR_BUFFER_BIT) };
+        }
+    }
+    pub fn viewport(&self, x: i32, y: i32, w: i32, h: i32) {
+        if let Some(func) = self.api().glViewport {
+            unsafe { func(x, y, w, h) };
+        }
+    }
+    /// Fill a top-left-origin rectangle via `glScissor` + `glClear` (no shaders).
+    pub fn fill_rect(&self, x: i32, y: i32, w: i32, h: i32, view_h: i32, rgb: [f32; 3]) {
+        if w <= 0 || h <= 0 {
+            return;
+        }
+        let gy = view_h - y - h;
+        let api = self.api();
+        if let Some(enable) = api.glEnable {
+            unsafe { enable(GL_SCISSOR_TEST) };
+        }
+        if let Some(scissor) = api.glScissor {
+            unsafe { scissor(x, gy, w, h) };
+        }
+        self.clear_color(rgb[0], rgb[1], rgb[2], 1.0);
+        self.clear();
+        if let Some(disable) = api.glDisable {
+            unsafe { disable(GL_SCISSOR_TEST) };
         }
     }
 }

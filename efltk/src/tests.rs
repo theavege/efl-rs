@@ -463,6 +463,12 @@ mod widget_tests {
         assert!(!Video::default().set_file("missing.mp4"));
         assert!(!Web::default().set_url("https://example.com"));
         Glview::default().changed();
+        assert!(Glview::default().gl_api().is_none());
+        assert_eq!(Glview::default().gl_size(), (0, 0));
+        Glview::default().with_init(|| {});
+        Glview::default().with_render(|_, _, _| {});
+        Glview::default().with_key_down(|_| {});
+        Glview::default().with_tick(0.1, |_| {});
         assert!(!Layout::default().set_file("missing.edj", ""));
         Multibuttonentry::default().clear();
         Combobox::default().hover_end();
