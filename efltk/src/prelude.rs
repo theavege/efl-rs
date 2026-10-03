@@ -2320,6 +2320,13 @@ pub trait GlviewExt: WidgetExt {
         }
         self
     }
+    /// `love.mousepressed` — local x/y and button (1 = left).
+    fn with_mouse_down<F: FnMut(i32, i32, i32) + 'static>(self, func: F) -> Self {
+        if self.is_set() {
+            glview_hooks(self.as_raw()).mouse = Some(Box::new(func));
+        }
+        self
+    }
     /// `love.update(dt)` plus a redraw request each tick.
     fn with_tick<F: FnMut(f64) + 'static>(self, dt: f64, mut func: F) -> Self {
         if self.is_set() {
@@ -2341,11 +2348,13 @@ const GLVIEW_HOOKS_KEY: &CStr = c"efltk.glview.hooks";
 type GlInitCb = Box<dyn FnMut()>;
 type GlRenderCb = Box<dyn FnMut(&GlApi, i32, i32)>;
 type GlKeyCb = Box<dyn FnMut(&str)>;
+type GlMouseCb = Box<dyn FnMut(i32, i32, i32)>;
 
 struct GlviewHooks {
     init: Option<GlInitCb>,
     render: Option<GlRenderCb>,
     key: Option<GlKeyCb>,
+    mouse: Option<GlMouseCb>,
     wired: bool,
     pipeline: Option<GlPipeline>,
 }
@@ -2368,6 +2377,7 @@ fn glview_hooks(obj: *mut Evas_Object) -> &'static mut GlviewHooks {
             init: None,
             render: None,
             key: None,
+            mouse: None,
             wired: false,
             pipeline: None,
         }));
@@ -2380,6 +2390,12 @@ fn glview_hooks(obj: *mut Evas_Object) -> &'static mut GlviewHooks {
                 obj,
                 Evas_Callback_Type_EVAS_CALLBACK_KEY_DOWN,
                 Some(glview_key_cb),
+                std::ptr::null_mut(),
+            );
+            evas_object_event_callback_add(
+                obj,
+                Evas_Callback_Type_EVAS_CALLBACK_MOUSE_DOWN,
+                Some(glview_mouse_cb),
                 std::ptr::null_mut(),
             );
             evas_object_event_callback_add(
@@ -2484,9 +2500,42 @@ unsafe extern "C" fn glview_key_cb(
             return;
         }
         let name = CStr::from_ptr((*ev).keyname).to_string_lossy();
-        if let Some(key) = glview_hooks(obj).key.as_mut() {
-            key(&name);
+        let mut key = glview_hooks(obj).key.take();
+        if let Some(cb) = key.as_mut() {
+            cb(&name);
         }
+        glview_hooks(obj).key = key;
+    }));
+}
+
+unsafe extern "C" fn glview_mouse_cb(
+    _data: *mut c_void,
+    _e: *mut Evas,
+    obj: *mut Evas_Object,
+    event_info: *mut c_void,
+) {
+    if obj.is_null() || event_info.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let ev = event_info as *mut Evas_Event_Mouse_Down;
+        let mut ox = 0;
+        let mut oy = 0;
+        evas_object_geometry_get(
+            obj,
+            &mut ox,
+            &mut oy,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+        );
+        let x = (*ev).canvas.x - ox;
+        let y = (*ev).canvas.y - oy;
+        let button = (*ev).button;
+        let mut mouse = glview_hooks(obj).mouse.take();
+        if let Some(cb) = mouse.as_mut() {
+            cb(x, y, button);
+        }
+        glview_hooks(obj).mouse = mouse;
     }));
 }
 

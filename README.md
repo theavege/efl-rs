@@ -27,6 +27,16 @@ CI scripts: [Linux](.github/workflows/make.sh), [workflow](.github/workflows/mak
 efltk = "0.0.7"
 ```
 
+## Examples
+
+```sh
+cargo run -p efltk --example simple
+cargo run -p efltk --example snake
+cargo run -p efltk --example floppy_bird
+```
+
+`snake` and `floppy_bird` are LÖVE-style loops (`load` / `update` / `draw` / `keypressed`, plus click-to-flap on Floppy Bird) drawn with `GLView`.
+
 ## Work in process
 
 - [x] [Widgets](https://www.enlightenment.org/_legacy_embed/widgetslist.html)

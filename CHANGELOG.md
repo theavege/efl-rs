@@ -11,9 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remaining Elementary wrappers: `Bg`, `Panel`, `Notify`, `Photo`, `Datetime`, `Hoversel`, `Diskselector`, `Toolbar`, `Genlist`, `Grid`, `Flip`, `Hover`, `Ctxpopup`, `Index`, `Dayselector`, `Actionslider`, `Bubble`, `Photocam`, `Slideshow`, `Gengrid`, `Map`, `Video`, `Web`, `Glview`, `Conformant`, `Layout`, `Multibuttonentry`, `Combobox`
 - `BgOption` for background image display; `PanelOrient` now converts to the EFL panel enum
 - `Weekday`, `ActionPos`, `BubblePos`, `FlipMode` for the new widgets
-- `GlApi` plus `GlviewExt::{with_init, with_render, with_key_down, with_tick}` for a LÖVE-style GL loop
+- `GlApi` plus `GlviewExt::{with_init, with_render, with_key_down, with_mouse_down, with_tick}` for a LÖVE-style GL loop
 - `examples/snake.rs` — Snake on `GLView` (`love.load` / `update` / `draw` / `keypressed`)
-- `examples/floppy_bird.rs` — Floppy Bird on `GLView` (same LÖVE loop)
+- `examples/floppy_bird.rs` — Floppy Bird on `GLView` (same LÖVE loop, click or Space to flap)
 
 ### Changed
 - Widget, `Timer`, and `WidgetItem` wrappers are `!Send`/`!Sync` (`PhantomData<*const ()>`); EFL objects stay on the main thread

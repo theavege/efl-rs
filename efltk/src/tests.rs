@@ -468,6 +468,7 @@ mod widget_tests {
         Glview::default().with_init(|| {});
         Glview::default().with_render(|_, _, _| {});
         Glview::default().with_key_down(|_| {});
+        Glview::default().with_mouse_down(|_, _, _| {});
         Glview::default().with_tick(0.1, |_| {});
         assert!(!Layout::default().set_file("missing.edj", ""));
         Multibuttonentry::default().clear();

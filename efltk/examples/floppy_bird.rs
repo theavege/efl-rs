@@ -6,8 +6,9 @@
 //! | `love.update`     | `dt`     | `Love::update`       |
 //! | `love.draw`       | frame    | `Love::draw` via GLES|
 //! | `love.keypressed` | keyboard | `Love::keypressed`   |
+//! | `love.mousepressed` | click  | `with_mouse_down`    |
 //!
-//! Keys: Space / Up / W to flap, Space to restart after a crash, Esc to quit.
+//! Keys: Space / Up / W or click to flap, Space/click to restart after a crash, Esc to quit.
 //!
 //! ```sh
 //! cargo run -p efltk --example floppy_bird
@@ -98,12 +99,12 @@ impl Bird {
     fn status(&self) -> String {
         if self.alive {
             format!(
-                "Score: {}  Best: {}   Space/Up flap  Esc quit",
+                "Score: {}  Best: {}   click/Space flap  Esc quit",
                 self.score, self.best
             )
         } else {
             format!(
-                "Crashed — {} (best {})  Space restart  Esc quit",
+                "Crashed — {} (best {})  click/Space restart  Esc quit",
                 self.score, self.best
             )
         }
@@ -241,6 +242,14 @@ fn main() {
                 .with_key_down({
                     let game = game.clone();
                     move |key| game.borrow_mut().keypressed(key)
+                })
+                .with_mouse_down({
+                    let game = game.clone();
+                    move |_x, _y, button| {
+                        if button == 1 {
+                            game.borrow_mut().flap();
+                        }
+                    }
                 })
                 .with_tick(1.0 / 60.0, {
                     let game = game.clone();
