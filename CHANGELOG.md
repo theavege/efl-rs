@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Widget, `Timer`, and `WidgetItem` wrappers are `!Send`/`!Sync` (`PhantomData<*const ()>`); EFL objects stay on the main thread
 - C callbacks (`smart_cb`, `ecore_task_cb`, gen item/slideshow class, callback `Drop`) catch panics so they cannot unwind into EFL
+- `GlApi::fill_rect` batches quads into one GLES2 `glDrawArrays` (scissored `glClear` only as fallback)
 
 ## [0.0.7] - 2026-09-17
 

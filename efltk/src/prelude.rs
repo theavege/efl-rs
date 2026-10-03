@@ -9,6 +9,7 @@ pub use std::sync::mpsc::Sender;
 use {
     efltk_sys::*,
     std::{
+        cell::RefCell,
         ffi::{CStr, CString, c_char, c_void},
         marker::PhantomData,
         panic::{AssertUnwindSafe, catch_unwind},
@@ -2346,6 +2347,14 @@ struct GlviewHooks {
     render: Option<GlRenderCb>,
     key: Option<GlKeyCb>,
     wired: bool,
+    pipeline: Option<GlPipeline>,
+}
+
+struct GlPipeline {
+    program: GLuint,
+    vbo: GLuint,
+    a_pos: i32,
+    a_col: i32,
 }
 
 fn glview_hooks(obj: *mut Evas_Object) -> &'static mut GlviewHooks {
@@ -2360,11 +2369,13 @@ fn glview_hooks(obj: *mut Evas_Object) -> &'static mut GlviewHooks {
             render: None,
             key: None,
             wired: false,
+            pipeline: None,
         }));
         evas_object_data_set(obj, key, hooks as *const c_void);
         if !(*hooks).wired {
             elm_glview_init_func_set(obj, Some(glview_init_cb));
             elm_glview_render_func_set(obj, Some(glview_render_cb));
+            elm_glview_del_func_set(obj, Some(glview_gl_del_cb));
             evas_object_event_callback_add(
                 obj,
                 Evas_Callback_Type_EVAS_CALLBACK_KEY_DOWN,
@@ -2388,9 +2399,14 @@ unsafe extern "C" fn glview_init_cb(obj: *mut Evas_Object) {
         return;
     }
     let _ = catch_unwind(AssertUnwindSafe(|| {
-        if let Some(init) = glview_hooks(obj).init.as_mut() {
-            init();
+        let pipeline = compile_gl_pipeline(unsafe { elm_glview_gl_api_get(obj) });
+        let hooks = glview_hooks(obj);
+        hooks.pipeline = pipeline;
+        let mut init = hooks.init.take();
+        if let Some(cb) = init.as_mut() {
+            cb();
         }
+        glview_hooks(obj).init = init;
     }));
 }
 
@@ -2399,9 +2415,10 @@ unsafe extern "C" fn glview_render_cb(obj: *mut Evas_Object) {
         return;
     }
     let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
-        let Some(api) = GlApi::from_raw(elm_glview_gl_api_get(obj)) else {
+        let raw = elm_glview_gl_api_get(obj);
+        if raw.is_null() {
             return;
-        };
+        }
         let mut w = 0;
         let mut h = 0;
         elm_glview_size_get(obj, &mut w, &mut h);
@@ -2414,8 +2431,40 @@ unsafe extern "C" fn glview_render_cb(obj: *mut Evas_Object) {
                 &mut h,
             );
         }
-        if let Some(render) = glview_hooks(obj).render.as_mut() {
-            render(&api, w, h);
+        let api = GlApi {
+            api: raw,
+            obj,
+            w,
+            h,
+            batch: RefCell::new(Vec::new()),
+        };
+        let mut render = glview_hooks(obj).render.take();
+        if let Some(cb) = render.as_mut() {
+            cb(&api, w, h);
+        }
+        glview_hooks(obj).render = render;
+        api.flush();
+    }));
+}
+
+unsafe extern "C" fn glview_gl_del_cb(obj: *mut Evas_Object) {
+    if obj.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let Some(pipeline) = glview_hooks(obj).pipeline.take() else {
+            return;
+        };
+        let raw = elm_glview_gl_api_get(obj);
+        if raw.is_null() {
+            return;
+        }
+        let api = &*raw;
+        if let Some(del) = api.glDeleteProgram {
+            del(pipeline.program);
+        }
+        if let Some(del) = api.glDeleteBuffers {
+            del(1, &pipeline.vbo);
         }
     }));
 }
@@ -2456,14 +2505,33 @@ unsafe extern "C" fn glview_hooks_del(
 }
 
 /// GLES helpers from `elm_glview_gl_api_get`. Safe to call only inside GL callbacks.
-pub struct GlApi(*mut Evas_GL_API);
+///
+/// `fill_rect` batches into one `glDrawArrays` when the GLView shader pipeline
+/// compiled; otherwise it falls back to scissored `glClear` per rectangle.
+pub struct GlApi {
+    api: *mut Evas_GL_API,
+    obj: *mut Evas_Object,
+    w: i32,
+    h: i32,
+    batch: RefCell<Vec<f32>>,
+}
 
 impl GlApi {
     pub fn from_raw(api: *mut Evas_GL_API) -> Option<Self> {
-        if api.is_null() { None } else { Some(Self(api)) }
+        if api.is_null() {
+            None
+        } else {
+            Some(Self {
+                api,
+                obj: std::ptr::null_mut(),
+                w: 0,
+                h: 0,
+                batch: RefCell::new(Vec::new()),
+            })
+        }
     }
     fn api(&self) -> &Evas_GL_API {
-        unsafe { &*self.0 }
+        unsafe { &*self.api }
     }
     pub fn clear_color(&self, r: f32, g: f32, b: f32, a: f32) {
         if let Some(func) = self.api().glClearColor {
@@ -2480,11 +2548,30 @@ impl GlApi {
             unsafe { func(x, y, w, h) };
         }
     }
-    /// Fill a top-left-origin rectangle via `glScissor` + `glClear` (no shaders).
+    fn can_batch(&self) -> bool {
+        !self.obj.is_null() && self.w > 0 && self.h > 0 && glview_hooks(self.obj).pipeline.is_some()
+    }
+    /// Fill a top-left-origin rectangle. Batched when a GLES2 pipeline exists.
     pub fn fill_rect(&self, x: i32, y: i32, w: i32, h: i32, view_h: i32, rgb: [f32; 3]) {
         if w <= 0 || h <= 0 {
             return;
         }
+        if self.can_batch() {
+            let x0 = x as f32;
+            let y0 = y as f32;
+            let x1 = (x + w) as f32;
+            let y1 = (y + h) as f32;
+            let mut batch = self.batch.borrow_mut();
+            for (px, py) in [(x0, y0), (x1, y0), (x0, y1), (x1, y0), (x1, y1), (x0, y1)] {
+                batch.push((px / self.w as f32) * 2.0 - 1.0);
+                batch.push(1.0 - (py / self.h as f32) * 2.0);
+                batch.extend_from_slice(&rgb);
+            }
+            return;
+        }
+        self.fill_rect_scissor(x, y, w, h, view_h, rgb);
+    }
+    fn fill_rect_scissor(&self, x: i32, y: i32, w: i32, h: i32, view_h: i32, rgb: [f32; 3]) {
         let gy = view_h - y - h;
         let api = self.api();
         if let Some(enable) = api.glEnable {
@@ -2498,6 +2585,155 @@ impl GlApi {
         if let Some(disable) = api.glDisable {
             unsafe { disable(GL_SCISSOR_TEST) };
         }
+    }
+    fn flush(&self) {
+        let verts = self.batch.take();
+        if verts.is_empty() || self.obj.is_null() {
+            return;
+        }
+        let Some(pipeline) = glview_hooks(self.obj).pipeline.as_ref() else {
+            return;
+        };
+        let api = self.api();
+        let Some(use_program) = api.glUseProgram else {
+            return;
+        };
+        let Some(bind) = api.glBindBuffer else {
+            return;
+        };
+        let Some(buffer_data) = api.glBufferData else {
+            return;
+        };
+        let Some(attrib) = api.glVertexAttribPointer else {
+            return;
+        };
+        let Some(enable_attr) = api.glEnableVertexAttribArray else {
+            return;
+        };
+        let Some(draw) = api.glDrawArrays else {
+            return;
+        };
+        let stride = (5 * std::mem::size_of::<f32>()) as GLsizei;
+        let count = (verts.len() / 5) as GLsizei;
+        unsafe {
+            if let Some(disable) = api.glDisable {
+                disable(GL_SCISSOR_TEST);
+            }
+            use_program(pipeline.program);
+            bind(GL_ARRAY_BUFFER, pipeline.vbo);
+            buffer_data(
+                GL_ARRAY_BUFFER,
+                (verts.len() * std::mem::size_of::<f32>()) as GLsizeiptr,
+                verts.as_ptr() as *const c_void,
+                GL_DYNAMIC_DRAW,
+            );
+            attrib(
+                pipeline.a_pos as GLuint,
+                2,
+                GL_FLOAT,
+                GL_FALSE as GLboolean,
+                stride,
+                std::ptr::null(),
+            );
+            enable_attr(pipeline.a_pos as GLuint);
+            attrib(
+                pipeline.a_col as GLuint,
+                3,
+                GL_FLOAT,
+                GL_FALSE as GLboolean,
+                stride,
+                (2 * std::mem::size_of::<f32>()) as *const c_void,
+            );
+            enable_attr(pipeline.a_col as GLuint);
+            draw(GL_TRIANGLES, 0, count);
+            use_program(0);
+            bind(GL_ARRAY_BUFFER, 0);
+        }
+    }
+}
+
+fn compile_shader(api: &Evas_GL_API, kind: GLenum, src: &CStr) -> Option<GLuint> {
+    let create = api.glCreateShader?;
+    let source = api.glShaderSource?;
+    let compile = api.glCompileShader?;
+    let getiv = api.glGetShaderiv?;
+    let sh = unsafe { create(kind) };
+    if sh == 0 {
+        return None;
+    }
+    let ptr = src.as_ptr();
+    unsafe {
+        source(sh, 1, &ptr, std::ptr::null());
+        compile(sh);
+        let mut ok = 0;
+        getiv(sh, GL_COMPILE_STATUS, &mut ok);
+        if ok == 0 {
+            if let Some(del) = api.glDeleteShader {
+                del(sh);
+            }
+            return None;
+        }
+    }
+    Some(sh)
+}
+
+fn compile_gl_pipeline(raw: *mut Evas_GL_API) -> Option<GlPipeline> {
+    if raw.is_null() {
+        return None;
+    }
+    let api = unsafe { &*raw };
+    let vs = compile_shader(
+        api,
+        GL_VERTEX_SHADER,
+        c"attribute vec2 a_pos; attribute vec3 a_col; varying vec3 v_col; void main(){ gl_Position = vec4(a_pos, 0.0, 1.0); v_col = a_col; }",
+    )?;
+    let fs = compile_shader(
+        api,
+        GL_FRAGMENT_SHADER,
+        c"precision mediump float; varying vec3 v_col; void main(){ gl_FragColor = vec4(v_col, 1.0); }",
+    )?;
+    let create_prog = api.glCreateProgram?;
+    let attach = api.glAttachShader?;
+    let bind_attr = api.glBindAttribLocation?;
+    let link = api.glLinkProgram?;
+    let getiv = api.glGetProgramiv?;
+    let gen_buffers = api.glGenBuffers?;
+    let prog = unsafe { create_prog() };
+    if prog == 0 {
+        return None;
+    }
+    unsafe {
+        attach(prog, vs);
+        attach(prog, fs);
+        bind_attr(prog, 0, c"a_pos".as_ptr());
+        bind_attr(prog, 1, c"a_col".as_ptr());
+        link(prog);
+        let mut ok = 0;
+        getiv(prog, GL_LINK_STATUS, &mut ok);
+        if let Some(del) = api.glDeleteShader {
+            del(vs);
+            del(fs);
+        }
+        if ok == 0 {
+            if let Some(del) = api.glDeleteProgram {
+                del(prog);
+            }
+            return None;
+        }
+        let mut vbo = 0;
+        gen_buffers(1, &mut vbo);
+        if vbo == 0 {
+            if let Some(del) = api.glDeleteProgram {
+                del(prog);
+            }
+            return None;
+        }
+        Some(GlPipeline {
+            program: prog,
+            vbo,
+            a_pos: 0,
+            a_col: 1,
+        })
     }
 }
 
