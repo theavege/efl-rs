@@ -51,3 +51,12 @@ The entry widget is a box where the user can enter text. It supports the followi
         .with_tooltip("HOME")
         .with_callback(move |wgt| println!("{} is Changed", wgt.text()));
 ```
+
+# [Datetime](https://www.enlightenment.org/develop/legacy/program_guide/widgets/datetime)
+
+A date and time field. Values use `Tm`.
+
+```rust
+    let dt = efltk::Datetime::new(parent);
+    dt.set_value(efltk::Tm::default());
+```

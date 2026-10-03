@@ -5,17 +5,17 @@ on:
   schedule:
     - cron: '0 0 1 * *'
   pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
-      - 'alpha/**'
 
 jobs:
   make:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
-      fail-fast: false
       matrix:
         os:
           - ubuntu-latest

@@ -27,6 +27,16 @@ CI scripts: [Linux](.github/workflows/make.sh), [workflow](.github/workflows/mak
 efltk = "0.0.7"
 ```
 
+## Examples
+
+```sh
+cargo run -p efltk --example simple
+cargo run -p efltk --example snake
+cargo run -p efltk --example floppy_bird
+```
+
+`snake` and `floppy_bird` are LÖVE-style loops (`load` / `update` / `draw` / `keypressed`, plus click-to-flap on Floppy Bird) drawn with `GLView`.
+
 ## Work in process
 
 - [x] [Widgets](https://www.enlightenment.org/_legacy_embed/widgetslist.html)
@@ -54,7 +64,11 @@ efltk = "0.0.7"
       - [x] [List](docs/elm_selectors.md#List) - is used to store data in list form.
       - [x] [SegmentControl](docs/elm_selectors.md#SegmentControl) - Horizontal selector
       - [x] [Menu](docs/elm_selectors.md#Menu) - Popup selector
-  - [x] Extra widgets: Calendar, Clock, ColorSelector, FileSelector, FileEntry
+      - [x] [Hoversel](docs/elm_selectors.md#Hoversel) - Dropdown selector
+      - [x] [Diskselector](docs/elm_selectors.md#Diskselector) - Rotary selector
+      - [x] [Toolbar](docs/elm_selectors.md#Toolbar) - Item bar
+      - [x] [Genlist](docs/elm_selectors.md#Genlist) - Virtualized list
+  - [x] Extra widgets: Calendar, Clock, ColorSelector, FileSelector, FileEntry, Bg, Panel, Notify, Photo, Datetime, Grid, Flip, Hover, Ctxpopup, Index, Dayselector, Actionslider, Bubble, Photocam, Slideshow, Gengrid, Map, Video, Web, Glview, Conformant, Layout, Multibuttonentry, Combobox
 
 ## Transition Table
 

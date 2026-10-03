@@ -7,9 +7,12 @@
 mod widget_tests {
     use crate::prelude::*;
     use crate::{
-        Box, Button, Calendar, Check, Clock, ColorSelector, Entry, FileEntry, FileSelector, Frame,
-        Icon, Image, Label, List, Menu, Naviframe, Panes, Popup, ProgressBar, Radio, Scroller,
-        SegmentControl, Separator, Slider, Spinner, Table, Window,
+        Actionslider, Bg, Box, Bubble, Button, Calendar, Check, Clock, ColorSelector, Combobox,
+        Conformant, Ctxpopup, Datetime, Dayselector, Diskselector, Entry, FileEntry, FileSelector,
+        Flip, Frame, Gengrid, Genlist, Glview, Grid, Hover, Hoversel, Icon, Image, Index, Label,
+        Layout, List, Map, Menu, Multibuttonentry, Naviframe, Notify, Panel, Panes, Photo,
+        Photocam, Popup, ProgressBar, Radio, Scroller, SegmentControl, Separator, Slider,
+        Slideshow, Spinner, Table, Toolbar, Video, Web, Window,
     };
 
     #[test]
@@ -282,6 +285,199 @@ mod widget_tests {
         requires_table_ext(&Table::default());
         requires_window_ext(&Window::default());
     }
+
+    #[test]
+    fn test_alpha8_remaining_widgets() {
+        fn requires_widget_ext<T: WidgetExt>(_: &T) {}
+        fn requires_container_ext<T: ContainerExt>(_: &T) {}
+        fn requires_selector_ext<T: SelectorExt>(_: &T) {}
+        fn requires_bg_ext<T: BgExt>(_: &T) {}
+        fn requires_panel_ext<T: PanelExt>(_: &T) {}
+        fn requires_notify_ext<T: NotifyExt>(_: &T) {}
+        fn requires_photo_ext<T: PhotoExt>(_: &T) {}
+        fn requires_datetime_ext<T: DatetimeExt>(_: &T) {}
+        fn requires_hoversel_ext<T: HoverselExt>(_: &T) {}
+        fn requires_diskselector_ext<T: DiskselectorExt>(_: &T) {}
+        fn requires_toolbar_ext<T: ToolbarExt>(_: &T) {}
+        fn requires_genlist_ext<T: GenlistExt>(_: &T) {}
+        fn requires_input_tm<T: InputExt<crate::Tm>>(_: &T) {}
+
+        let widgets = (
+            Bg::default(),
+            Datetime::default(),
+            Diskselector::default(),
+            Genlist::default(),
+            Hoversel::default(),
+            Notify::default(),
+            Panel::default(),
+            Photo::default(),
+            Toolbar::default(),
+        );
+        assert!(!widgets.0.is_set());
+        assert!(!widgets.1.is_set());
+        assert!(!widgets.2.is_set());
+        assert!(!widgets.3.is_set());
+        assert!(!widgets.4.is_set());
+        assert!(!widgets.5.is_set());
+        assert!(!widgets.6.is_set());
+        assert!(!widgets.7.is_set());
+        assert!(!widgets.8.is_set());
+
+        requires_widget_ext(&widgets.0);
+        requires_container_ext(&Notify::default());
+        requires_container_ext(&Panel::default());
+        requires_selector_ext(&Diskselector::default());
+        requires_selector_ext(&Genlist::default());
+        requires_selector_ext(&Toolbar::default());
+        requires_bg_ext(&Bg::default());
+        requires_panel_ext(&Panel::default());
+        requires_notify_ext(&Notify::default());
+        requires_photo_ext(&Photo::default());
+        requires_datetime_ext(&Datetime::default());
+        requires_hoversel_ext(&Hoversel::default());
+        requires_diskselector_ext(&Diskselector::default());
+        requires_toolbar_ext(&Toolbar::default());
+        requires_genlist_ext(&Genlist::default());
+        requires_input_tm(&Datetime::default());
+
+        assert!(!Bg::default().set_file("missing.png"));
+        Panel::default().toggle();
+        assert!(!Panel::default().hidden());
+        Notify::default().set_timeout(1.0);
+        assert!(!Photo::default().set_file("missing.png"));
+        DatetimeExt::set_value(&Datetime::default(), crate::Tm::default());
+        Diskselector::default().clear();
+        Hoversel::default().clear();
+        Toolbar::default().clear();
+        Genlist::default().clear();
+        assert_eq!(Genlist::default().length(), 0);
+        assert_eq!(Hoversel::default().length(), 0);
+        assert_eq!(Diskselector::default().value(), -1);
+        assert_eq!(Toolbar::default().value(), -1);
+        assert_eq!(Genlist::default().value(), -1);
+    }
+
+    #[test]
+    fn test_alpha8_more_widgets() {
+        fn requires_widget_ext<T: WidgetExt>(_: &T) {}
+        fn requires_container_ext<T: ContainerExt>(_: &T) {}
+        fn requires_grid_ext<T: GridExt>(_: &T) {}
+        fn requires_flip_ext<T: FlipExt>(_: &T) {}
+        fn requires_hover_ext<T: HoverExt>(_: &T) {}
+        fn requires_ctxpopup_ext<T: CtxpopupExt>(_: &T) {}
+        fn requires_index_ext<T: IndexExt>(_: &T) {}
+        fn requires_dayselector_ext<T: DayselectorExt>(_: &T) {}
+        fn requires_actionslider_ext<T: ActionsliderExt>(_: &T) {}
+        fn requires_bubble_ext<T: BubbleExt>(_: &T) {}
+        fn requires_photocam_ext<T: PhotocamExt>(_: &T) {}
+
+        assert!(!Actionslider::default().is_set());
+        assert!(!Bubble::default().is_set());
+        assert!(!Ctxpopup::default().is_set());
+        assert!(!Dayselector::default().is_set());
+        assert!(!Flip::default().is_set());
+        assert!(!Grid::default().is_set());
+        assert!(!Hover::default().is_set());
+        assert!(!Index::default().is_set());
+        assert!(!Photocam::default().is_set());
+
+        requires_widget_ext(&Index::default());
+        requires_container_ext(&Grid::default());
+        requires_container_ext(&Flip::default());
+        requires_container_ext(&Hover::default());
+        requires_container_ext(&Bubble::default());
+        requires_grid_ext(&Grid::default());
+        requires_flip_ext(&Flip::default());
+        requires_hover_ext(&Hover::default());
+        requires_ctxpopup_ext(&Ctxpopup::default());
+        requires_index_ext(&Index::default());
+        requires_dayselector_ext(&Dayselector::default());
+        requires_actionslider_ext(&Actionslider::default());
+        requires_bubble_ext(&Bubble::default());
+        requires_photocam_ext(&Photocam::default());
+
+        Grid::default().pack(&Button::default(), 0, 0, 50, 50);
+        Grid::default().clear(false);
+        Flip::default().go(FlipMode::RotateY);
+        Hover::default().set_target(&Button::default());
+        Ctxpopup::default().dismiss();
+        Index::default().clear();
+        assert!(!Dayselector::default().day_selected(Weekday::Mon));
+        Actionslider::default().set_magnet(ActionPos::All);
+        assert!(!Photocam::default().set_file("missing.png"));
+    }
+
+    #[test]
+    fn test_alpha8_heavy_widgets() {
+        fn requires_widget_ext<T: WidgetExt>(_: &T) {}
+        fn requires_container_ext<T: ContainerExt>(_: &T) {}
+        fn requires_selector_ext<T: SelectorExt>(_: &T) {}
+        fn requires_gengrid_ext<T: GengridExt>(_: &T) {}
+        fn requires_slideshow_ext<T: SlideshowExt>(_: &T) {}
+        fn requires_map_ext<T: MapExt>(_: &T) {}
+        fn requires_video_ext<T: VideoExt>(_: &T) {}
+        fn requires_web_ext<T: WebExt>(_: &T) {}
+        fn requires_glview_ext<T: GlviewExt>(_: &T) {}
+        fn requires_conformant_ext<T: ConformantExt>(_: &T) {}
+        fn requires_layout_ext<T: LayoutExt>(_: &T) {}
+        fn requires_multibuttonentry_ext<T: MultibuttonentryExt>(_: &T) {}
+        fn requires_combobox_ext<T: ComboboxExt>(_: &T) {}
+
+        assert!(!Combobox::default().is_set());
+        assert!(!Conformant::default().is_set());
+        assert!(!Gengrid::default().is_set());
+        assert!(!Glview::default().is_set());
+        assert!(!Layout::default().is_set());
+        assert!(!Map::default().is_set());
+        assert!(!Multibuttonentry::default().is_set());
+        assert!(!Slideshow::default().is_set());
+        assert!(!Video::default().is_set());
+        assert!(!Web::default().is_set());
+
+        requires_widget_ext(&Web::default());
+        requires_container_ext(&Conformant::default());
+        requires_container_ext(&Layout::default());
+        requires_selector_ext(&Gengrid::default());
+        requires_selector_ext(&Multibuttonentry::default());
+        requires_selector_ext(&Combobox::default());
+        requires_gengrid_ext(&Gengrid::default());
+        requires_slideshow_ext(&Slideshow::default());
+        requires_map_ext(&Map::default());
+        requires_video_ext(&Video::default());
+        requires_web_ext(&Web::default());
+        requires_glview_ext(&Glview::default());
+        requires_conformant_ext(&Conformant::default());
+        requires_layout_ext(&Layout::default());
+        requires_multibuttonentry_ext(&Multibuttonentry::default());
+        requires_combobox_ext(&Combobox::default());
+
+        Gengrid::default().clear();
+        Slideshow::default().clear();
+        Slideshow::default().next();
+        Slideshow::default().previous();
+        assert_eq!(Slideshow::default().length(), 0);
+        assert_eq!(Map::default().zoom(), 0);
+        Map::default().set_paused(true);
+        Video::default().pause();
+        Video::default().stop();
+        assert!(!Video::default().set_file("missing.mp4"));
+        assert!(!Web::default().set_url("https://example.com"));
+        Glview::default().changed();
+        assert!(Glview::default().gl_api().is_none());
+        assert_eq!(Glview::default().gl_size(), (0, 0));
+        Glview::default().with_init(|| {});
+        Glview::default().with_render(|_, _, _| {});
+        Glview::default().with_key_down(|_| {});
+        Glview::default().with_mouse_down(|_, _, _| {});
+        Glview::default().with_tick(0.1, |_| {});
+        assert!(!Layout::default().set_file("missing.edj", ""));
+        Multibuttonentry::default().clear();
+        Combobox::default().hover_end();
+        assert!(!Combobox::default().expanded());
+        assert_eq!(Gengrid::default().value(), -1);
+        assert_eq!(Multibuttonentry::default().value(), -1);
+        assert_eq!(Combobox::default().value(), -1);
+    }
 }
 
 #[cfg(test)]
@@ -326,6 +522,21 @@ mod trait_method_tests {
         assert_eq!(ScrollPolicy::default(), ScrollPolicy::Auto);
         assert_ne!(ScrollPolicy::Auto, ScrollPolicy::On);
         assert_ne!(ScrollPolicy::On, ScrollPolicy::Off);
+    }
+
+    #[test]
+    fn test_bg_option_enum() {
+        assert_eq!(BgOption::default(), BgOption::Scale);
+        assert_ne!(BgOption::Center, BgOption::Stretch);
+        assert_ne!(BgOption::Tile, BgOption::Scale);
+    }
+
+    #[test]
+    fn test_weekday_action_bubble_flip_enums() {
+        assert_eq!(Weekday::default(), Weekday::Sun);
+        assert_eq!(ActionPos::default(), ActionPos::Center);
+        assert_eq!(BubblePos::default(), BubblePos::TopLeft);
+        assert_eq!(FlipMode::default(), FlipMode::RotateY);
     }
 
     #[test]
@@ -764,5 +975,50 @@ mod crate_exports {
         let _: Option<crate::EflResult<()>> = None;
         fn needs_cstring_ext<T: crate::CStringExt + ?Sized>(_: &T) {}
         needs_cstring_ext("ok");
+    }
+}
+
+#[cfg(test)]
+mod ffi_hygiene {
+    fn assert_not_send<T>() {
+        trait AmbiguousIfSend<A> {
+            fn check() {}
+        }
+        impl<T> AmbiguousIfSend<()> for T {}
+        impl<T: Send> AmbiguousIfSend<u8> for T {}
+        let _ = <T as AmbiguousIfSend<_>>::check;
+    }
+
+    fn assert_not_sync<T>() {
+        trait AmbiguousIfSync<A> {
+            fn check() {}
+        }
+        impl<T> AmbiguousIfSync<()> for T {}
+        impl<T: Sync> AmbiguousIfSync<u8> for T {}
+        let _ = <T as AmbiguousIfSync<_>>::check;
+    }
+
+    #[test]
+    fn wrappers_are_neither_send_nor_sync() {
+        assert_not_send::<crate::Button>();
+        assert_not_sync::<crate::Button>();
+        assert_not_send::<crate::Window>();
+        assert_not_sync::<crate::Window>();
+        assert_not_send::<crate::Timer>();
+        assert_not_sync::<crate::Timer>();
+        assert_not_send::<crate::WidgetItem>();
+        assert_not_sync::<crate::WidgetItem>();
+        assert_not_send::<crate::Popup>();
+        assert_not_sync::<crate::Popup>();
+        assert_not_send::<crate::Genlist>();
+        assert_not_sync::<crate::Genlist>();
+    }
+
+    #[test]
+    fn catch_unwind_does_not_escape() {
+        let panicked = std::panic::catch_unwind(|| {
+            panic!("user callback");
+        });
+        assert!(panicked.is_err());
     }
 }

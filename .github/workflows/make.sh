@@ -9,9 +9,9 @@ function _setup
             case ${ID:?} in
                 debian | ubuntu)
                     sudo apt-get update
-                    sudo apt-get install -y "${DEPS[@]}" libefl-all-dev clang libclang-dev
+                    sudo apt-get install -y "${DEPS[@]}" lib{efl-all,clang}-dev clang
                     ;;
-                fedora | alma) sudo dnf install -y "${DEPS[@]}" efl-devel clang-devel ;;
+                fedora | alma) sudo dnf install -y "${DEPS[@]}" {efl,clang}-devel ;;
             esac 1>/dev/null
             shellcheck --external-sources "${0}"
             shfmt -ci -fn -i 4 -d "${0}"

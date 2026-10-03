@@ -9,9 +9,12 @@ pub use std::sync::mpsc::Sender;
 use {
     efltk_sys::*,
     std::{
-        ffi::{CStr, CString, c_void},
+        cell::RefCell,
+        ffi::{CStr, CString, c_char, c_void},
+        marker::PhantomData,
+        panic::{AssertUnwindSafe, catch_unwind},
         ptr::NonNull,
-        sync::mpsc::channel,
+        sync::{OnceLock, mpsc::channel},
     },
 };
 
@@ -70,6 +73,132 @@ pub enum PanelOrient {
     Right,
 }
 
+impl From<PanelOrient> for Elm_Panel_Orient {
+    fn from(orient: PanelOrient) -> Self {
+        match orient {
+            PanelOrient::Top => Elm_Panel_Orient_ELM_PANEL_ORIENT_TOP,
+            PanelOrient::Bottom => Elm_Panel_Orient_ELM_PANEL_ORIENT_BOTTOM,
+            PanelOrient::Left => Elm_Panel_Orient_ELM_PANEL_ORIENT_LEFT,
+            PanelOrient::Right => Elm_Panel_Orient_ELM_PANEL_ORIENT_RIGHT,
+        }
+    }
+}
+
+/// How [`BgExt`] displays its image.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum BgOption {
+    Center,
+    #[default]
+    Scale,
+    Stretch,
+    Tile,
+}
+
+impl From<BgOption> for Elm_Bg_Option {
+    fn from(option: BgOption) -> Self {
+        match option {
+            BgOption::Center => Elm_Bg_Option_ELM_BG_OPTION_CENTER,
+            BgOption::Scale => Elm_Bg_Option_ELM_BG_OPTION_SCALE,
+            BgOption::Stretch => Elm_Bg_Option_ELM_BG_OPTION_STRETCH,
+            BgOption::Tile => Elm_Bg_Option_ELM_BG_OPTION_TILE,
+        }
+    }
+}
+
+/// Day of week for [`DayselectorExt`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum Weekday {
+    #[default]
+    Sun,
+    Mon,
+    Tue,
+    Wed,
+    Thu,
+    Fri,
+    Sat,
+}
+
+impl From<Weekday> for Elm_Dayselector_Day {
+    fn from(day: Weekday) -> Self {
+        match day {
+            Weekday::Sun => Elm_Dayselector_Day_ELM_DAYSELECTOR_SUN,
+            Weekday::Mon => Elm_Dayselector_Day_ELM_DAYSELECTOR_MON,
+            Weekday::Tue => Elm_Dayselector_Day_ELM_DAYSELECTOR_TUE,
+            Weekday::Wed => Elm_Dayselector_Day_ELM_DAYSELECTOR_WED,
+            Weekday::Thu => Elm_Dayselector_Day_ELM_DAYSELECTOR_THU,
+            Weekday::Fri => Elm_Dayselector_Day_ELM_DAYSELECTOR_FRI,
+            Weekday::Sat => Elm_Dayselector_Day_ELM_DAYSELECTOR_SAT,
+        }
+    }
+}
+
+/// Indicator/magnet position for [`ActionsliderExt`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum ActionPos {
+    None,
+    Left,
+    #[default]
+    Center,
+    Right,
+    All,
+}
+
+impl From<ActionPos> for Elm_Actionslider_Pos {
+    fn from(pos: ActionPos) -> Self {
+        match pos {
+            ActionPos::None => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_NONE,
+            ActionPos::Left => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_LEFT,
+            ActionPos::Center => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_CENTER,
+            ActionPos::Right => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_RIGHT,
+            ActionPos::All => Elm_Actionslider_Pos_ELM_ACTIONSLIDER_ALL,
+        }
+    }
+}
+
+/// Arrow corner for [`BubbleExt`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum BubblePos {
+    #[default]
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+impl From<BubblePos> for Elm_Bubble_Pos {
+    fn from(pos: BubblePos) -> Self {
+        match pos {
+            BubblePos::TopLeft => Elm_Bubble_Pos_ELM_BUBBLE_POS_TOP_LEFT,
+            BubblePos::TopRight => Elm_Bubble_Pos_ELM_BUBBLE_POS_TOP_RIGHT,
+            BubblePos::BottomLeft => Elm_Bubble_Pos_ELM_BUBBLE_POS_BOTTOM_LEFT,
+            BubblePos::BottomRight => Elm_Bubble_Pos_ELM_BUBBLE_POS_BOTTOM_RIGHT,
+        }
+    }
+}
+
+/// Animation used by [`FlipExt::go`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum FlipMode {
+    #[default]
+    RotateY,
+    RotateX,
+    CubeLeft,
+    PageLeft,
+    CrossFade,
+}
+
+impl From<FlipMode> for Elm_Flip_Mode {
+    fn from(mode: FlipMode) -> Self {
+        match mode {
+            FlipMode::RotateY => Elm_Flip_Mode_ELM_FLIP_ROTATE_Y_CENTER_AXIS,
+            FlipMode::RotateX => Elm_Flip_Mode_ELM_FLIP_ROTATE_X_CENTER_AXIS,
+            FlipMode::CubeLeft => Elm_Flip_Mode_ELM_FLIP_CUBE_LEFT,
+            FlipMode::PageLeft => Elm_Flip_Mode_ELM_FLIP_PAGE_LEFT,
+            FlipMode::CrossFade => Elm_Flip_Mode_ELM_FLIP_CROSS_FADE,
+        }
+    }
+}
+
 /// Cursor styles that can be set on widgets.
 ///
 /// Controls the mouse cursor appearance when hovering over a widget.
@@ -116,14 +245,15 @@ impl From<ScrollPolicy> for Elm_Scroller_Policy {
 
 /// Start the EFL main loop with a window.
 ///
-/// This function initializes the EFL libraries, creates the window using the provided
-/// function, and starts the main event loop.
+/// Initializes EFL, creates the window from `func`, then runs until the last
+/// window closes. Used by [`Component::run`] and standalone examples such as
+/// `examples/snake.rs`.
 ///
 /// # Panics
 ///
 /// Panics if any command-line argument contains a null byte, which should never happen
 /// in normal circumstances.
-fn run(func: impl Fn() -> super::Window) {
+pub fn run(func: impl Fn() -> super::Window) {
     let c_args: Vec<CString> = std::env::args()
         .map(|arg| arg.expect_cstring("command-line argument"))
         .collect();
@@ -173,7 +303,9 @@ impl super::Timer {
         unsafe {
             let data = ecore_timer_del(timer.as_ptr());
             if !data.is_null() {
-                drop(Box::from_raw(data as *mut Box<EcoreCb>));
+                let _ = catch_unwind(AssertUnwindSafe(|| {
+                    drop(Box::from_raw(data as *mut Box<EcoreCb>));
+                }));
             }
         }
     }
@@ -188,11 +320,12 @@ fn box_callback<T: WidgetExt + 'static, F: FnMut(T) + 'static>(func: F) -> *mut 
 }
 
 unsafe fn drop_boxed_callback<T>(data: *mut c_void) {
-    if !data.is_null() {
-        unsafe {
-            drop(Box::from_raw(data as *mut Callback<T>));
-        }
+    if data.is_null() {
+        return;
     }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        drop(Box::from_raw(data as *mut Callback<T>));
+    }));
 }
 
 unsafe extern "C" fn smart_cb<T: WidgetExt>(
@@ -200,10 +333,13 @@ unsafe extern "C" fn smart_cb<T: WidgetExt>(
     object: *mut Evas_Object,
     _event_info: *mut c_void,
 ) {
-    unsafe {
+    if data.is_null() || object.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
         let callback = &mut *(data as *mut Callback<T>);
         (callback.0)(T::from_raw(object));
-    }
+    }));
 }
 
 unsafe extern "C" fn drop_smart_cb<T>(
@@ -257,17 +393,108 @@ fn attach_item_del_cb<T>(item: *mut Evas_Object, data: *mut Callback<T>) {
     unsafe { elm_object_item_del_cb_set(item, Some(drop_smart_cb::<T>)) };
 }
 
-pub(crate) unsafe extern "C" fn ecore_task_cb(data: *mut c_void) -> Eina_Bool {
-    unsafe {
-        let keep = {
-            let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
-            func()
-        };
-        if !keep {
-            drop(Box::from_raw(data as *mut Box<EcoreCb>));
-        }
-        keep as Eina_Bool
+pub(crate) fn eina_list_len(mut list: *const Eina_List) -> u32 {
+    let mut count = 0;
+    while !list.is_null() {
+        count += 1;
+        list = unsafe { (*list).next };
     }
+    count
+}
+
+unsafe extern "C" fn genlist_text_get(
+    data: *mut c_void,
+    _obj: *mut Evas_Object,
+    _part: *const c_char,
+) -> *mut c_char {
+    if data.is_null() {
+        return std::ptr::null_mut();
+    }
+    catch_unwind(AssertUnwindSafe(|| {
+        let bytes = unsafe { CStr::from_ptr(data as *const c_char) }.to_bytes();
+        CString::new(bytes)
+            .map(CString::into_raw)
+            .unwrap_or(std::ptr::null_mut())
+    }))
+    .unwrap_or(std::ptr::null_mut())
+}
+
+unsafe extern "C" fn genlist_label_del(data: *mut c_void, _obj: *mut Evas_Object) {
+    if data.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        drop(CString::from_raw(data as *mut c_char));
+    }));
+}
+
+pub(crate) fn genlist_label_class() -> *mut Elm_Genlist_Item_Class {
+    let itc = unsafe { elm_genlist_item_class_new() };
+    if !itc.is_null() {
+        unsafe {
+            (*itc).item_style = c"default".as_ptr();
+            (*itc).func.text_get = Some(genlist_text_get);
+            (*itc).func.del = Some(genlist_label_del);
+        }
+    }
+    itc
+}
+
+pub(crate) fn gengrid_label_class() -> *mut Elm_Gengrid_Item_Class {
+    let itc = unsafe { elm_gengrid_item_class_new() };
+    if !itc.is_null() {
+        unsafe {
+            (*itc).item_style = c"default".as_ptr();
+            (*itc).func.text_get = Some(genlist_text_get);
+            (*itc).func.del = Some(genlist_label_del);
+        }
+    }
+    itc
+}
+
+unsafe extern "C" fn slideshow_item_get(
+    data: *mut c_void,
+    obj: *mut Evas_Object,
+) -> *mut Evas_Object {
+    if data.is_null() || obj.is_null() {
+        return std::ptr::null_mut();
+    }
+    catch_unwind(AssertUnwindSafe(|| {
+        let img = unsafe { elm_image_add(obj) };
+        if img.is_null() {
+            return std::ptr::null_mut();
+        }
+        unsafe { elm_image_file_set(img, data as *const c_char, std::ptr::null()) };
+        img
+    }))
+    .unwrap_or(std::ptr::null_mut())
+}
+
+pub(crate) fn slideshow_image_class() -> *const Elm_Slideshow_Item_Class {
+    static ITC: OnceLock<Elm_Slideshow_Item_Class> = OnceLock::new();
+    ITC.get_or_init(|| Elm_Slideshow_Item_Class {
+        func: Elm_Slideshow_Item_Class_Func {
+            get: Some(slideshow_item_get),
+            del: Some(genlist_label_del),
+        },
+    })
+}
+
+pub(crate) unsafe extern "C" fn ecore_task_cb(data: *mut c_void) -> Eina_Bool {
+    if data.is_null() {
+        return false as Eina_Bool;
+    }
+    let keep = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let func: &mut Box<EcoreCb> = &mut *(data as *mut Box<EcoreCb>);
+        func()
+    }))
+    .unwrap_or(false);
+    if !keep {
+        let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+            drop(Box::from_raw(data as *mut Box<EcoreCb>));
+        }));
+    }
+    keep as Eina_Bool
 }
 
 impl super::WidgetItem {
@@ -275,7 +502,7 @@ impl super::WidgetItem {
         self.0.expect("Empty Evas_Object!").as_ptr()
     }
     pub fn from_raw(obj: *mut Evas_Object) -> Self {
-        Self(NonNull::new(obj))
+        Self(NonNull::new(obj), PhantomData)
     }
     pub fn is_set(&self) -> bool {
         self.0.is_some()
@@ -1446,6 +1673,1178 @@ pub trait ColorSelExt: InputExt<(i32, i32, i32, i32)> {
             .with_signal(Signal::Changed, |wgt| wgt.call_signal(Signal::Selected));
         prt.add(&elm);
         elm
+    }
+}
+
+/// Trait for background widgets.
+pub trait BgExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_bg_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_color(self, r: i32, g: i32, b: i32) -> Self {
+        self.set_color(r, g, b);
+        self
+    }
+    fn set_color(&self, r: i32, g: i32, b: i32) {
+        if self.is_set() {
+            unsafe { elm_bg_color_set(self.as_raw(), r, g, b) };
+        }
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("BgExt::set_file");
+        unsafe { elm_bg_file_set(self.as_raw(), cfile.as_ptr(), std::ptr::null()) != 0 }
+    }
+    fn with_option(self, option: BgOption) -> Self {
+        if self.is_set() {
+            unsafe { elm_bg_option_set(self.as_raw(), Elm_Bg_Option::from(option)) };
+        }
+        self
+    }
+}
+
+/// Trait for sliding panel widgets.
+pub trait PanelExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_panel_add(prt.as_raw()) })
+            .with_orient(PanelOrient::Left)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_orient(self, orient: PanelOrient) -> Self {
+        if self.is_set() {
+            unsafe { elm_panel_orient_set(self.as_raw(), Elm_Panel_Orient::from(orient)) };
+        }
+        self
+    }
+    fn set_hidden(&self, hidden: bool) {
+        if self.is_set() {
+            unsafe { elm_panel_hidden_set(self.as_raw(), hidden as Eina_Bool) };
+        }
+    }
+    fn hidden(&self) -> bool {
+        self.is_set() && unsafe { elm_panel_hidden_get(self.as_raw()) != 0 }
+    }
+    fn toggle(&self) {
+        if self.is_set() {
+            unsafe { elm_panel_toggle(self.as_raw()) };
+        }
+    }
+}
+
+/// Trait for notify (toast) widgets.
+pub trait NotifyExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_notify_add(prt.as_raw()) })
+            .with_timeout(3.0)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_timeout(self, timeout: f64) -> Self {
+        self.set_timeout(timeout);
+        self
+    }
+    fn set_timeout(&self, timeout: f64) {
+        if self.is_set() {
+            unsafe { elm_notify_timeout_set(self.as_raw(), timeout) };
+        }
+    }
+    fn with_align(self, horizontal: Align, vertical: Align) -> Self {
+        if self.is_set() {
+            unsafe {
+                elm_notify_align_set(self.as_raw(), f64::from(horizontal), f64::from(vertical))
+            };
+        }
+        self
+    }
+}
+
+/// Trait for photo widgets.
+pub trait PhotoExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_photo_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("PhotoExt::set_file");
+        unsafe { elm_photo_file_set(self.as_raw(), cfile.as_ptr()) != 0 }
+    }
+    fn with_thumb_size(self, size: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_photo_size_set(self.as_raw(), size) };
+        }
+        self
+    }
+}
+
+/// Trait for datetime widgets.
+pub trait DatetimeExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_datetime_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn value(&self) -> super::Tm {
+        let mut tm_ = unsafe { std::mem::zeroed() };
+        if self.is_set() {
+            unsafe { elm_datetime_value_get(self.as_raw(), &mut tm_) };
+        }
+        super::Tm::from_tm(tm_)
+    }
+    fn set_value(&self, value: super::Tm) {
+        if !self.is_set() {
+            return;
+        }
+        let tm_ = value.to_tm();
+        unsafe { elm_datetime_value_set(self.as_raw(), &tm_) };
+    }
+}
+
+/// Trait for hoversel (dropdown) widgets.
+pub trait HoverselExt: WidgetExt + TextExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_hoversel_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn add_item(&self, label: &str) -> super::WidgetItem {
+        if !self.is_set() {
+            return super::WidgetItem::default();
+        }
+        let c_label = label.expect_cstring("HoverselExt::add_item");
+        super::WidgetItem::from_raw(unsafe {
+            elm_hoversel_item_add(
+                self.as_raw(),
+                c_label.as_ptr(),
+                std::ptr::null(),
+                Elm_Icon_Type_ELM_ICON_NONE,
+                None,
+                std::ptr::null(),
+            )
+        })
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        eina_list_len(unsafe { elm_hoversel_items_get(self.as_raw()) })
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_hoversel_clear(self.as_raw()) };
+        }
+    }
+    fn with_items(self, items: &[&str]) -> Self {
+        for item in items {
+            self.add_item(item);
+        }
+        self
+    }
+}
+
+/// Trait for diskselector widgets.
+pub trait DiskselectorExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_diskselector_add(prt.as_raw()) })
+            .with_defaults()
+            .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for toolbar widgets.
+pub trait ToolbarExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_toolbar_add(prt.as_raw()) })
+            .with_defaults()
+            .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for genlist widgets (virtualized list, label items).
+pub trait GenlistExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_genlist_add(prt.as_raw()) })
+            .with_defaults()
+            .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for virtual-coordinate grid widgets.
+pub trait GridExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_grid_add(prt.as_raw()) })
+            .with_grid_size(100, 100)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_grid_size(self, w: i32, h: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_grid_size_set(self.as_raw(), w, h) };
+        }
+        self
+    }
+    fn pack(&self, child: &impl WidgetExt, x: i32, y: i32, w: i32, h: i32) {
+        if !self.is_set() || !child.is_set() {
+            return;
+        }
+        unsafe { elm_grid_pack(self.as_raw(), child.as_raw(), x, y, w, h) };
+        child.show();
+    }
+    fn unpack(&self, child: &impl WidgetExt) {
+        if self.is_set() && child.is_set() {
+            unsafe { elm_grid_unpack(self.as_raw(), child.as_raw()) };
+        }
+    }
+    fn clear(&self, delete_children: bool) {
+        if self.is_set() {
+            unsafe { elm_grid_clear(self.as_raw(), delete_children as Eina_Bool) };
+        }
+    }
+}
+
+/// Trait for flip widgets (two faces).
+pub trait FlipExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_flip_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn go(&self, mode: FlipMode) {
+        if self.is_set() {
+            unsafe { elm_flip_go(self.as_raw(), Elm_Flip_Mode::from(mode)) };
+        }
+    }
+}
+
+/// Trait for hover widgets.
+pub trait HoverExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_hover_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn set_target(&self, target: &impl WidgetExt) {
+        if self.is_set() && target.is_set() {
+            unsafe { elm_hover_target_set(self.as_raw(), target.as_raw()) };
+        }
+    }
+}
+
+/// Trait for context-popup widgets.
+pub trait CtxpopupExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        Self::from_raw(unsafe { elm_ctxpopup_add(prt.as_raw()) }).with_defaults()
+    }
+    fn add_item(&self, label: &str) -> super::WidgetItem {
+        if !self.is_set() {
+            return super::WidgetItem::default();
+        }
+        let c_label = label.expect_cstring("CtxpopupExt::add_item");
+        super::WidgetItem::from_raw(unsafe {
+            elm_ctxpopup_item_append(
+                self.as_raw(),
+                c_label.as_ptr(),
+                std::ptr::null_mut(),
+                None,
+                std::ptr::null(),
+            )
+        })
+    }
+    fn dismiss(&self) {
+        if self.is_set() {
+            unsafe { elm_ctxpopup_dismiss(self.as_raw()) };
+        }
+    }
+    fn with_items(self, items: &[&str]) -> Self {
+        for item in items {
+            self.add_item(item);
+        }
+        self
+    }
+}
+
+/// Trait for index (fast-scroll letter) widgets.
+pub trait IndexExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_index_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn add_item(&self, letter: &str) -> super::WidgetItem {
+        if !self.is_set() {
+            return super::WidgetItem::default();
+        }
+        let c_letter = letter.expect_cstring("IndexExt::add_item");
+        super::WidgetItem::from_raw(unsafe {
+            elm_index_item_append(self.as_raw(), c_letter.as_ptr(), None, std::ptr::null())
+        })
+    }
+    fn go(&self) {
+        if self.is_set() {
+            unsafe { elm_index_level_go(self.as_raw(), 0) };
+        }
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_index_item_clear(self.as_raw()) };
+        }
+    }
+    fn with_items(self, items: &[&str]) -> Self {
+        for item in items {
+            self.add_item(item);
+        }
+        self.go();
+        self
+    }
+}
+
+/// Trait for dayselector widgets.
+pub trait DayselectorExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_dayselector_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn set_day(&self, day: Weekday, selected: bool) {
+        if self.is_set() {
+            unsafe {
+                elm_dayselector_day_selected_set(
+                    self.as_raw(),
+                    Elm_Dayselector_Day::from(day),
+                    selected as Eina_Bool,
+                )
+            };
+        }
+    }
+    fn day_selected(&self, day: Weekday) -> bool {
+        self.is_set()
+            && unsafe {
+                elm_dayselector_day_selected_get(self.as_raw(), Elm_Dayselector_Day::from(day)) != 0
+            }
+    }
+}
+
+/// Trait for actionslider widgets.
+pub trait ActionsliderExt: TextExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_actionslider_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_indicator(self, pos: ActionPos) -> Self {
+        if self.is_set() {
+            unsafe {
+                elm_actionslider_indicator_pos_set(self.as_raw(), Elm_Actionslider_Pos::from(pos))
+            };
+        }
+        self
+    }
+    fn set_magnet(&self, pos: ActionPos) {
+        if self.is_set() {
+            unsafe {
+                elm_actionslider_magnet_pos_set(self.as_raw(), Elm_Actionslider_Pos::from(pos))
+            };
+        }
+    }
+}
+
+/// Trait for bubble widgets.
+pub trait BubbleExt: TextExt + ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_bubble_add(prt.as_raw()) })
+            .with_pos(BubblePos::TopLeft)
+            .with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_pos(self, pos: BubblePos) -> Self {
+        if self.is_set() {
+            unsafe { elm_bubble_pos_set(self.as_raw(), Elm_Bubble_Pos::from(pos)) };
+        }
+        self
+    }
+}
+
+/// Trait for photocam (pannable photo) widgets.
+pub trait PhotocamExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_photocam_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("PhotocamExt::set_file");
+        unsafe {
+            elm_photocam_file_set(self.as_raw(), cfile.as_ptr())
+                == Evas_Load_Error_EVAS_LOAD_ERROR_NONE
+        }
+    }
+    fn with_zoom(self, zoom: f64) -> Self {
+        if self.is_set() {
+            unsafe { elm_photocam_zoom_set(self.as_raw(), zoom) };
+        }
+        self
+    }
+}
+
+/// Trait for gengrid widgets (virtualized grid, label items).
+pub trait GengridExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_gengrid_add(prt.as_raw()) })
+            .with_defaults()
+            .with_signal(Signal::Selected, |wgt| wgt.call_signal(Signal::Changed));
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for slideshow widgets (image-file items).
+pub trait SlideshowExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_slideshow_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn add_item(&self, file: &str) -> super::WidgetItem {
+        if !self.is_set() {
+            return super::WidgetItem::default();
+        }
+        let data = file.expect_cstring("SlideshowExt::add_item").into_raw();
+        super::WidgetItem::from_raw(unsafe {
+            elm_slideshow_item_add(
+                self.as_raw(),
+                slideshow_image_class(),
+                data as *const c_void,
+            )
+        })
+    }
+    fn next(&self) {
+        if self.is_set() {
+            unsafe { elm_slideshow_next(self.as_raw()) };
+        }
+    }
+    fn previous(&self) {
+        if self.is_set() {
+            unsafe { elm_slideshow_previous(self.as_raw()) };
+        }
+    }
+    fn with_timeout(self, timeout: f64) -> Self {
+        if self.is_set() {
+            unsafe { elm_slideshow_timeout_set(self.as_raw(), timeout) };
+        }
+        self
+    }
+    fn clear(&self) {
+        if self.is_set() {
+            unsafe { elm_slideshow_clear(self.as_raw()) };
+        }
+    }
+    fn length(&self) -> u32 {
+        if !self.is_set() {
+            return 0;
+        }
+        unsafe { elm_slideshow_count_get(self.as_raw()) }
+    }
+}
+
+/// Trait for map widgets.
+pub trait MapExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_map_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_zoom(self, zoom: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_map_zoom_set(self.as_raw(), zoom) };
+        }
+        self
+    }
+    fn zoom(&self) -> i32 {
+        if !self.is_set() {
+            return 0;
+        }
+        unsafe { elm_map_zoom_get(self.as_raw()) }
+    }
+    fn set_paused(&self, paused: bool) {
+        if self.is_set() {
+            unsafe { elm_map_paused_set(self.as_raw(), paused as Eina_Bool) };
+        }
+    }
+}
+
+/// Trait for video widgets.
+pub trait VideoExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_video_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_file(self, file: &str) -> Self {
+        self.set_file(file);
+        self
+    }
+    fn set_file(&self, file: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("VideoExt::set_file");
+        unsafe { elm_video_file_set(self.as_raw(), cfile.as_ptr()) != 0 }
+    }
+    fn play(&self) {
+        if self.is_set() {
+            unsafe { elm_video_play(self.as_raw()) };
+        }
+    }
+    fn pause(&self) {
+        if self.is_set() {
+            unsafe { elm_video_pause(self.as_raw()) };
+        }
+    }
+    fn stop(&self) {
+        if self.is_set() {
+            unsafe { elm_video_stop(self.as_raw()) };
+        }
+    }
+}
+
+/// Trait for web widgets.
+pub trait WebExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_web_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn with_url(self, url: &str) -> Self {
+        self.set_url(url);
+        self
+    }
+    fn set_url(&self, url: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let curl = url.expect_cstring("WebExt::set_url");
+        unsafe { elm_web_url_set(self.as_raw(), curl.as_ptr()) != 0 }
+    }
+}
+
+/// Trait for OpenGL view widgets.
+pub trait GlviewExt: WidgetExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_glview_add(prt.as_raw()) }).with_defaults();
+        if elm.is_set() {
+            unsafe {
+                elm_glview_mode_set(elm.as_raw(), Elm_GLView_Mode_ELM_GLVIEW_ALPHA);
+                elm_object_focus_allow_set(elm.as_raw(), true as Eina_Bool);
+                evas_object_focus_set(elm.as_raw(), true as Eina_Bool);
+            };
+        }
+        prt.add(&elm);
+        elm
+    }
+    fn with_gl_size(self, w: i32, h: i32) -> Self {
+        if self.is_set() {
+            unsafe { elm_glview_size_set(self.as_raw(), w, h) };
+        }
+        self
+    }
+    fn gl_size(&self) -> (i32, i32) {
+        let mut w = 0;
+        let mut h = 0;
+        if self.is_set() {
+            unsafe { elm_glview_size_get(self.as_raw(), &mut w, &mut h) };
+        }
+        (w, h)
+    }
+    fn gl_api(&self) -> Option<GlApi> {
+        if !self.is_set() {
+            return None;
+        }
+        GlApi::from_raw(unsafe { elm_glview_gl_api_get(self.as_raw()) })
+    }
+    fn changed(&self) {
+        if self.is_set() {
+            unsafe { elm_glview_changed_set(self.as_raw()) };
+        }
+    }
+    /// `love.load` — GL context is ready.
+    fn with_init<F: FnMut() + 'static>(self, func: F) -> Self {
+        if self.is_set() {
+            glview_hooks(self.as_raw()).init = Some(Box::new(func));
+        }
+        self
+    }
+    /// `love.draw` — called with the Evas GL API and surface size.
+    fn with_render<F: FnMut(&GlApi, i32, i32) + 'static>(self, func: F) -> Self {
+        if self.is_set() {
+            glview_hooks(self.as_raw()).render = Some(Box::new(func));
+        }
+        self
+    }
+    /// `love.keypressed` — EFL keyname (`Up`, `a`, `space`, …).
+    fn with_key_down<F: FnMut(&str) + 'static>(self, func: F) -> Self {
+        if self.is_set() {
+            glview_hooks(self.as_raw()).key = Some(Box::new(func));
+        }
+        self
+    }
+    /// `love.mousepressed` — local x/y and button (1 = left).
+    fn with_mouse_down<F: FnMut(i32, i32, i32) + 'static>(self, func: F) -> Self {
+        if self.is_set() {
+            glview_hooks(self.as_raw()).mouse = Some(Box::new(func));
+        }
+        self
+    }
+    /// `love.update(dt)` plus a redraw request each tick.
+    fn with_tick<F: FnMut(f64) + 'static>(self, dt: f64, mut func: F) -> Self {
+        if self.is_set() {
+            let ptr = self.as_raw();
+            super::Timer::new(dt, move || {
+                func(dt);
+                if !ptr.is_null() {
+                    unsafe { elm_glview_changed_set(ptr) };
+                }
+                true
+            });
+        }
+        self
+    }
+}
+
+const GLVIEW_HOOKS_KEY: &CStr = c"efltk.glview.hooks";
+
+type GlInitCb = Box<dyn FnMut()>;
+type GlRenderCb = Box<dyn FnMut(&GlApi, i32, i32)>;
+type GlKeyCb = Box<dyn FnMut(&str)>;
+type GlMouseCb = Box<dyn FnMut(i32, i32, i32)>;
+
+struct GlviewHooks {
+    init: Option<GlInitCb>,
+    render: Option<GlRenderCb>,
+    key: Option<GlKeyCb>,
+    mouse: Option<GlMouseCb>,
+    wired: bool,
+    pipeline: Option<GlPipeline>,
+}
+
+struct GlPipeline {
+    program: GLuint,
+    vbo: GLuint,
+    a_pos: i32,
+    a_col: i32,
+}
+
+fn glview_hooks(obj: *mut Evas_Object) -> &'static mut GlviewHooks {
+    let key = GLVIEW_HOOKS_KEY.as_ptr();
+    unsafe {
+        let existing = evas_object_data_get(obj, key) as *mut GlviewHooks;
+        if !existing.is_null() {
+            return &mut *existing;
+        }
+        let hooks = Box::into_raw(Box::new(GlviewHooks {
+            init: None,
+            render: None,
+            key: None,
+            mouse: None,
+            wired: false,
+            pipeline: None,
+        }));
+        evas_object_data_set(obj, key, hooks as *const c_void);
+        if !(*hooks).wired {
+            elm_glview_init_func_set(obj, Some(glview_init_cb));
+            elm_glview_render_func_set(obj, Some(glview_render_cb));
+            elm_glview_del_func_set(obj, Some(glview_gl_del_cb));
+            evas_object_event_callback_add(
+                obj,
+                Evas_Callback_Type_EVAS_CALLBACK_KEY_DOWN,
+                Some(glview_key_cb),
+                std::ptr::null_mut(),
+            );
+            evas_object_event_callback_add(
+                obj,
+                Evas_Callback_Type_EVAS_CALLBACK_MOUSE_DOWN,
+                Some(glview_mouse_cb),
+                std::ptr::null_mut(),
+            );
+            evas_object_event_callback_add(
+                obj,
+                Evas_Callback_Type_EVAS_CALLBACK_DEL,
+                Some(glview_hooks_del),
+                hooks as *mut c_void,
+            );
+            (*hooks).wired = true;
+        }
+        &mut *hooks
+    }
+}
+
+unsafe extern "C" fn glview_init_cb(obj: *mut Evas_Object) {
+    if obj.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| {
+        let pipeline = compile_gl_pipeline(unsafe { elm_glview_gl_api_get(obj) });
+        let hooks = glview_hooks(obj);
+        hooks.pipeline = pipeline;
+        let mut init = hooks.init.take();
+        if let Some(cb) = init.as_mut() {
+            cb();
+        }
+        glview_hooks(obj).init = init;
+    }));
+}
+
+unsafe extern "C" fn glview_render_cb(obj: *mut Evas_Object) {
+    if obj.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let raw = elm_glview_gl_api_get(obj);
+        if raw.is_null() {
+            return;
+        }
+        let mut w = 0;
+        let mut h = 0;
+        elm_glview_size_get(obj, &mut w, &mut h);
+        if w <= 0 || h <= 0 {
+            evas_object_geometry_get(
+                obj,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &mut w,
+                &mut h,
+            );
+        }
+        let api = GlApi {
+            api: raw,
+            obj,
+            w,
+            h,
+            batch: RefCell::new(Vec::new()),
+        };
+        let mut render = glview_hooks(obj).render.take();
+        if let Some(cb) = render.as_mut() {
+            cb(&api, w, h);
+        }
+        glview_hooks(obj).render = render;
+        api.flush();
+    }));
+}
+
+unsafe extern "C" fn glview_gl_del_cb(obj: *mut Evas_Object) {
+    if obj.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let Some(pipeline) = glview_hooks(obj).pipeline.take() else {
+            return;
+        };
+        let raw = elm_glview_gl_api_get(obj);
+        if raw.is_null() {
+            return;
+        }
+        let api = &*raw;
+        if let Some(del) = api.glDeleteProgram {
+            del(pipeline.program);
+        }
+        if let Some(del) = api.glDeleteBuffers {
+            del(1, &pipeline.vbo);
+        }
+    }));
+}
+
+unsafe extern "C" fn glview_key_cb(
+    _data: *mut c_void,
+    _e: *mut Evas,
+    obj: *mut Evas_Object,
+    event_info: *mut c_void,
+) {
+    if obj.is_null() || event_info.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let ev = event_info as *mut Evas_Event_Key_Down;
+        if (*ev).keyname.is_null() {
+            return;
+        }
+        let name = CStr::from_ptr((*ev).keyname).to_string_lossy();
+        let mut key = glview_hooks(obj).key.take();
+        if let Some(cb) = key.as_mut() {
+            cb(&name);
+        }
+        glview_hooks(obj).key = key;
+    }));
+}
+
+unsafe extern "C" fn glview_mouse_cb(
+    _data: *mut c_void,
+    _e: *mut Evas,
+    obj: *mut Evas_Object,
+    event_info: *mut c_void,
+) {
+    if obj.is_null() || event_info.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        let ev = event_info as *mut Evas_Event_Mouse_Down;
+        let mut ox = 0;
+        let mut oy = 0;
+        evas_object_geometry_get(
+            obj,
+            &mut ox,
+            &mut oy,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+        );
+        let x = (*ev).canvas.x - ox;
+        let y = (*ev).canvas.y - oy;
+        let button = (*ev).button;
+        let mut mouse = glview_hooks(obj).mouse.take();
+        if let Some(cb) = mouse.as_mut() {
+            cb(x, y, button);
+        }
+        glview_hooks(obj).mouse = mouse;
+    }));
+}
+
+unsafe extern "C" fn glview_hooks_del(
+    data: *mut c_void,
+    _e: *mut Evas,
+    _obj: *mut Evas_Object,
+    _event_info: *mut c_void,
+) {
+    if data.is_null() {
+        return;
+    }
+    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
+        drop(Box::from_raw(data as *mut GlviewHooks));
+    }));
+}
+
+/// GLES helpers from `elm_glview_gl_api_get`. Safe to call only inside GL callbacks.
+///
+/// `fill_rect` batches into one `glDrawArrays` when the GLView shader pipeline
+/// compiled; otherwise it falls back to scissored `glClear` per rectangle.
+pub struct GlApi {
+    api: *mut Evas_GL_API,
+    obj: *mut Evas_Object,
+    w: i32,
+    h: i32,
+    batch: RefCell<Vec<f32>>,
+}
+
+impl GlApi {
+    pub fn from_raw(api: *mut Evas_GL_API) -> Option<Self> {
+        if api.is_null() {
+            None
+        } else {
+            Some(Self {
+                api,
+                obj: std::ptr::null_mut(),
+                w: 0,
+                h: 0,
+                batch: RefCell::new(Vec::new()),
+            })
+        }
+    }
+    fn api(&self) -> &Evas_GL_API {
+        unsafe { &*self.api }
+    }
+    pub fn clear_color(&self, r: f32, g: f32, b: f32, a: f32) {
+        if let Some(func) = self.api().glClearColor {
+            unsafe { func(r, g, b, a) };
+        }
+    }
+    pub fn clear(&self) {
+        if let Some(func) = self.api().glClear {
+            unsafe { func(GL_COLOR_BUFFER_BIT) };
+        }
+    }
+    pub fn viewport(&self, x: i32, y: i32, w: i32, h: i32) {
+        if let Some(func) = self.api().glViewport {
+            unsafe { func(x, y, w, h) };
+        }
+    }
+    fn can_batch(&self) -> bool {
+        !self.obj.is_null() && self.w > 0 && self.h > 0 && glview_hooks(self.obj).pipeline.is_some()
+    }
+    /// Fill a top-left-origin rectangle. Batched when a GLES2 pipeline exists.
+    pub fn fill_rect(&self, x: i32, y: i32, w: i32, h: i32, view_h: i32, rgb: [f32; 3]) {
+        if w <= 0 || h <= 0 {
+            return;
+        }
+        if self.can_batch() {
+            let x0 = x as f32;
+            let y0 = y as f32;
+            let x1 = (x + w) as f32;
+            let y1 = (y + h) as f32;
+            let mut batch = self.batch.borrow_mut();
+            for (px, py) in [(x0, y0), (x1, y0), (x0, y1), (x1, y0), (x1, y1), (x0, y1)] {
+                batch.push((px / self.w as f32) * 2.0 - 1.0);
+                batch.push(1.0 - (py / self.h as f32) * 2.0);
+                batch.extend_from_slice(&rgb);
+            }
+            return;
+        }
+        self.fill_rect_scissor(x, y, w, h, view_h, rgb);
+    }
+    fn fill_rect_scissor(&self, x: i32, y: i32, w: i32, h: i32, view_h: i32, rgb: [f32; 3]) {
+        let gy = view_h - y - h;
+        let api = self.api();
+        if let Some(enable) = api.glEnable {
+            unsafe { enable(GL_SCISSOR_TEST) };
+        }
+        if let Some(scissor) = api.glScissor {
+            unsafe { scissor(x, gy, w, h) };
+        }
+        self.clear_color(rgb[0], rgb[1], rgb[2], 1.0);
+        self.clear();
+        if let Some(disable) = api.glDisable {
+            unsafe { disable(GL_SCISSOR_TEST) };
+        }
+    }
+    fn flush(&self) {
+        let verts = self.batch.take();
+        if verts.is_empty() || self.obj.is_null() {
+            return;
+        }
+        let Some(pipeline) = glview_hooks(self.obj).pipeline.as_ref() else {
+            return;
+        };
+        let api = self.api();
+        let Some(use_program) = api.glUseProgram else {
+            return;
+        };
+        let Some(bind) = api.glBindBuffer else {
+            return;
+        };
+        let Some(buffer_data) = api.glBufferData else {
+            return;
+        };
+        let Some(attrib) = api.glVertexAttribPointer else {
+            return;
+        };
+        let Some(enable_attr) = api.glEnableVertexAttribArray else {
+            return;
+        };
+        let Some(draw) = api.glDrawArrays else {
+            return;
+        };
+        let stride = (5 * std::mem::size_of::<f32>()) as GLsizei;
+        let count = (verts.len() / 5) as GLsizei;
+        unsafe {
+            if let Some(disable) = api.glDisable {
+                disable(GL_SCISSOR_TEST);
+            }
+            use_program(pipeline.program);
+            bind(GL_ARRAY_BUFFER, pipeline.vbo);
+            buffer_data(
+                GL_ARRAY_BUFFER,
+                (verts.len() * std::mem::size_of::<f32>()) as GLsizeiptr,
+                verts.as_ptr() as *const c_void,
+                GL_DYNAMIC_DRAW,
+            );
+            attrib(
+                pipeline.a_pos as GLuint,
+                2,
+                GL_FLOAT,
+                GL_FALSE as GLboolean,
+                stride,
+                std::ptr::null(),
+            );
+            enable_attr(pipeline.a_pos as GLuint);
+            attrib(
+                pipeline.a_col as GLuint,
+                3,
+                GL_FLOAT,
+                GL_FALSE as GLboolean,
+                stride,
+                (2 * std::mem::size_of::<f32>()) as *const c_void,
+            );
+            enable_attr(pipeline.a_col as GLuint);
+            draw(GL_TRIANGLES, 0, count);
+            use_program(0);
+            bind(GL_ARRAY_BUFFER, 0);
+        }
+    }
+}
+
+fn compile_shader(api: &Evas_GL_API, kind: GLenum, src: &CStr) -> Option<GLuint> {
+    let create = api.glCreateShader?;
+    let source = api.glShaderSource?;
+    let compile = api.glCompileShader?;
+    let getiv = api.glGetShaderiv?;
+    let sh = unsafe { create(kind) };
+    if sh == 0 {
+        return None;
+    }
+    let ptr = src.as_ptr();
+    unsafe {
+        source(sh, 1, &ptr, std::ptr::null());
+        compile(sh);
+        let mut ok = 0;
+        getiv(sh, GL_COMPILE_STATUS, &mut ok);
+        if ok == 0 {
+            if let Some(del) = api.glDeleteShader {
+                del(sh);
+            }
+            return None;
+        }
+    }
+    Some(sh)
+}
+
+fn compile_gl_pipeline(raw: *mut Evas_GL_API) -> Option<GlPipeline> {
+    if raw.is_null() {
+        return None;
+    }
+    let api = unsafe { &*raw };
+    let vs = compile_shader(
+        api,
+        GL_VERTEX_SHADER,
+        c"attribute vec2 a_pos; attribute vec3 a_col; varying vec3 v_col; void main(){ gl_Position = vec4(a_pos, 0.0, 1.0); v_col = a_col; }",
+    )?;
+    let fs = compile_shader(
+        api,
+        GL_FRAGMENT_SHADER,
+        c"precision mediump float; varying vec3 v_col; void main(){ gl_FragColor = vec4(v_col, 1.0); }",
+    )?;
+    let create_prog = api.glCreateProgram?;
+    let attach = api.glAttachShader?;
+    let bind_attr = api.glBindAttribLocation?;
+    let link = api.glLinkProgram?;
+    let getiv = api.glGetProgramiv?;
+    let gen_buffers = api.glGenBuffers?;
+    let prog = unsafe { create_prog() };
+    if prog == 0 {
+        return None;
+    }
+    unsafe {
+        attach(prog, vs);
+        attach(prog, fs);
+        bind_attr(prog, 0, c"a_pos".as_ptr());
+        bind_attr(prog, 1, c"a_col".as_ptr());
+        link(prog);
+        let mut ok = 0;
+        getiv(prog, GL_LINK_STATUS, &mut ok);
+        if let Some(del) = api.glDeleteShader {
+            del(vs);
+            del(fs);
+        }
+        if ok == 0 {
+            if let Some(del) = api.glDeleteProgram {
+                del(prog);
+            }
+            return None;
+        }
+        let mut vbo = 0;
+        gen_buffers(1, &mut vbo);
+        if vbo == 0 {
+            if let Some(del) = api.glDeleteProgram {
+                del(prog);
+            }
+            return None;
+        }
+        Some(GlPipeline {
+            program: prog,
+            vbo,
+            a_pos: 0,
+            a_col: 1,
+        })
+    }
+}
+
+/// Trait for conformant widgets (keyboard/indicator-aware container).
+pub trait ConformantExt: ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_conformant_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for layout (Edje) widgets.
+pub trait LayoutExt: TextExt + ContainerExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_layout_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn set_file(&self, file: &str, group: &str) -> bool {
+        if !self.is_set() {
+            return false;
+        }
+        let cfile = file.expect_cstring("LayoutExt::set_file");
+        let cgroup = group.expect_cstring("LayoutExt::set_file group");
+        let group_ptr = if group.is_empty() {
+            std::ptr::null()
+        } else {
+            cgroup.as_ptr()
+        };
+        unsafe { elm_layout_file_set(self.as_raw(), cfile.as_ptr(), group_ptr) != 0 }
+    }
+}
+
+/// Trait for multibuttonentry widgets.
+pub trait MultibuttonentryExt: SelectorExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_multibuttonentry_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+}
+
+/// Trait for combobox widgets.
+pub trait ComboboxExt: SelectorExt + TextExt {
+    fn new(prt: &impl ContainerExt) -> Self {
+        let elm = Self::from_raw(unsafe { elm_combobox_add(prt.as_raw()) }).with_defaults();
+        prt.add(&elm);
+        elm
+    }
+    fn hover_begin(&self) {
+        if self.is_set() {
+            unsafe { elm_combobox_hover_begin(self.as_raw()) };
+        }
+    }
+    fn hover_end(&self) {
+        if self.is_set() {
+            unsafe { elm_combobox_hover_end(self.as_raw()) };
+        }
+    }
+    fn expanded(&self) -> bool {
+        self.is_set() && unsafe { elm_combobox_expanded_get(self.as_raw()) != 0 }
     }
 }
 

@@ -48,3 +48,27 @@ A scroller is a single-child viewport. `add` sets that child; scrollbars follow 
             });
         });
 ```
+
+# [Panel](https://www.enlightenment.org/develop/legacy/program_guide/widgets/panel)
+
+A sliding drawer. Orientation uses `PanelOrient`.
+
+```rust
+    efltk::Panel::new(parent)
+        .with_orient(efltk::prelude::PanelOrient::Left)
+        .inside(|panel| {
+            efltk::Label::new(panel).with_text("Drawer");
+        });
+```
+
+# [Notify](https://www.enlightenment.org/develop/legacy/program_guide/widgets/notify)
+
+A timeout toast. `add` sets the single child.
+
+```rust
+    efltk::Notify::new(parent)
+        .with_timeout(3.0)
+        .inside(|n| {
+            efltk::Label::new(n).with_text("Saved");
+        });
+```
