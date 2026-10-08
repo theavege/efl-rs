@@ -4,14 +4,15 @@ function _setup
 {
     if [[ -f '/etc/os-release' ]]; then
         source '/etc/os-release'
-        if ! command -v efl-config >/dev/null && ! pkg-config --exists elementary; then
+        if ! pkg-config --exists elementary; then
             declare -ra DEPS=(sh{fmt,ellcheck} pkg-config)
             case ${ID:?} in
+                msys2) return 0 ;;
+                fedora | alma) sudo dnf install -y "${DEPS[@]}" {efl,clang}-devel ;;
                 debian | ubuntu)
                     sudo apt-get update
                     sudo apt-get install -y "${DEPS[@]}" lib{efl-all,clang}-dev clang
                     ;;
-                fedora | alma) sudo dnf install -y "${DEPS[@]}" {efl,clang}-devel ;;
             esac 1>/dev/null
             shellcheck --external-sources "${0}"
             shfmt -ci -fn -i 4 -d "${0}"

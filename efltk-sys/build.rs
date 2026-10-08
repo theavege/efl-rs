@@ -1,5 +1,5 @@
 use bindgen::callbacks::{MacroParsingBehavior, ParseCallbacks};
-use std::{env, path::Path};
+use std::{env, error::Error, path::Path};
 
 #[derive(Debug, Default)]
 struct MacroCallback();
@@ -22,39 +22,24 @@ impl ParseCallbacks for MacroCallback {
     }
 }
 
-fn compile() -> Vec<String> {
+fn get_include_paths() -> Result<Vec<String>, Box<dyn Error>> {
     let library = "elementary";
     println!("cargo:rustc-link-lib=dylib={library}");
     let mut includes = Vec::new();
-    match pkg_config::probe_library(library) {
-        Ok(lib) => {
-            for dir in lib.include_paths {
-                includes.push(format!("-I{}", dir.display()));
-            }
-        }
-        Err(e) => {
-            eprintln!("Failed to find {library}: {e}");
-            eprintln!("Install EFL development packages, for example:");
-            eprintln!(
-                "  Debian/Ubuntu: sudo apt-get install libefl-all-dev pkg-config libclang-dev"
-            );
-            eprintln!("  Fedora:        sudo dnf install efl-devel pkg-config clang-devel");
-            eprintln!("  Windows MSYS2: pacboy -S efl:p pkg-config:p clang:p");
-            std::process::exit(1);
-        }
+    for dir in pkg_config::probe_library(library)?.include_paths {
+        includes.push(format!("-I{}", dir.display()));
     }
-    includes
+    Ok(includes)
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=src/wrapper.h");
     println!("cargo:rerun-if-changed=build.rs");
     bindgen::Builder::default()
         .header("src/wrapper.h")
-        .clang_args(compile())
+        .clang_args(get_include_paths()?)
         .parse_callbacks(Box::new(MacroCallback::default()))
-        .generate()
-        .expect("Unable to generate bindings")
-        .write_to_file(Path::new(&env::var("OUT_DIR").unwrap()).join("bindings.rs"))
-        .expect("Couldn't write bindings!");
+        .generate()?
+        .write_to_file(Path::new(&env::var("OUT_DIR").unwrap()).join("bindings.rs"))?;
+    Ok(())
 }
