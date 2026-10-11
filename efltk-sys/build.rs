@@ -35,9 +35,22 @@ fn get_include_paths() -> Result<Vec<String>, Box<dyn Error>> {
 fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=src/wrapper.h");
     println!("cargo:rerun-if-changed=build.rs");
+    // MSVC-style targets (e.g. the `x86_64-pc-windows-gnullvm` triple used by
+    // the clang64 MINGW/MSYS2 toolchain) make Clang parse its own AMX headers
+    // with Microsoft extensions enabled, which emits anonymous `_str` wrapper
+    // structs (`__tile1024i_str`, ...) around 1024-byte vector types. Bindgen
+    // then generates a layout test that underflows at compile time and adds a
+    // `packed` attribute that conflicts with the type's `align(64)` hint, so
+    // compiling `efltk-sys` fails with E0587/E0080. Disable the Microsoft
+    // extensions for the bindings pass to keep those types out of the output.
+    let target = env::var("TARGET").unwrap_or_default();
+    let mut clang_args = get_include_paths()?;
+    if target.contains("msvc") || target.contains("gnullvm") {
+        clang_args.push("-fno-ms-extensions".to_string());
+    }
     bindgen::Builder::default()
         .header("src/wrapper.h")
-        .clang_args(get_include_paths()?)
+        .clang_args(clang_args)
         // Do not emit bindings for libc symbols (memcmp, strlen, ...). Generated
         // declarations for these trip the `library_definitions` lint and can
         // shadow the real runtime symbols.
