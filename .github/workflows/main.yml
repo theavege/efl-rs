@@ -7,9 +7,11 @@ on:
   pull_request:
     branches:
       - main
+      - 'alpha/**'
   push:
     branches:
       - main
+      - 'alpha/**'
 
 jobs:
   make:
@@ -20,6 +22,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
+          - macos-latest
 
     steps:
       - name: Checkout
@@ -28,12 +31,21 @@ jobs:
           submodules: recursive
 
       - name: Setup on Linux
-        if: runner.os != 'Windows'
+        if: runner.os == 'Linux'
         shell: bash
         run: |
           bash '.github/workflows/make.sh' setup
 
-      - name: Build on Linux
+      - name: Setup on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install efl pkg-config llvm
+          echo "LIBCLANG_PATH=$(brew --prefix llvm)/lib" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=$(brew --prefix efl)/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" >> "$GITHUB_ENV"
+          echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
+
+      - name: Build on Unix
         if: runner.os != 'Windows'
         shell: bash
         run: |

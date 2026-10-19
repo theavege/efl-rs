@@ -52,6 +52,8 @@ Set `EFL_DIR` only if Elementary is installed outside the default MSYS2 prefix.
 ```bash
 # Check the code compiles
 cargo check --workspace
+cargo check --workspace --no-default-features
+cargo check --workspace --all-features
 
 # Build in release mode
 cargo build --release --workspace
@@ -61,6 +63,9 @@ cargo test --workspace --lib
 
 # Run clippy (linter)
 cargo clippy --workspace --lib --examples
+
+# Build API documentation
+cargo doc --workspace --all-features --no-deps
 
 # Format code
 cargo fmt --all

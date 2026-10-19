@@ -37,7 +37,6 @@ macro_rules! impl_widget {
                 self.0.is_some()
             }
         }
-
     };
 }
 
@@ -52,6 +51,31 @@ impl Timer {
     /// EFL main thread. It must remain live while this wrapper is used.
     pub unsafe fn from_raw(obj: *mut Ecore_Timer) -> Self {
         Self(NonNull::new(obj), PhantomData)
+    }
+}
+
+/// Keeps a mounted [`Component`](prelude::Component) alive until it is stopped
+/// or this handle is dropped.
+#[must_use = "keep the mount handle alive while the component should remain active"]
+pub struct ComponentMount {
+    timer: Timer,
+}
+
+impl ComponentMount {
+    /// Returns whether the component's update timer is still active.
+    pub fn is_active(&self) -> bool {
+        self.timer.is_set()
+    }
+
+    /// Stops the component's update timer and releases its callback state.
+    pub fn stop(&mut self) {
+        self.timer.del();
+    }
+}
+
+impl Drop for ComponentMount {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
 

@@ -4,6 +4,7 @@
 //! All widget-specific functionality is defined through traits that can be
 //! implemented by widget types.
 
+pub use crate::ComponentMount;
 pub use crate::error::{CStringExt, EflError, EflResult};
 pub use std::sync::mpsc::Sender;
 use {
@@ -254,6 +255,15 @@ impl From<ScrollPolicy> for Elm_Scroller_Policy {
 /// Panics if any command-line argument contains a null byte, which should never happen
 /// in normal circumstances.
 pub fn run(func: impl Fn() -> super::Window) {
+    run_with_guard(|| (func(), ()))
+}
+
+/// Run the EFL event loop while retaining an application guard.
+///
+/// The guard is dropped after the event loop exits and before EFL shuts down.
+/// This is useful for [`ComponentMount`] handles, which must stop their timers
+/// before `elm_shutdown`.
+pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) {
     let c_args: Vec<CString> = std::env::args()
         .map(|arg| arg.expect_cstring("command-line argument"))
         .collect();
@@ -266,10 +276,12 @@ pub fn run(func: impl Fn() -> super::Window) {
             Elm_Policy_ELM_POLICY_QUIT,
             Elm_Policy_Quit_ELM_POLICY_QUIT_LAST_WINDOW_CLOSED as i32,
         );
-        func().show();
-        elm_run();
-        elm_shutdown();
     }
+    let (window, guard) = func();
+    window.show();
+    unsafe { elm_run() };
+    drop(guard);
+    unsafe { elm_shutdown() };
 }
 
 /// Exit the EFL main loop.
@@ -284,7 +296,13 @@ pub fn exit() {
 impl super::Timer {
     pub fn new<F: FnMut() -> bool + 'static>(timeout: f64, func: F) -> Self {
         let raw_ptr: *mut Box<EcoreCb> = Box::into_raw(Box::new(Box::new(func)));
-        timer_from_efl(unsafe { ecore_timer_add(timeout, Some(ecore_task_cb), raw_ptr as *mut c_void) })
+        let timer =
+            unsafe { ecore_timer_add(timeout, Some(ecore_task_cb), raw_ptr as *mut c_void) };
+        if timer.is_null() {
+            // SAFETY: EFL rejected timer creation, so it will never own this callback data.
+            unsafe { drop(Box::from_raw(raw_ptr)) };
+        }
+        timer_from_efl(timer)
     }
     pub fn as_ptr(&self) -> *mut Ecore_Timer {
         self.0.expect("Empty Ecore_Timer!").as_ptr()
@@ -1833,7 +1851,8 @@ pub trait PhotoExt: WidgetExt {
 /// Trait for datetime widgets.
 pub trait DatetimeExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = widget_from_efl::<Self>(unsafe { elm_datetime_add(prt.as_raw()) }).with_defaults();
+        let elm =
+            widget_from_efl::<Self>(unsafe { elm_datetime_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -1856,7 +1875,8 @@ pub trait DatetimeExt: WidgetExt {
 /// Trait for hoversel (dropdown) widgets.
 pub trait HoverselExt: WidgetExt + TextExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = widget_from_efl::<Self>(unsafe { elm_hoversel_add(prt.as_raw()) }).with_defaults();
+        let elm =
+            widget_from_efl::<Self>(unsafe { elm_hoversel_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -2061,7 +2081,8 @@ pub trait IndexExt: WidgetExt {
 /// Trait for dayselector widgets.
 pub trait DayselectorExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = widget_from_efl::<Self>(unsafe { elm_dayselector_add(prt.as_raw()) }).with_defaults();
+        let elm =
+            widget_from_efl::<Self>(unsafe { elm_dayselector_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -2087,7 +2108,8 @@ pub trait DayselectorExt: WidgetExt {
 /// Trait for actionslider widgets.
 pub trait ActionsliderExt: TextExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = widget_from_efl::<Self>(unsafe { elm_actionslider_add(prt.as_raw()) }).with_defaults();
+        let elm =
+            widget_from_efl::<Self>(unsafe { elm_actionslider_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -2128,7 +2150,8 @@ pub trait BubbleExt: TextExt + ContainerExt {
 /// Trait for photocam (pannable photo) widgets.
 pub trait PhotocamExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = widget_from_efl::<Self>(unsafe { elm_photocam_add(prt.as_raw()) }).with_defaults();
+        let elm =
+            widget_from_efl::<Self>(unsafe { elm_photocam_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -2168,7 +2191,8 @@ pub trait GengridExt: SelectorExt {
 /// Trait for slideshow widgets (image-file items).
 pub trait SlideshowExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = widget_from_efl::<Self>(unsafe { elm_slideshow_add(prt.as_raw()) }).with_defaults();
+        let elm =
+            widget_from_efl::<Self>(unsafe { elm_slideshow_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -2831,7 +2855,8 @@ fn compile_gl_pipeline(raw: *mut Evas_GL_API) -> Option<GlPipeline> {
 /// Trait for conformant widgets (keyboard/indicator-aware container).
 pub trait ConformantExt: ContainerExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = widget_from_efl::<Self>(unsafe { elm_conformant_add(prt.as_raw()) }).with_defaults();
+        let elm =
+            widget_from_efl::<Self>(unsafe { elm_conformant_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -2862,7 +2887,8 @@ pub trait LayoutExt: TextExt + ContainerExt {
 /// Trait for multibuttonentry widgets.
 pub trait MultibuttonentryExt: SelectorExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = widget_from_efl::<Self>(unsafe { elm_multibuttonentry_add(prt.as_raw()) }).with_defaults();
+        let elm = widget_from_efl::<Self>(unsafe { elm_multibuttonentry_add(prt.as_raw()) })
+            .with_defaults();
         prt.add(&elm);
         elm
     }
@@ -2871,7 +2897,8 @@ pub trait MultibuttonentryExt: SelectorExt {
 /// Trait for combobox widgets.
 pub trait ComboboxExt: SelectorExt + TextExt {
     fn new(prt: &impl ContainerExt) -> Self {
-        let elm = widget_from_efl::<Self>(unsafe { elm_combobox_add(prt.as_raw()) }).with_defaults();
+        let elm =
+            widget_from_efl::<Self>(unsafe { elm_combobox_add(prt.as_raw()) }).with_defaults();
         prt.add(&elm);
         elm
     }
@@ -2901,19 +2928,23 @@ pub trait ComboboxExt: SelectorExt + TextExt {
 /// - `handle`: Function to process events and update state
 /// - `update`: Function to update the view based on state
 /// - `view`: Function to build the UI
+///
+/// Keep the [`ComponentMount`] returned by [`Component::mount`] alive while the
+/// component should continue processing events. Drop it before deleting its
+/// parent widget; [`Component::run`] handles this before EFL shuts down.
 pub trait Component: Default + 'static {
     type Event: 'static;
     type State: Default + 'static;
     fn handle(msg: Self::Event, model: &mut Self::State, sender: Sender<Self::Event>) -> bool;
     fn update(&self, model: &Self::State);
     fn view(&mut self, parent: &impl ContainerExt, sender: Sender<Self::Event>);
-    fn mount(prt: &impl ContainerExt) {
+    fn mount(prt: &impl ContainerExt) -> ComponentMount {
         let (sender, receiver) = channel::<Self::Event>();
         let mut page = Self::default();
         let mut model = Self::State::default();
         page.view(prt, sender.clone());
         page.update(&model);
-        super::Timer::new(0.04, move || {
+        let timer = super::Timer::new(0.04, move || {
             let mut update = false;
             while let Ok(msg) = receiver.try_recv() {
                 update = Self::handle(msg, &mut model, sender.clone()) || update;
@@ -2923,14 +2954,15 @@ pub trait Component: Default + 'static {
             }
             true
         });
+        ComponentMount { timer }
     }
     fn run(title: &str, width: i32, height: i32) {
-        run(move || {
+        run_with_guard(move || {
             let win = super::Window::new("Main", title)
                 .with_min_size(width, height)
                 .with_center(true);
-            Self::mount(&win);
-            win
+            let mount = Self::mount(&win);
+            (win, mount)
         });
     }
 }
