@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Raw EFL pointer constructors for widgets, widget items, timers, and GL API tables are now `unsafe` and document their pointer lifetime requirements
+
 ### Fixed
 - `efltk-sys` build script now blocklists libc symbols (`malloc`, `memcmp`, `strlen`, `strcpy`, ...) from the generated bindings, silencing the `library_definitions` warnings ("suspicious definition of the runtime symbol used by the standard library") and avoiding accidental shadowing of real runtime symbols
 

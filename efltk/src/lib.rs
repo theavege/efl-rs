@@ -22,14 +22,14 @@ macro_rules! impl_widget {
             PhantomData<*const ()>,
         );
 
-        impl WidgetExt for $name {
+        unsafe impl WidgetExt for $name {
             fn as_raw(&self) -> *mut Evas_Object {
                 self.0
                     .expect(concat!("Empty ", stringify!($name), "!"))
                     .as_ptr()
             }
 
-            fn from_raw(obj: *mut Evas_Object) -> Self {
+            unsafe fn from_raw(obj: *mut Evas_Object) -> Self {
                 Self(std::ptr::NonNull::new(obj), PhantomData)
             }
 
@@ -38,19 +38,19 @@ macro_rules! impl_widget {
             }
         }
 
-        impl From<*mut Evas_Object> for $name {
-            fn from(obj: *mut Evas_Object) -> Self {
-                Self(NonNull::new(obj), PhantomData)
-            }
-        }
     };
 }
 
 #[derive(Default)]
 pub struct Timer(Option<NonNull<Ecore_Timer>>, PhantomData<*const ()>);
 
-impl From<*mut Ecore_Timer> for Timer {
-    fn from(obj: *mut Ecore_Timer) -> Self {
+impl Timer {
+    /// Wraps a raw EFL timer pointer.
+    ///
+    /// # Safety
+    /// `obj` must be null or a live timer pointer returned by EFL on the current
+    /// EFL main thread. It must remain live while this wrapper is used.
+    pub unsafe fn from_raw(obj: *mut Ecore_Timer) -> Self {
         Self(NonNull::new(obj), PhantomData)
     }
 }
@@ -65,13 +65,13 @@ impl Menu {
         if !self.is_set() {
             return WidgetItem::default();
         }
-        WidgetItem::from_raw(unsafe { elm_menu_selected_item_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_menu_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
         if !self.is_set() {
             return WidgetItem::default();
         }
-        WidgetItem::from_raw(unsafe { elm_menu_first_item_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_menu_first_item_get(self.as_raw()) })
     }
 }
 
@@ -114,7 +114,7 @@ impl SelectorExt for Menu {
         let mut temp = self.first();
         while temp.0.is_some() {
             count += 1;
-            temp = WidgetItem::from_raw(unsafe { elm_menu_item_next_get(temp.as_raw()) });
+            temp = widget_item_from_efl(unsafe { elm_menu_item_next_get(temp.as_raw()) });
         }
         count
     }
@@ -124,7 +124,7 @@ impl SelectorExt for Menu {
         }
         let mut temp = self.first();
         while temp.0.is_some() {
-            let next = WidgetItem::from_raw(unsafe { elm_menu_item_next_get(temp.as_raw()) });
+            let next = widget_item_from_efl(unsafe { elm_menu_item_next_get(temp.as_raw()) });
             temp.del();
             temp = next;
         }
@@ -253,13 +253,13 @@ impl List {
         if !self.is_set() {
             return WidgetItem::default();
         }
-        WidgetItem::from_raw(unsafe { elm_list_selected_item_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_list_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
         if !self.is_set() {
             return WidgetItem::default();
         }
-        WidgetItem::from_raw(unsafe { elm_list_first_item_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_list_first_item_get(self.as_raw()) })
     }
 }
 
@@ -311,7 +311,7 @@ impl SelectorExt for List {
         let mut temp = self.first();
         while temp.0.is_some() {
             count += 1;
-            temp = WidgetItem::from_raw(unsafe { elm_list_item_next(temp.as_raw()) });
+            temp = widget_item_from_efl(unsafe { elm_list_item_next(temp.as_raw()) });
         }
         count
     }
@@ -343,7 +343,7 @@ impl Naviframe {
         self.to_top(&self.bottom())
     }
     fn bottom(&self) -> WidgetItem {
-        WidgetItem::from_raw(unsafe { elm_naviframe_bottom_item_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_naviframe_bottom_item_get(self.as_raw()) })
     }
     fn to_top(&self, item: &WidgetItem) {
         if item.0.is_none() {
@@ -353,11 +353,11 @@ impl Naviframe {
     }
 }
 
-impl WidgetExt for Naviframe {
+unsafe impl WidgetExt for Naviframe {
     fn as_raw(&self) -> *mut Evas_Object {
         self.obj.expect("Empty Evas_Object!").as_ptr()
     }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
+    unsafe fn from_raw(obj: *mut Evas_Object) -> Self {
         Self {
             obj: NonNull::new(obj),
             lst: Rc::default(),
@@ -398,11 +398,11 @@ impl PanesExt for Panes {}
 #[derive(Default, Clone)]
 pub struct Popup(Option<NonNull<Evas_Object>>, PhantomData<*const ()>);
 
-impl WidgetExt for Popup {
+unsafe impl WidgetExt for Popup {
     fn as_raw(&self) -> *mut Evas_Object {
         self.0.expect("Empty Evas_Object!").as_ptr()
     }
-    fn from_raw(obj: *mut Evas_Object) -> Self {
+    unsafe fn from_raw(obj: *mut Evas_Object) -> Self {
         Self(NonNull::new(obj), PhantomData)
     }
     fn is_set(&self) -> bool {
@@ -436,7 +436,7 @@ impl SegmentControl {
         if !self.is_set() {
             return WidgetItem::default();
         }
-        WidgetItem::from_raw(unsafe { elm_segment_control_item_selected_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_segment_control_item_selected_get(self.as_raw()) })
     }
 }
 
@@ -464,7 +464,7 @@ impl InputExt<i32> for SegmentControl {
 impl SelectorExt for SegmentControl {
     fn add(&self, label: &str) -> WidgetItem {
         let c_label = label.expect_cstring("SegmentControl::add");
-        WidgetItem::from_raw(unsafe {
+        widget_item_from_efl(unsafe {
             elm_segment_control_item_add(
                 self.as_raw(),
                 Icon::new(self).with_standard(label).as_raw(),
@@ -682,13 +682,13 @@ impl Diskselector {
         if !self.is_set() {
             return WidgetItem::default();
         }
-        WidgetItem::from_raw(unsafe { elm_diskselector_selected_item_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_diskselector_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
         if !self.is_set() {
             return WidgetItem::default();
         }
-        WidgetItem::from_raw(unsafe { elm_diskselector_first_item_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_diskselector_first_item_get(self.as_raw()) })
     }
 }
 
@@ -734,7 +734,7 @@ impl SelectorExt for Diskselector {
             return WidgetItem::default();
         }
         let c_label = label.expect_cstring("Diskselector::add");
-        WidgetItem::from_raw(unsafe {
+        widget_item_from_efl(unsafe {
             elm_diskselector_item_append(
                 self.as_raw(),
                 c_label.as_ptr(),
@@ -752,7 +752,7 @@ impl SelectorExt for Diskselector {
         let mut temp = self.first();
         while temp.0.is_some() {
             count += 1;
-            temp = WidgetItem::from_raw(unsafe { elm_diskselector_item_next_get(temp.as_raw()) });
+            temp = widget_item_from_efl(unsafe { elm_diskselector_item_next_get(temp.as_raw()) });
         }
         count
     }
@@ -771,13 +771,13 @@ impl Toolbar {
         if !self.is_set() {
             return WidgetItem::default();
         }
-        WidgetItem::from_raw(unsafe { elm_toolbar_selected_item_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_toolbar_selected_item_get(self.as_raw()) })
     }
     fn first(&self) -> WidgetItem {
         if !self.is_set() {
             return WidgetItem::default();
         }
-        WidgetItem::from_raw(unsafe { elm_toolbar_first_item_get(self.as_raw()) })
+        widget_item_from_efl(unsafe { elm_toolbar_first_item_get(self.as_raw()) })
     }
 }
 
@@ -823,7 +823,7 @@ impl SelectorExt for Toolbar {
             return WidgetItem::default();
         }
         let c_label = label.expect_cstring("Toolbar::add");
-        WidgetItem::from_raw(unsafe {
+        widget_item_from_efl(unsafe {
             elm_toolbar_item_append(
                 self.as_raw(),
                 std::ptr::null(),
@@ -899,7 +899,7 @@ impl SelectorExt for Genlist {
             )
         };
         unsafe { elm_genlist_item_class_unref(itc) };
-        WidgetItem::from_raw(item)
+        widget_item_from_efl(item)
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -1003,7 +1003,7 @@ impl SelectorExt for Gengrid {
             )
         };
         unsafe { elm_gengrid_item_class_unref(itc) };
-        WidgetItem::from_raw(item)
+        widget_item_from_efl(item)
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -1084,7 +1084,7 @@ impl SelectorExt for Multibuttonentry {
             return WidgetItem::default();
         }
         let c_label = label.expect_cstring("Multibuttonentry::add");
-        WidgetItem::from_raw(unsafe {
+        widget_item_from_efl(unsafe {
             elm_multibuttonentry_item_append(
                 self.as_raw(),
                 c_label.as_ptr(),
@@ -1153,7 +1153,7 @@ impl SelectorExt for Combobox {
             )
         };
         unsafe { elm_genlist_item_class_unref(itc) };
-        WidgetItem::from_raw(item)
+        widget_item_from_efl(item)
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
