@@ -596,7 +596,7 @@ mod timer_tests {
 
     #[test]
     fn test_timer_from_raw() {
-        let timer = Timer::from(std::ptr::null_mut());
+        let timer = unsafe { Timer::from_raw(std::ptr::null_mut()) };
         assert!(timer.0.is_none());
         assert!(!timer.is_set());
     }
@@ -620,7 +620,7 @@ mod widget_item_tests {
 
     #[test]
     fn test_widget_item_from_raw_null() {
-        let item = WidgetItem::from_raw(std::ptr::null_mut());
+        let item = unsafe { WidgetItem::from_raw(std::ptr::null_mut()) };
         assert!(item.0.is_none());
         assert!(!item.is_set());
     }

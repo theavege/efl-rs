@@ -20,6 +20,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
+          # - macos-latest
 
     steps:
       - name: Checkout
@@ -28,16 +29,30 @@ jobs:
           submodules: recursive
 
       - name: Setup on Linux
-        if: runner.os != 'Windows'
+        if: runner.os == 'Linux'
         shell: bash
         run: |
           bash '.github/workflows/make.sh' setup
 
-      - name: Build on Linux
+      - name: Setup on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install efl pkg-config llvm
+          echo "LIBCLANG_PATH=$(brew --prefix llvm)/lib" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=$(brew --prefix efl)/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" >> "$GITHUB_ENV"
+          echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
+
+      - name: Build on Unix
         if: runner.os != 'Windows'
         shell: bash
         run: |
           bash '.github/workflows/make.sh' build
+
+      - name: Runtime tests on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: xvfb-run -a cargo test -p efltk --test runtime
 
       - name: Setup on Windows
         if: runner.os == 'Windows'
@@ -55,7 +70,4 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
-          set -euo pipefail
-          cargo clippy --quiet --workspace --lib --examples --features=all
-          cargo test --workspace --lib
-          cargo build --release --workspace --examples --features=all
+          bash '.github/workflows/make.sh' build

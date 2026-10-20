@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Component::mount` returns a `ComponentMount` handle that stops its event timer when dropped; `run_with_guard` keeps application guards alive through the EFL loop and drops them before shutdown
+
+### Changed
+- Raw EFL pointer constructors for widgets, widget items, timers, and GL API tables are now `unsafe` and document their pointer lifetime requirements
+
+### Fixed
+- `efltk-sys` build script now blocklists libc symbols (`malloc`, `memcmp`, `strlen`, `strcpy`, ...) from the generated bindings, silencing the `library_definitions` warnings ("suspicious definition of the runtime symbol used by the standard library") and avoiding accidental shadowing of real runtime symbols
+
+### Added
 - Remaining Elementary wrappers: `Bg`, `Panel`, `Notify`, `Photo`, `Datetime`, `Hoversel`, `Diskselector`, `Toolbar`, `Genlist`, `Grid`, `Flip`, `Hover`, `Ctxpopup`, `Index`, `Dayselector`, `Actionslider`, `Bubble`, `Photocam`, `Slideshow`, `Gengrid`, `Map`, `Video`, `Web`, `Glview`, `Conformant`, `Layout`, `Multibuttonentry`, `Combobox`
 - `BgOption` for background image display; `PanelOrient` now converts to the EFL panel enum
 - `Weekday`, `ActionPos`, `BubblePos`, `FlipMode` for the new widgets

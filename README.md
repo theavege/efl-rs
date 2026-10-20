@@ -20,16 +20,49 @@ Published crates: [`efltk`](https://crates.io/crates/efltk) and [`efltk-sys`](ht
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for Linux, macOS, and Windows (MSYS2) setup.
 
-CI scripts: [Linux](.github/workflows/make.sh), [workflow](.github/workflows/make.yml).
+CI build script: [.github/workflows/make.sh](.github/workflows/make.sh), [workflow](.github/workflows/main.yml).
 
 ```toml
 [dependencies]
-efltk = "0.0.7"
+efltk = "0.0.8"
+```
+
+## First window
+
+Install the native EFL development dependencies for your platform (see
+[CONTRIBUTING.md](CONTRIBUTING.md)), then create a window, add a vertical box,
+and put a label and button inside it. The button callback updates the label:
+
+```rust,no_run
+use efltk::prelude::*;
+use efltk::{Box as EflBox, Button, Label, Window};
+
+fn main() {
+    run(|| {
+        let window = Window::new("first-window", "My first efltk app").with_min_size(320, 160);
+
+        EflBox::new(&window).with_padding(12).inside(|column| {
+            let message = Label::new(column).with_text("Welcome to efltk!");
+            Button::new(column)
+                .with_text("Click me")
+                .with_callback(move |_| message.set_text("The callback updated this label."));
+        });
+
+        window
+    });
+}
+```
+
+Run the same example from the repository with:
+
+```sh
+cargo run -p efltk --example first_window
 ```
 
 ## Examples
 
 ```sh
+cargo run -p efltk --example first_window
 cargo run -p efltk --example simple
 cargo run -p efltk --example snake
 cargo run -p efltk --example floppy_bird

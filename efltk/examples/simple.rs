@@ -10,15 +10,19 @@ pub enum Msg {
 }
 
 #[derive(Default)]
-pub struct View([efltk::Frame; 5], efltk::Naviframe);
+pub struct View {
+    frames: [efltk::Frame; 5],
+    nav: efltk::Naviframe,
+    mounts: Vec<efltk::ComponentMount>,
+}
 
 impl Component for View {
     type Event = Msg;
     type State = (usize, usize);
     fn update(&self, model: &Self::State) {
-        self.1.set_top(model.1);
-        for idx in 0..self.0.len() {
-            self.0[idx].set_value(idx != model.0);
+        self.nav.set_top(model.1);
+        for idx in 0..self.frames.len() {
+            self.frames[idx].set_value(idx != model.0);
         }
     }
     fn handle(msg: Self::Event, model: &mut Self::State, _: Sender<Self::Event>) -> bool {
@@ -39,33 +43,41 @@ impl Component for View {
                     let sender = sender.clone();
                     move |wgt| sender.send(Msg::Slide(wgt.value() as usize)).unwrap()
                 });
-            self.1 = efltk::Naviframe::new(prt);
-            self.1.inside(|prt| {
+            self.nav = efltk::Naviframe::new(prt);
+            self.nav.inside(|prt| {
                 efltk::Box::new(prt).inside(|prt| {
                     for (idx, item) in ["Inputs", "Rangers", "Selectors", "Booker", "CRUD"]
                         .iter()
                         .enumerate()
                     {
-                        self.0[idx] = efltk::Frame::new(prt).with_text(item).with_callback({
+                        self.frames[idx] = efltk::Frame::new(prt).with_text(item).with_callback({
                             let sender = sender.clone();
                             move |_| sender.send(Msg::Set(idx)).unwrap()
                         });
                         match idx {
-                            0 => components::Converter::mount(&self.0[idx]),
-                            1 => components::Ranger::mount(&self.0[idx]),
-                            2 => components::Selector::mount(&self.0[idx]),
-                            3 => components::Booker::mount(&self.0[idx]),
-                            _ => components::Crud::mount(&self.0[idx]),
+                            0 => self
+                                .mounts
+                                .push(components::Converter::mount(&self.frames[idx])),
+                            1 => self
+                                .mounts
+                                .push(components::Ranger::mount(&self.frames[idx])),
+                            2 => self
+                                .mounts
+                                .push(components::Selector::mount(&self.frames[idx])),
+                            3 => self
+                                .mounts
+                                .push(components::Booker::mount(&self.frames[idx])),
+                            _ => self.mounts.push(components::Crud::mount(&self.frames[idx])),
                         };
                     }
                     efltk::Label::new(prt);
                 });
-                components::Calc::mount(prt);
-                components::Sudoku::mount(prt);
-                components::NicCalc::mount(prt);
-                components::Siege::mount(prt);
-                components::Search::mount(prt);
-                components::Dialect::mount(prt);
+                self.mounts.push(components::Calc::mount(prt));
+                self.mounts.push(components::Sudoku::mount(prt));
+                self.mounts.push(components::NicCalc::mount(prt));
+                self.mounts.push(components::Siege::mount(prt));
+                self.mounts.push(components::Search::mount(prt));
+                self.mounts.push(components::Dialect::mount(prt));
                 prt.promote();
             });
         });
