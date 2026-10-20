@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // extensions for the bindings pass to keep those types out of the output.
     let target = env::var("TARGET").unwrap_or_default();
     let mut clang_args = get_include_paths()?;
-    if target.contains("msvc") || target.contains("gnullvm") {
+    if target.contains("windows") {
         clang_args.push("-fno-ms-extensions".to_string());
     }
     bindgen::Builder::default()
