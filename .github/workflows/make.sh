@@ -11,11 +11,15 @@ function _setup
                 fedora | alma) sudo dnf install -y "${DEPS[@]}" {efl,clang}-devel ;;
                 debian | ubuntu)
                     sudo apt-get update
-                    sudo apt-get install -y "${DEPS[@]}" lib{efl-all,clang}-dev clang
+                    sudo apt-get install -y "${DEPS[@]}" lib{efl-all,clang}-dev clang xvfb
                     ;;
             esac 1>/dev/null
             shellcheck --external-sources "${0}"
             shfmt -ci -fn -i 4 -d "${0}"
+        fi
+        if [[ ${ID} == debian || ${ID} == ubuntu ]] && ! command -v xvfb-run >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y xvfb
         fi
     fi
 }
