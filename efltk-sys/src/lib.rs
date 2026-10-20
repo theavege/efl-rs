@@ -10,5 +10,6 @@
 #![allow(clippy::ptr_offset_with_cast)]
 #![allow(clippy::type_complexity)]
 #![allow(clippy::approx_constant)]
+#![allow(clippy::manual_div_ceil)]
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
