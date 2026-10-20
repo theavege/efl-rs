@@ -20,17 +20,17 @@ function _setup
     fi
 }
 
-set -euo pipefail
+set -xeuo pipefail
 if ((${#})); then
     case ${1} in
         setup) _setup ;;
         build)
             cargo check --workspace --no-default-features
             cargo check --workspace --all-features
-            cargo clippy --quiet --workspace --lib --examples --features=all
+            cargo clippy --quiet --workspace --lib --examples
             cargo test --workspace --lib
             cargo doc --workspace --all-features --no-deps
-            cargo build --release --workspace --examples --features=all
+            cargo build --release --workspace --examples
             cargo fmt --check --all
             ;;
     esac

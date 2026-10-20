@@ -71,7 +71,7 @@ cargo doc --workspace --all-features --no-deps
 cargo fmt --all
 ```
 
-`make check-all` runs format check, clippy, and tests.
+Run `bash .github/workflows/make.sh build` for the full CI validation sequence.
 
 ## Code Style
 
