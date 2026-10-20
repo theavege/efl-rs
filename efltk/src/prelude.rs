@@ -580,9 +580,18 @@ pub trait TextExt: WidgetExt {
     fn set_text(&self, text: &str) {
         self.set_part("default", text);
     }
+    /// Sets widget text, returning an error for invalid strings or an empty widget.
+    fn try_set_text(&self, text: &str) -> EflResult<()> {
+        self.try_set_part("default", text)
+    }
     fn with_text(self, text: &str) -> Self {
         self.set_text(text);
         self
+    }
+    /// Sets widget text and returns the widget, or an error on failure.
+    fn try_with_text(self, text: &str) -> EflResult<Self> {
+        self.try_set_text(text)?;
+        Ok(self)
     }
 }
 
@@ -756,22 +765,38 @@ pub unsafe trait WidgetExt: Sized + 'static {
             .with_focus(false)
     }
     fn set_part(&self, part: &str, text: &str) {
-        let c_part = part.expect_cstring("WidgetExt::set_part part");
-        let c_text = text.expect_cstring("WidgetExt::set_part text");
-        let c_part_ptr = match part.is_empty() {
-            true => std::ptr::null(),
-            false => c_part.as_ptr(),
+        self.try_set_part(part, text)
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+    /// Sets text in a widget part, returning an error for invalid strings or an empty widget.
+    fn try_set_part(&self, part: &str, text: &str) -> EflResult<()> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("WidgetExt::try_set_part"));
+        }
+        let c_part = part.to_cstring()?;
+        let c_text = text.to_cstring()?;
+        let c_part_ptr = if part.is_empty() {
+            std::ptr::null()
+        } else {
+            c_part.as_ptr()
         };
-        let c_text_ptr = match text.is_empty() {
-            true => std::ptr::null(),
-            false => c_text.as_ptr(),
+        let c_text_ptr = if text.is_empty() {
+            std::ptr::null()
+        } else {
+            c_text.as_ptr()
         };
         unsafe { elm_object_part_text_set(self.as_raw(), c_part_ptr, c_text_ptr) };
+        Ok(())
     }
 
     fn with_part(self, part: &str, text: &str) -> Self {
         self.set_part(part, text);
         self
+    }
+    /// Sets text in a widget part and returns the widget, or an error on failure.
+    fn try_with_part(self, part: &str, text: &str) -> EflResult<Self> {
+        self.try_set_part(part, text)?;
+        Ok(self)
     }
     fn focus(&self) -> bool {
         unsafe { elm_object_focus_get(self.as_raw()) != 0 }
@@ -1574,6 +1599,23 @@ pub trait WindowExt: WidgetExt {
             ptr
         })
     }
+    /// Creates a window, returning an error for invalid strings or a null EFL pointer.
+    fn try_new(id: &str, title: &str) -> EflResult<Self> {
+        let c_id = id.to_cstring()?;
+        let c_title = title.to_cstring()?;
+        let window = widget_from_efl::<Self>(unsafe {
+            let ptr = elm_win_util_standard_add(c_id.as_ptr(), c_title.as_ptr());
+            if !ptr.is_null() {
+                elm_win_autodel_set(ptr, true as Eina_Bool);
+            }
+            ptr
+        });
+        if window.is_set() {
+            Ok(window)
+        } else {
+            Err(EflError::null_widget("WindowExt::try_new"))
+        }
+    }
     fn with_center(self, value: bool) -> Self {
         unsafe { elm_win_center(self.as_raw(), value as Eina_Bool, value as Eina_Bool) }
         self
@@ -2352,7 +2394,7 @@ pub trait GlviewExt: WidgetExt {
             return None;
         }
         // SAFETY: EFL returns its GL API table for this GLView's active context.
-        unsafe { GlApi::from_raw(unsafe { elm_glview_gl_api_get(self.as_raw()) }) }
+        unsafe { GlApi::from_raw(elm_glview_gl_api_get(self.as_raw())) }
     }
     fn changed(&self) {
         if self.is_set() {

@@ -51,6 +51,11 @@ jobs:
         run: |
           bash '.github/workflows/make.sh' build
 
+      - name: Runtime tests on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: xvfb-run -a cargo test -p efltk --test runtime
+
       - name: Setup on Windows
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
