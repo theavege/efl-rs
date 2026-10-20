@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // then generates a layout test that underflows at compile time and adds a
     // `packed` attribute that conflicts with the type's `align(64)` hint, so
     // compiling `efltk-sys` fails with E0587/E0080. Disable the Microsoft
-    // extensions for the bindings pass to keep those types out of the output.
+    // extensions and blocklist the intrinsic wrapper types below.
     let target = env::var("TARGET").unwrap_or_default();
     let mut clang_args = get_include_paths()?;
     if target.contains("windows") {
@@ -51,6 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     bindgen::Builder::default()
         .header("src/wrapper.h")
         .clang_args(clang_args)
+        .blocklist_type("__tile.*")
         // Do not emit bindings for libc symbols (memcmp, strlen, ...). Generated
         // declarations for these trip the `library_definitions` lint and can
         // shadow the real runtime symbols.
