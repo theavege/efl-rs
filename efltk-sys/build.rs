@@ -25,6 +25,26 @@ impl ParseCallbacks for MacroCallback {
 fn get_include_paths() -> Result<Vec<String>, Box<dyn Error>> {
     let library = "elementary";
     println!("cargo:rustc-link-lib=dylib={library}");
+
+    // Detect and report EFL version
+    match pkg_config::probe_library(library) {
+        Ok(probe) => {
+            let version = probe.version;
+            println!("cargo:warning=Detected EFL version: {}", version);
+            // EFL 1.25+ is required for full widget support
+            if version
+                < semver::Version::parse("1.25.0").unwrap_or_else(|_| semver::Version::new(0, 0, 0))
+            {
+                println!(
+                    "cargo:warning=EFL version >= 1.25.0 is recommended for full widget support"
+                );
+            }
+        }
+        Err(_) => {
+            println!("cargo:warning=Could not detect EFL version");
+        }
+    }
+
     let mut includes = Vec::new();
     for dir in pkg_config::probe_library(library)?.include_paths {
         includes.push(format!("-I{}", dir.display()));
@@ -94,6 +114,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         .blocklist_function("strtok_r")
         .blocklist_function("strtold")
         .blocklist_function("usleep")
+        // Additional libc internals that may leak through
+        .blocklist_function("abort")
+        .blocklist_function("abs")
+        .blocklist_function("exit")
+        .blocklist_function("free")
+        .blocklist_function("labs")
+        .blocklist_function("llabs")
+        .blocklist_function("rand")
+        .blocklist_function("srand")
+        .blocklist_function("time")
+        // EFL-specific: blocklist internal types that shouldn't be exposed
+        .blocklist_type("_Efl_Object")
+        .blocklist_type("_Evas_Object")
+        .blocklist_type("_Elm_Widget")
         .parse_callbacks(Box::new(MacroCallback::default()))
         .generate()?
         .write_to_file(Path::new(&env::var("OUT_DIR").unwrap()).join("bindings.rs"))?;

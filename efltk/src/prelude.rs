@@ -2505,6 +2505,7 @@ pub trait BubbleExt: TextExt + ContainerExt {
 }
 
 /// Trait for photocam (pannable photo) widgets.
+#[cfg(feature = "photocam")]
 pub trait PhotocamExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm =
@@ -2596,6 +2597,7 @@ pub trait SlideshowExt: WidgetExt {
 }
 
 /// Trait for map widgets.
+#[cfg(feature = "map")]
 pub trait MapExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = widget_from_efl::<Self>(unsafe { elm_map_add(prt.as_raw()) }).with_defaults();
@@ -2622,6 +2624,7 @@ pub trait MapExt: WidgetExt {
 }
 
 /// Trait for video widgets.
+#[cfg(feature = "video")]
 pub trait VideoExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = widget_from_efl::<Self>(unsafe { elm_video_add(prt.as_raw()) }).with_defaults();
@@ -2657,6 +2660,7 @@ pub trait VideoExt: WidgetExt {
 }
 
 /// Trait for web widgets.
+#[cfg(feature = "web")]
 pub trait WebExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = widget_from_efl::<Self>(unsafe { elm_web_add(prt.as_raw()) }).with_defaults();

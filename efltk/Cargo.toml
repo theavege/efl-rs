@@ -16,6 +16,13 @@ exclude = ["examples"]
 [dependencies]
 efltk-sys = { path = "../efltk-sys", version = "=0.0.8" }
 
+[features]
+default = []
+web = []
+map = []
+video = []
+photocam = []
+
 [dev-dependencies]
 reqwest = { version = "0.13", features = ["json", "native-tls", "blocking"] }
 xlsxwriter = { version = "0" }

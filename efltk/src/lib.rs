@@ -996,7 +996,9 @@ impl TextExt for Bubble {}
 impl ContainerExt for Bubble {}
 impl BubbleExt for Bubble {}
 
+#[cfg(feature = "photocam")]
 impl_widget!(Photocam);
+#[cfg(feature = "photocam")]
 impl PhotocamExt for Photocam {}
 
 impl_widget!(Gengrid);
@@ -1066,13 +1068,19 @@ impl GengridExt for Gengrid {}
 impl_widget!(Slideshow);
 impl SlideshowExt for Slideshow {}
 
+#[cfg(feature = "map")]
 impl_widget!(Map);
+#[cfg(feature = "map")]
 impl MapExt for Map {}
 
+#[cfg(feature = "video")]
 impl_widget!(Video);
+#[cfg(feature = "video")]
 impl VideoExt for Video {}
 
+#[cfg(feature = "web")]
 impl_widget!(Web);
+#[cfg(feature = "web")]
 impl WebExt for Web {}
 
 impl_widget!(Glview);
