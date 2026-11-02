@@ -3,6 +3,40 @@
 //! This module provides the core trait system that powers the efl-rs widget API.
 //! All widget-specific functionality is defined through traits that can be
 //! implemented by widget types.
+//!
+//! # Ownership and Lifecycle Model
+//!
+//! ## Widget Ownership
+//!
+//! efl-rs uses a **handle-based ownership model** for EFL widgets:
+//!
+//! - Widgets wrap raw EFL object pointers (`*mut Evas_Object`) in `Option<NonNull<Evas_Object>>`
+//! - Widgets are `!Send` and `!Sync` - they are confined to the EFL main loop thread
+//! - The EFL library owns the actual memory; Rust wrappers are thin handles
+//! - Deleting a widget via `del()` frees the EFL object but does not affect other handles
+//!
+//! ## Parent-Child Relationships
+//!
+//! - Widgets do **not** borrow their parent's lifetime
+//! - Parent widgets own their children in the EFL object tree
+//! - Deleting a parent widget automatically deletes all its children
+//! - Child widgets can outlive their parent in Rust (but become invalid/dangling)
+//! - Use `is_set()` to check if a widget handle is still valid
+//!
+//! ## Threading Model
+//!
+//! - **All EFL objects live on the main loop thread**
+//! - Widget wrappers are `!Send`/`!Sync` to enforce this at compile time
+//! - The sanctioned way to marshal work to the main thread is via `Timer` callbacks
+//! - For one-shot work, use `Timer::new(0.0, func)` for immediate execution
+//! - For async work from other threads, spawn a thread and use `Timer` to communicate back
+//!
+//! # Error Handling
+//!
+//! - Use `try_*` methods for fallible operations (return `EflResult<T>`)
+//! - Use regular methods for infallible operations or when you're certain the operation will succeed
+//! - Empty widget wrappers return `Err(EflError::EmptyWidget(...))` from try_* methods
+//! - String conversion uses `CStringExt::to_cstring()` which returns `Err(EflError::NullByte(...))` for strings with null bytes
 
 pub use crate::ComponentMount;
 pub use crate::error::{CStringExt, EflError, EflResult};
@@ -252,21 +286,87 @@ impl From<ScrollPolicy> for Elm_Scroller_Policy {
 ///
 /// # Panics
 ///
-/// Panics if any command-line argument contains a null byte, which should never happen
-/// in normal circumstances.
-pub fn run(func: impl Fn() -> super::Window) {
-    run_with_guard(|| (func(), ()))
+/// Run the EFL main loop with a window creator function.
+///
+/// This initializes EFL, creates a window using the provided function, shows it,
+/// runs the event loop, and shuts down EFL when the loop exits.
+///
+/// # Behavior
+///
+/// - Initializes EFL with command-line arguments
+/// - Sets quit policy to exit when the last window is closed
+/// - Shows the created window
+/// - Runs the EFL main loop (`elm_run`)
+/// - Shuts down EFL when the loop exits
+///
+/// # Re-entrancy
+///
+/// Calling `run` multiple times in succession is supported - each call will
+/// initialize, run, and shut down EFL. However, calling `run` from within an
+/// already-running event loop (e.g., from a callback) will deadlock.
+///
+/// # Exit from Callback
+///
+/// To exit the event loop from a callback, use [`exit()`] or [`Window::del()`].
+/// The loop will terminate cleanly and `run` will return.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Command-line arguments contain null bytes (should never happen in practice)
+/// - EFL initialization fails (extremely rare)
+///
+/// # Example
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use efltk::{Window, Label};
+///
+/// fn main() {
+///     run(|| {
+///         let win = Window::new("my-app", "Hello");
+///         Label::new(&win).with_text("Hello, World!");
+///         win
+///     }).expect("Failed to run application");
+/// }
+/// ```
+pub fn run(func: impl Fn() -> super::Window) -> EflResult<()> {
+    run_with_guard(|| (func(), ())).map(|_| ())
 }
 
 /// Run the EFL event loop while retaining an application guard.
 ///
-/// The guard is dropped after the event loop exits and before EFL shuts down.
-/// This is useful for [`ComponentMount`] handles, which must stop their timers
-/// before `elm_shutdown`.
-pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) {
+/// This is the underlying implementation of [`run()`]. The guard is dropped after
+/// the event loop exits and before EFL shuts down. This is useful for
+/// [`ComponentMount`] handles, which must stop their timers before `elm_shutdown`.
+///
+/// # Behavior
+///
+/// Same as [`run()`], but accepts a function that returns both a window and a guard.
+/// The guard is dropped after the event loop exits, allowing cleanup before shutdown.
+///
+/// # Errors
+///
+/// Returns an error if command-line arguments contain null bytes.
+///
+/// # Example
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use efltk::{Window, ComponentMount};
+///
+/// fn main() {
+///     let mount = ComponentMount { timer: Timer::default() };
+///     run_with_guard(|| {
+///         let win = Window::new("my-app", "Hello");
+///         (win, mount)
+///     }).expect("Failed to run application");
+/// }
+/// ```
+pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) -> EflResult<T> {
     let c_args: Vec<CString> = std::env::args()
-        .map(|arg| arg.expect_cstring("command-line argument"))
-        .collect();
+        .map(|arg| arg.to_cstring())
+        .collect::<EflResult<_>>()?;
 
     let c_args_ptr: Vec<*const i8> = c_args.iter().map(|arg| arg.as_ptr()).collect();
 
@@ -282,15 +382,89 @@ pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) {
     unsafe { elm_run() };
     drop(guard);
     unsafe { elm_shutdown() };
+    Ok(guard)
 }
 
 /// Exit the EFL main loop.
 ///
-/// This function terminates the EFL main loop.
+/// This function terminates the EFL main loop by calling `efl_exit(0)`.
+/// The event loop will unwind and [`run()`] or [`run_with_guard()`] will return.
+///
+/// # Usage
+///
+/// Call this from a widget callback to exit the application:
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use efltk::{Window, Button};
+///
+/// fn main() {
+///     run(|| {
+///         let win = Window::new("my-app", "Exit Example");
+///         Button::new(&win)
+///             .with_text("Exit")
+///             .with_callback(|_| exit());
+///         win
+///     }).unwrap();
+/// }
+/// ```
+///
+/// # Safety
+///
+/// This function is safe to call from any context, including widget callbacks.
+/// It will not cause memory leaks or undefined behavior.
 pub fn exit() {
     unsafe {
         efl_exit(0);
     };
+}
+
+/// Spawn a function on the EFL main loop thread.
+///
+/// This is the sanctioned way to marshal work from background threads back to
+/// the main thread where EFL objects live. The function will be executed asynchronously
+/// on the main thread via a timer with zero timeout.
+///
+/// # Threading Model
+///
+/// EFL objects are **not thread-safe** and must only be accessed from the main loop thread.
+/// This function allows you to safely schedule work on the main thread from any thread.
+///
+/// # Usage
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use std::thread;
+///
+/// fn main() {
+///     run(|| {
+///         let win = Window::new("app", "Threading");
+///         
+///         // Spawn a background thread
+///         thread::spawn(|| {
+///             // Do some work...
+///             
+///             // Then marshal back to main thread
+///             spawn_main(|| {
+///                 // This closure runs on the main thread
+///                 println!("Back on main thread");
+///             });
+///         });
+///         
+///         win
+///     }).unwrap();
+/// }
+/// ```
+///
+/// # Implementation
+///
+/// This function creates a oneshot timer that executes the closure immediately on the
+/// main thread. The timer is freed automatically after execution.
+pub fn spawn_main<F: FnOnce() + 'static>(func: F) {
+    Timer::new(0.0, move || {
+        func();
+        false // Return false to stop the timer after one execution
+    });
 }
 
 impl super::Timer {
@@ -646,6 +820,32 @@ pub(crate) fn widget_from_efl<T: WidgetExt>(obj: *mut Evas_Object) -> T {
     unsafe { T::from_raw(obj) }
 }
 
+/// Debug assertion to verify that a child widget has the expected parent.
+///
+/// This is useful for catching parent-child relationship bugs during development.
+/// In production, this check is elided.
+#[cfg(debug_assertions)]
+pub(crate) fn debug_assert_parent<T: WidgetExt>(child: &impl WidgetExt, expected_parent: &T) {
+    use std::ptr::eq;
+    let actual_parent_ptr = unsafe { efl_parent_get(child.as_raw()) };
+    let expected_parent_ptr = expected_parent.as_raw();
+    debug_assert!(
+        eq(actual_parent_ptr, expected_parent_ptr),
+        "Child widget has unexpected parent: expected {:?}, got {:?}",
+        expected_parent_ptr,
+        actual_parent_ptr
+    );
+}
+
+/// Debug assertion to verify that a widget is still alive (has not been deleted).
+///
+/// This checks if the widget's internal pointer is still valid by verifying
+/// that it hasn't been nullified.
+#[cfg(debug_assertions)]
+pub(crate) fn debug_assert_alive(widget: &impl WidgetExt) {
+    debug_assert!(widget.is_set(), "Widget is not set (may have been deleted)");
+}
+
 /// Trait for all EFL widgets.
 ///
 /// This is the base trait that all widgets implement.
@@ -934,6 +1134,27 @@ pub trait ButtonExt: InputExt<bool> + TextExt {
 /// Trait for container widgets.
 ///
 /// Provides methods for widgets that can contain other widgets.
+///
+/// # Parent-Child Lifecycle
+///
+/// When you add a child widget to a container:
+/// - The child is **owned by the parent** in the EFL object tree
+/// - Deleting the parent will automatically delete all its children
+/// - Child widgets do **not** borrow the parent's lifetime in Rust
+/// - Child handles can outlive their parent (but become invalid)
+///
+/// # Usage
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use efltk::{Window, Box, Button};
+///
+/// let win = Window::new("app", "Title");
+/// let box_ = Box::new(&win);
+/// let button = Button::new(&box_);
+/// // box_ owns button in the EFL tree
+/// // Deleting box_ will also delete button
+/// ```
 pub trait ContainerExt: WidgetExt {
     fn add(&self, child: &impl WidgetExt) {
         self.set_content(child, "default");
