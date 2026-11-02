@@ -111,6 +111,36 @@ Rough equivalents between common widgets of GTK+ 3 and widgets of EFL.
 | ---- | --- |
 | [`Gtk.Button`](https://valadoc.org/gtk+-3.0/Gtk.Button.html) | [`Elm.Button`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Button.html) |
 | [`Gtk.CheckButton`](https://valadoc.org/gtk+-3.0/Gtk.CheckButton.html) | [`Elm.Check`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Check.html) |
+| [`ColorSelection`](https://valadoc.org/gtk+-3.0/Gtk.ColorSelection.html) ||
+| [`ComboBox`](https://valadoc.org/gtk+-3.0/Gtk.ComboBox.html) ||
+| [`Widget`](https://valadoc.org/gtk+-3.0/Gtk.Widget.html) ||
+| [`Dialog`](https://valadoc.org/gtk+-3.0/Gtk.Dialog.html) ||
+| [`TextView`](https://valadoc.org/gtk+-3.0/Gtk.TextView.html) ||
+| [`FileChooserDialog`](https://valadoc.org/gtk+-3.0/Gtk.FileChooserDialog.html) ||
+| [`Window`](https://valadoc.org/gtk+-3.0/Gtk.Window.html) ||
+| [`Label`](https://valadoc.org/gtk+-3.0/Gtk.Label.html) ||
+| [`TreeView`](https://valadoc.org/gtk+-3.0/Gtk.TreeView.html) with [`ListStore`](https://valadoc.org/gtk+-3.0/Gtk.ListStore.html) ||
+| [`Menu`](https://valadoc.org/gtk+-3.0/Gtk.Menu.html) ||
+| [`MenuBar`](https://valadoc.org/gtk+-3.0/Gtk.MenuBar.html) ||
+| [`MessageDialog`](https://valadoc.org/gtk+-3.0/Gtk.MessageDialog.html) ||
+| [`Container`](https://valadoc.org/gtk+-3.0/Gtk.Container.html) (depending on layout: [`Box`](https://valadoc.org/gtk+-3.0/Gtk.Box.html), [`Table`](https://valadoc.org/gtk+-3.0/Gtk.Table.html), [`Fixed`](https://valadoc.org/gtk+-3.0/Gtk.Fixed.html), …) ||
+| [`Entry`](https://valadoc.org/gtk+-3.0/Gtk.Entry.html) with `visibility = false` ||
+| [`ProgressBar`](https://valadoc.org/gtk+-3.0/Gtk.ProgressBar.html) ||
+| [`RadioButton`](https://valadoc.org/gtk+-3.0/Gtk.RadioButton.html) ||
+| [`ScrolledWindow`](https://valadoc.org/gtk+-3.0/Gtk.ScrolledWindow.html) ||
+| [`Separator`](https://valadoc.org/gtk+-3.0/Gtk.Separator.html) ||
+| [`Scale`](https://valadoc.org/gtk+-3.0/Gtk.Scale.html) ||
+| [`SpinButton`](https://valadoc.org/gtk+-3.0/Gtk.SpinButton.html) ||
+| [`Paned`](https://valadoc.org/gtk+-3.0/Gtk.Paned.html) ||
+| [`Notebook`](https://valadoc.org/gtk+-3.0/Gtk.Notebook.html) ||
+| [`TreeView`](https://valadoc.org/gtk+-3.0/Gtk.TreeView.html) with [`ListStore`](https://valadoc.org/gtk+-3.0/Gtk.ListStore.html) ||
+| [`TextView`](https://valadoc.org/gtk+-3.0/Gtk.TextView.html) ||
+| [`Entry`](https://valadoc.org/gtk+-3.0/Gtk.Entry.html) ||
+| [`TextView`](https://valadoc.org/gtk+-3.0/Gtk.TextView.html) ||
+| [`Toolbar`](https://valadoc.org/gtk+-3.0/Gtk.Toolbar.html) ||
+| [`Tooltip`](https://valadoc.org/gtk+-3.0/Gtk.Tooltip.html) ||
+| [`TreeView`](https://valadoc.org/gtk+-3.0/Gtk.TreeView.html) with [`TreeStore`](https://valadoc.org/gtk+-3.0/Gtk.TreeStore.html) ||
+| [`Viewport`](https://valadoc.org/gtk+-3.0/Gtk.Viewport.html) ||
 
 ## Screenshots
 
