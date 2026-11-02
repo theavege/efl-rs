@@ -620,13 +620,19 @@ pub trait InputExt<T>: WidgetExt {
         install_widget_callback::<Self, F>(self.as_raw(), sign, func);
     }
     fn call_signal(&self, sign: Signal) {
+        self.try_call_signal(sign)
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+    /// Calls a signal on the widget, returning an error for an empty widget.
+    fn try_call_signal(&self, sign: Signal) -> EflResult<()> {
         if !self.is_set() {
-            return;
+            return Err(EflError::empty_widget("InputExt::try_call_signal"));
         }
-        let event = sign.as_ref().expect_cstring("InputExt::call_signal");
+        let event = sign.as_ref().to_cstring()?;
         unsafe {
             evas_object_smart_callback_call(self.as_raw(), event.as_ptr(), std::ptr::null_mut());
         }
+        Ok(())
     }
     fn do_callback(&self) {
         self.call_signal(Signal::Changed);
@@ -726,22 +732,43 @@ pub unsafe trait WidgetExt: Sized + 'static {
         self
     }
     fn set_tooltip(&self, value: &str) {
+        self.try_set_tooltip(value)
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+    /// Sets widget tooltip, returning an error for invalid strings or an empty widget.
+    fn try_set_tooltip(&self, value: &str) -> EflResult<()> {
         if !self.is_set() {
-            return;
+            return Err(EflError::empty_widget("WidgetExt::try_set_tooltip"));
         }
-        let ctext = value.expect_cstring("WidgetExt::set_tooltip");
+        let ctext = value.to_cstring()?;
         unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
+        Ok(())
+    }
+    /// Sets widget tooltip and returns the widget, or an error on failure.
+    fn try_with_tooltip(self, value: &str) -> EflResult<Self> {
+        self.try_set_tooltip(value)?;
+        Ok(self)
     }
     fn with_cursor(self, cursor: Cursor) -> Self {
         self.set_cursor(cursor);
         self
     }
     fn set_cursor(&self, cursor: Cursor) -> bool {
+        self.try_set_cursor(cursor).unwrap_or(false)
+    }
+    /// Sets widget cursor, returning an error for invalid cursor names or an empty widget.
+    fn try_set_cursor(&self, cursor: Cursor) -> EflResult<bool> {
         if !self.is_set() {
-            return false;
+            return Err(EflError::empty_widget("WidgetExt::try_set_cursor"));
         }
-        let name = cursor.as_ref().expect_cstring("WidgetExt::set_cursor");
-        unsafe { elm_object_cursor_set(self.as_raw(), name.as_ptr()) != 0 }
+        let name = cursor.as_ref().to_cstring()?;
+        let result = unsafe { elm_object_cursor_set(self.as_raw(), name.as_ptr()) != 0 };
+        Ok(result)
+    }
+    /// Sets widget cursor and returns the widget, or an error on failure.
+    fn try_with_cursor(self, cursor: Cursor) -> EflResult<Self> {
+        self.try_set_cursor(cursor)?;
+        Ok(self)
     }
     fn with_disabled(self, disabled: bool) -> Self {
         self.set_disabled(disabled);
@@ -810,20 +837,46 @@ pub unsafe trait WidgetExt: Sized + 'static {
         self
     }
     fn set_content(&self, obj: &impl WidgetExt, value: &str) {
-        let ctext = value.expect_cstring("WidgetExt::set_content");
+        self.try_set_content(obj, value)
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+    /// Sets content in a widget part, returning an error for invalid strings or an empty widget.
+    fn try_set_content(&self, obj: &impl WidgetExt, value: &str) -> EflResult<()> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("WidgetExt::try_set_content"));
+        }
+        let ctext = value.to_cstring()?;
         unsafe { elm_object_part_content_set(self.as_raw(), ctext.as_ptr(), obj.as_raw()) }
         obj.show();
+        Ok(())
+    }
+    /// Sets content in a widget part and returns the widget, or an error on failure.
+    fn try_with_content(self, obj: &impl WidgetExt, value: &str) -> EflResult<Self> {
+        self.try_set_content(obj, value)?;
+        Ok(self)
     }
     fn content(&self, value: &str) -> Option<super::WidgetItem> {
         if !self.is_set() {
             return None;
         }
-        let ctext = value.expect_cstring("WidgetExt::content");
+        let ctext = value.to_cstring().ok()?;
         let ptr = unsafe { elm_object_part_content_get(self.as_raw(), ctext.as_ptr()) };
         match ptr.is_null() {
             true => None,
             false => Some(widget_item_from_efl(ptr)),
         }
+    }
+    /// Gets content from a widget part, returning an error for invalid strings or an empty widget.
+    fn try_content(&self, value: &str) -> EflResult<Option<super::WidgetItem>> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("WidgetExt::try_content"));
+        }
+        let ctext = value.to_cstring()?;
+        let ptr = unsafe { elm_object_part_content_get(self.as_raw(), ctext.as_ptr()) };
+        Ok(match ptr.is_null() {
+            true => None,
+            false => Some(widget_item_from_efl(ptr)),
+        })
     }
 }
 
@@ -1118,7 +1171,19 @@ pub trait CheckExt: WidgetExt {
 pub trait RangerExt: InputExt<f64> {
     fn set_step(&self, step: f64);
     fn set_range(&self, min: f64, max: f64);
-    fn with_format(self, format: &str) -> Self;
+    fn with_format(self, format: &str) -> Self {
+        self.try_with_format(format)
+            .unwrap_or_else(|err| panic!("{err}"))
+    }
+    /// Sets format string and returns the widget, or an error on failure.
+    fn try_with_format(self, format: &str) -> EflResult<Self> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("RangerExt::try_with_format"));
+        }
+        let cformat = format.to_cstring()?;
+        unsafe { elm_object_unit_format_set(self.as_raw(), cformat.as_ptr()) }
+        Ok(self)
+    }
     fn with_range(self, min: f64, max: f64) -> Self {
         self.set_range(min, max);
         self
@@ -1127,13 +1192,30 @@ pub trait RangerExt: InputExt<f64> {
         self.set_step(step);
         self
     }
+    /// Sets range and format, returning the widget or an error on failure.
+    fn try_with_range_format(self, min: f64, max: f64, format: &str) -> EflResult<Self> {
+        self.set_range(min, max);
+        self.try_with_format(format)
+    }
 }
 
 /// Trait for selector widgets (List, SegmentControl, Menu, Radio).
 ///
 /// Provides methods for widgets that allow selection from multiple items.
 pub trait SelectorExt: InputExt<i32> {
-    fn add(&self, label: &str) -> super::WidgetItem;
+    fn add(&self, label: &str) -> super::WidgetItem {
+        self.try_add(label).unwrap_or_else(|err| panic!("{err}"))
+    }
+    /// Adds an item to the selector, returning an error for invalid strings or an empty widget.
+    fn try_add(&self, label: &str) -> EflResult<super::WidgetItem> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("SelectorExt::try_add"));
+        }
+        let c_label = label.to_cstring()?;
+        Ok(widget_item_from_efl(unsafe {
+            elm_object_item_add(self.as_raw(), c_label.as_ptr())
+        }))
+    }
     fn length(&self) -> u32;
     fn clear(&self);
     fn add_items(&self, items: &[&str]) {
@@ -1141,9 +1223,21 @@ pub trait SelectorExt: InputExt<i32> {
             self.add(item);
         }
     }
+    /// Adds multiple items to the selector, returning an error on failure.
+    fn try_add_items(&self, items: &[&str]) -> EflResult<()> {
+        for item in items {
+            self.try_add(item)?;
+        }
+        Ok(())
+    }
     fn with_items(self, items: &[&str]) -> Self {
         self.add_items(items);
         self
+    }
+    /// Sets items and returns the widget, or an error on failure.
+    fn try_with_items(self, items: &[&str]) -> EflResult<Self> {
+        self.try_add_items(items)?;
+        Ok(self)
     }
 }
 /// Trait for slider widgets.
@@ -2674,6 +2768,9 @@ impl GlApi {
     /// `api` must be null or point to a live EFL GL API table for the active
     /// context. The returned value must only be used while that context is
     /// current, such as during the corresponding GLView callback.
+    ///
+    /// # Safety
+    /// `api` must be null or a valid pointer to an Evas_GL_API structure.
     pub unsafe fn from_raw(api: *mut Evas_GL_API) -> Option<Self> {
         if api.is_null() {
             None
