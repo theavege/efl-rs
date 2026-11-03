@@ -38,8 +38,8 @@
 //! - Empty widget wrappers return `Err(EflError::EmptyWidget(...))` from try_* methods
 //! - String conversion uses `CStringExt::to_cstring()` which returns `Err(EflError::NullByte(...))` for strings with null bytes
 
-pub use crate::{ComponentMount, Timer};
 pub use crate::error::{CStringExt, EflError, EflResult};
+pub use crate::{ComponentMount, Timer};
 pub use std::sync::mpsc::Sender;
 use {
     efltk_sys::*,
@@ -823,32 +823,6 @@ pub(crate) fn widget_from_efl<T: WidgetExt>(obj: *mut Evas_Object) -> T {
     unsafe { T::from_raw(obj) }
 }
 
-/// Debug assertion to verify that a child widget has the expected parent.
-///
-/// This is useful for catching parent-child relationship bugs during development.
-/// In production, this check is elided.
-#[cfg(debug_assertions)]
-pub(crate) fn debug_assert_parent<T: WidgetExt>(child: &impl WidgetExt, expected_parent: &T) {
-    use std::ptr::eq;
-    let actual_parent_ptr = unsafe { efl_parent_get(child.as_raw()) };
-    let expected_parent_ptr = expected_parent.as_raw();
-    debug_assert!(
-        eq(actual_parent_ptr, expected_parent_ptr),
-        "Child widget has unexpected parent: expected {:?}, got {:?}",
-        expected_parent_ptr,
-        actual_parent_ptr
-    );
-}
-
-/// Debug assertion to verify that a widget is still alive (has not been deleted).
-///
-/// This checks if the widget's internal pointer is still valid by verifying
-/// that it hasn't been nullified.
-#[cfg(debug_assertions)]
-pub(crate) fn debug_assert_alive(widget: &impl WidgetExt) {
-    debug_assert!(widget.is_set(), "Widget is not set (may have been deleted)");
-}
-
 /// Trait for all EFL widgets.
 ///
 /// This is the base trait that all widgets implement.
@@ -1427,7 +1401,9 @@ pub trait SelectorExt: InputExt<i32> {
     /// Adds an item to the selector, returning an error for invalid strings or an empty widget.
     fn try_add(&self, label: &str) -> EflResult<super::WidgetItem> {
         let _ = label;
-        Err(EflError::Other("try_add is not implemented for this selector".into()))
+        Err(EflError::Other(
+            "try_add is not implemented for this selector".into(),
+        ))
     }
     fn length(&self) -> u32;
     fn clear(&self);
@@ -3312,14 +3288,14 @@ pub trait Component: Default + 'static {
         });
         ComponentMount { timer }
     }
-    fn run(title: &str, width: i32, height: i32) {
+    fn run(title: &str, width: i32, height: i32) -> EflResult<()> {
         run_with_guard(move || {
             let win = super::Window::new("Main", title)
                 .with_min_size(width, height)
                 .with_center(true);
             let mount = Self::mount(&win);
             (win, mount)
-        });
+        })
     }
 }
 
