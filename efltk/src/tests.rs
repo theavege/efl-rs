@@ -10,9 +10,9 @@ mod widget_tests {
         Actionslider, Bg, Box, Bubble, Button, Calendar, Check, Clock, ColorSelector, Combobox,
         Conformant, Ctxpopup, Datetime, Dayselector, Diskselector, Entry, FileEntry, FileSelector,
         Flip, Frame, Gengrid, Genlist, Glview, Grid, Hover, Hoversel, Icon, Image, Index, Label,
-        Layout, List, Map, Menu, Multibuttonentry, Naviframe, Notify, Panel, Panes, Photo,
-        Photocam, Popup, ProgressBar, Radio, Scroller, SegmentControl, Separator, Slider,
-        Slideshow, Spinner, Table, Toolbar, Video, Web, Window,
+        Layout, List, Menu, Multibuttonentry, Naviframe, Notify, Panel, Panes, Photo, Popup,
+        ProgressBar, Radio, Scroller, SegmentControl, Separator, Slider, Slideshow, Spinner, Table,
+        Toolbar, Window,
     };
 
     #[test]
@@ -46,6 +46,14 @@ mod widget_tests {
             Table::default(),
             Window::default(),
         );
+        #[cfg(feature = "map")]
+        let _ = crate::Map::default();
+        #[cfg(feature = "photocam")]
+        let _ = crate::Photocam::default();
+        #[cfg(feature = "video")]
+        let _ = crate::Video::default();
+        #[cfg(feature = "web")]
+        let _ = crate::Web::default();
     }
 
     #[test]
@@ -77,6 +85,14 @@ mod widget_tests {
         assert!(!Spinner::default().is_set());
         assert!(!Table::default().is_set());
         assert!(!Window::default().is_set());
+        #[cfg(feature = "map")]
+        assert!(!crate::Map::default().is_set());
+        #[cfg(feature = "photocam")]
+        assert!(!crate::Photocam::default().is_set());
+        #[cfg(feature = "video")]
+        assert!(!crate::Video::default().is_set());
+        #[cfg(feature = "web")]
+        assert!(!crate::Web::default().is_set());
     }
 
     #[test]
@@ -123,14 +139,19 @@ mod widget_tests {
         uses_hygiene(&Window::default());
 
         let label = Label::default();
-        label.set_tooltip("hint");
+        assert!(matches!(
+            label.try_set_tooltip("hint"),
+            Err(EflError::EmptyWidget(_))
+        ));
         assert!(!label.set_cursor(Cursor::Hand1));
         label.set_disabled(true);
         assert!(!label.disabled());
-        let _ = label
-            .with_tooltip("hint")
-            .with_cursor(Cursor::Xterm)
-            .with_disabled(false);
+        let _ = label.with_cursor(Cursor::Xterm).with_disabled(false);
+        let empty_label = Label::default();
+        assert!(matches!(
+            empty_label.try_with_tooltip("hint"),
+            Err(EflError::EmptyWidget(_))
+        ));
     }
 
     #[test]
@@ -369,7 +390,6 @@ mod widget_tests {
         fn requires_dayselector_ext<T: DayselectorExt>(_: &T) {}
         fn requires_actionslider_ext<T: ActionsliderExt>(_: &T) {}
         fn requires_bubble_ext<T: BubbleExt>(_: &T) {}
-        fn requires_photocam_ext<T: PhotocamExt>(_: &T) {}
 
         assert!(!Actionslider::default().is_set());
         assert!(!Bubble::default().is_set());
@@ -379,7 +399,6 @@ mod widget_tests {
         assert!(!Grid::default().is_set());
         assert!(!Hover::default().is_set());
         assert!(!Index::default().is_set());
-        assert!(!Photocam::default().is_set());
 
         requires_widget_ext(&Index::default());
         requires_container_ext(&Grid::default());
@@ -394,7 +413,6 @@ mod widget_tests {
         requires_dayselector_ext(&Dayselector::default());
         requires_actionslider_ext(&Actionslider::default());
         requires_bubble_ext(&Bubble::default());
-        requires_photocam_ext(&Photocam::default());
 
         Grid::default().pack(&Button::default(), 0, 0, 50, 50);
         Grid::default().clear(false);
@@ -404,19 +422,14 @@ mod widget_tests {
         Index::default().clear();
         assert!(!Dayselector::default().day_selected(Weekday::Mon));
         Actionslider::default().set_magnet(ActionPos::All);
-        assert!(!Photocam::default().set_file("missing.png"));
     }
 
     #[test]
     fn test_alpha8_heavy_widgets() {
-        fn requires_widget_ext<T: WidgetExt>(_: &T) {}
         fn requires_container_ext<T: ContainerExt>(_: &T) {}
         fn requires_selector_ext<T: SelectorExt>(_: &T) {}
         fn requires_gengrid_ext<T: GengridExt>(_: &T) {}
         fn requires_slideshow_ext<T: SlideshowExt>(_: &T) {}
-        fn requires_map_ext<T: MapExt>(_: &T) {}
-        fn requires_video_ext<T: VideoExt>(_: &T) {}
-        fn requires_web_ext<T: WebExt>(_: &T) {}
         fn requires_glview_ext<T: GlviewExt>(_: &T) {}
         fn requires_conformant_ext<T: ConformantExt>(_: &T) {}
         fn requires_layout_ext<T: LayoutExt>(_: &T) {}
@@ -428,13 +441,9 @@ mod widget_tests {
         assert!(!Gengrid::default().is_set());
         assert!(!Glview::default().is_set());
         assert!(!Layout::default().is_set());
-        assert!(!Map::default().is_set());
         assert!(!Multibuttonentry::default().is_set());
         assert!(!Slideshow::default().is_set());
-        assert!(!Video::default().is_set());
-        assert!(!Web::default().is_set());
 
-        requires_widget_ext(&Web::default());
         requires_container_ext(&Conformant::default());
         requires_container_ext(&Layout::default());
         requires_selector_ext(&Gengrid::default());
@@ -442,9 +451,6 @@ mod widget_tests {
         requires_selector_ext(&Combobox::default());
         requires_gengrid_ext(&Gengrid::default());
         requires_slideshow_ext(&Slideshow::default());
-        requires_map_ext(&Map::default());
-        requires_video_ext(&Video::default());
-        requires_web_ext(&Web::default());
         requires_glview_ext(&Glview::default());
         requires_conformant_ext(&Conformant::default());
         requires_layout_ext(&Layout::default());
@@ -456,12 +462,6 @@ mod widget_tests {
         Slideshow::default().next();
         Slideshow::default().previous();
         assert_eq!(Slideshow::default().length(), 0);
-        assert_eq!(Map::default().zoom(), 0);
-        Map::default().set_paused(true);
-        Video::default().pause();
-        Video::default().stop();
-        assert!(!Video::default().set_file("missing.mp4"));
-        assert!(!Web::default().set_url("https://example.com"));
         Glview::default().changed();
         assert!(Glview::default().gl_api().is_none());
         assert_eq!(Glview::default().gl_size(), (0, 0));
@@ -477,6 +477,53 @@ mod widget_tests {
         assert_eq!(Gengrid::default().value(), -1);
         assert_eq!(Multibuttonentry::default().value(), -1);
         assert_eq!(Combobox::default().value(), -1);
+    }
+
+    #[cfg(feature = "photocam")]
+    #[test]
+    fn test_photocam_feature_api() {
+        fn requires_photocam_ext<T: PhotocamExt>(_: &T) {}
+
+        let photocam = crate::Photocam::default();
+        assert!(!photocam.is_set());
+        requires_photocam_ext(&photocam);
+        assert!(!photocam.set_file("missing.png"));
+    }
+
+    #[cfg(feature = "map")]
+    #[test]
+    fn test_map_feature_api() {
+        fn requires_map_ext<T: MapExt>(_: &T) {}
+
+        let map = crate::Map::default();
+        assert!(!map.is_set());
+        requires_map_ext(&map);
+        assert_eq!(map.zoom(), 0);
+        map.set_paused(true);
+    }
+
+    #[cfg(feature = "video")]
+    #[test]
+    fn test_video_feature_api() {
+        fn requires_video_ext<T: VideoExt>(_: &T) {}
+
+        let video = crate::Video::default();
+        assert!(!video.is_set());
+        requires_video_ext(&video);
+        video.pause();
+        video.stop();
+        assert!(!video.set_file("missing.mp4"));
+    }
+
+    #[cfg(feature = "web")]
+    #[test]
+    fn test_web_feature_api() {
+        fn requires_web_ext<T: WebExt>(_: &T) {}
+
+        let web = crate::Web::default();
+        assert!(!web.is_set());
+        requires_web_ext(&web);
+        assert!(!web.set_url("https://example.com"));
     }
 }
 
