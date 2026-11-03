@@ -95,30 +95,31 @@ API surface, and a release process. This document is the plan.
 - [ ] **Doc comments on 100% of public items**, each with a `# Examples` block
       runnable via `cargo test --doc` (use `#[cfg]`/`no_run` where a display
       server is unavailable).
-- [ ] **Book-style guides in `docs/`:** getting started, threading model,
+- [x] **Book-style guides in `docs/`:** getting started, threading model,
       memory/lifetime model, migrating from GTK (generated from the README
       Transition Table), migrating from 0.0.x → 0.1.0.
-- [ ] **README:** keep "First window" example compiling against the release;
-      add MSRV policy (currently Rust 1.85 / edition 2024) and support matrix
+- [ ] **README:** verify "First window" against the release.
+- [x] **README:** add MSRV policy (Rust 1.85 / edition 2024) and support matrix
       (OS × EFL version).
-- [ ] **CHANGELOG:** deduplicate the existing entries (0.0.6/0.0.7 blocks are
-      repeated and the Unreleased section mixes two "Added"/"Changed" groups),
-      then cut `[0.1.0]`.
+- [x] **CHANGELOG:** deduplicate the repeated 0.0.6/0.0.7 blocks and separate
+      the documentation additions from the Unreleased entries.
+- [ ] **CHANGELOG:** cut `[0.1.0]`.
 
 ## Phase 5 — Testing & CI
 
-- [ ] **Headless UI smoke tests.** Run the four examples (`first_window`,
+- [x] **Headless UI smoke tests.** Run the four examples (`first_window`,
       `simple`, `snake`, `floppy_bird`) under Xvfb/Wayland-headless in CI with
-      a timeout; assert clean startup/shutdown (catches regressions the unit
-      tests can't).
+      a timeout; an opt-in EFL timer requests clean shutdown after startup.
 - [ ] **Leak/callback tests.** Instrument allocation of boxed callbacks and
-      `Eina_List`s; assert deletion frees them (extend existing `tests.rs`).
+      `Eina_List`s; assert deletion frees them (boxed callback and timer
+      ownership are tested; `Eina_List` instrumentation remains).
 - [ ] **`#![deny(missing_docs, missing_debug_implementations)]`** and
       `clippy::pedantic` triage with an explicit allow-list committed as
       policy.
-- [ ] **Public-API diff check.** Add `cargo public-api` (or `cargo-machete`
-      for deps) to CI so any API change after the freeze fails the build until
-      reviewed.
+- [x] **Dependency hygiene.** Run `cargo-machete` in CI to detect unused
+      dependencies.
+- [ ] **Public-API diff check.** Add `cargo public-api` so any API change after
+      the freeze fails the build until reviewed.
 - [ ] **Platform matrix:** keep Linux/macOS/Windows builds green including the
       MSYS2 EFL path used by CI today.
 

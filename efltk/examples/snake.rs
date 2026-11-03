@@ -15,12 +15,14 @@
 
 #![forbid(unsafe_code)]
 
+mod common;
+
 use {
     efltk::{
         Glview, Label, Window,
         prelude::{
             BoxExt, ContainerExt, GlApi, GlviewExt, LabelExt, TextExt, WidgetExt, WindowExt, exit,
-            run,
+            run_with_guard,
         },
     },
     std::{cell::RefCell, rc::Rc},
@@ -166,7 +168,8 @@ impl Love for Snake {
 }
 
 fn main() {
-    run(|| {
+    run_with_guard(|| {
+        let smoke_timer = common::smoke_timer();
         let win = Window::new("snake", "Snake")
             .with_min_size(480, 520)
             .with_center(true);
@@ -193,6 +196,7 @@ fn main() {
                     }
                 });
         });
-        win
-    });
+        (win, smoke_timer)
+    })
+    .expect("EFL initialization failed");
 }

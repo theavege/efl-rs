@@ -72,6 +72,11 @@ cargo fmt --all
 ```
 
 Run `bash .github/workflows/make.sh build` for the full CI validation sequence.
+CI treats Clippy warnings as errors. Pedantic lint exceptions must be intentional,
+specific lint names with a short rationale; broad `allow(clippy::pedantic)` or
+`allow(warnings)` suppressions are not accepted. The safe crate should keep
+`missing_docs` and `missing_debug_implementations` denied as public API docs are
+completed; generated FFI bindings are exempt from rustdoc link checks.
 
 ## Code Style
 

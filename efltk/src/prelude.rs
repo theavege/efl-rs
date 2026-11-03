@@ -38,7 +38,7 @@
 //! - Empty widget wrappers return `Err(EflError::EmptyWidget(...))` from try_* methods
 //! - String conversion uses `CStringExt::to_cstring()` which returns `Err(EflError::NullByte(...))` for strings with null bytes
 
-pub use crate::ComponentMount;
+pub use crate::{ComponentMount, Timer};
 pub use crate::error::{CStringExt, EflError, EflResult};
 pub use std::sync::mpsc::Sender;
 use {
@@ -331,7 +331,7 @@ impl From<ScrollPolicy> for Elm_Scroller_Policy {
 /// }
 /// ```
 pub fn run(func: impl Fn() -> super::Window) -> EflResult<()> {
-    run_with_guard(|| (func(), ())).map(|_| ())
+    run_with_guard(|| (func(), ()))
 }
 
 /// Run the EFL event loop while retaining an application guard.
@@ -353,17 +353,17 @@ pub fn run(func: impl Fn() -> super::Window) -> EflResult<()> {
 ///
 /// ```no_run
 /// use efltk::prelude::*;
-/// use efltk::{Window, ComponentMount};
+/// use efltk::Window;
 ///
 /// fn main() {
-///     let mount = ComponentMount { timer: Timer::default() };
 ///     run_with_guard(|| {
 ///         let win = Window::new("my-app", "Hello");
-///         (win, mount)
+///         let timer = Timer::new(1.0, || true);
+///         (win, timer)
 ///     }).expect("Failed to run application");
 /// }
 /// ```
-pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) -> EflResult<T> {
+pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) -> EflResult<()> {
     let c_args: Vec<CString> = std::env::args()
         .map(|arg| arg.to_cstring())
         .collect::<EflResult<_>>()?;
@@ -382,7 +382,7 @@ pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) -> EflResult
     unsafe { elm_run() };
     drop(guard);
     unsafe { elm_shutdown() };
-    Ok(guard)
+    Ok(())
 }
 
 /// Exit the EFL main loop.
@@ -461,9 +461,12 @@ pub fn exit() {
 /// This function creates a oneshot timer that executes the closure immediately on the
 /// main thread. The timer is freed automatically after execution.
 pub fn spawn_main<F: FnOnce() + 'static>(func: F) {
+    let mut func = Some(func);
     Timer::new(0.0, move || {
-        func();
-        false // Return false to stop the timer after one execution
+        if let Some(func) = func.take() {
+            func();
+        }
+        false
     });
 }
 
@@ -1392,18 +1395,12 @@ pub trait CheckExt: WidgetExt {
 pub trait RangerExt: InputExt<f64> {
     fn set_step(&self, step: f64);
     fn set_range(&self, min: f64, max: f64);
+    fn try_with_format(self, format: &str) -> EflResult<Self>
+    where
+        Self: Sized;
     fn with_format(self, format: &str) -> Self {
         self.try_with_format(format)
             .unwrap_or_else(|err| panic!("{err}"))
-    }
-    /// Sets format string and returns the widget, or an error on failure.
-    fn try_with_format(self, format: &str) -> EflResult<Self> {
-        if !self.is_set() {
-            return Err(EflError::empty_widget("RangerExt::try_with_format"));
-        }
-        let cformat = format.to_cstring()?;
-        unsafe { elm_object_unit_format_set(self.as_raw(), cformat.as_ptr()) }
-        Ok(self)
     }
     fn with_range(self, min: f64, max: f64) -> Self {
         self.set_range(min, max);
@@ -1429,13 +1426,8 @@ pub trait SelectorExt: InputExt<i32> {
     }
     /// Adds an item to the selector, returning an error for invalid strings or an empty widget.
     fn try_add(&self, label: &str) -> EflResult<super::WidgetItem> {
-        if !self.is_set() {
-            return Err(EflError::empty_widget("SelectorExt::try_add"));
-        }
-        let c_label = label.to_cstring()?;
-        Ok(widget_item_from_efl(unsafe {
-            elm_object_item_add(self.as_raw(), c_label.as_ptr())
-        }))
+        let _ = label;
+        Err(EflError::Other("try_add is not implemented for this selector".into()))
     }
     fn length(&self) -> u32;
     fn clear(&self);
@@ -3333,7 +3325,7 @@ pub trait Component: Default + 'static {
 
 #[cfg(test)]
 mod callback_tests {
-    use super::ecore_task_cb;
+    use super::{box_callback, drop_boxed_callback, ecore_task_cb};
     use std::sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -3398,6 +3390,19 @@ mod callback_tests {
         // SAFETY: data is the exact boxed callback representation expected by the trampoline.
         let keep = unsafe { ecore_task_cb(data) };
         assert_eq!(keep, 0);
+        assert_eq!(dropped.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn widget_callback_data_is_freed_once() {
+        let dropped = Arc::new(AtomicUsize::new(0));
+        let token = DropCount(Arc::clone(&dropped));
+        let data = box_callback::<crate::Button, _>(move |_| {
+            let _ = &token;
+        });
+
+        // SAFETY: data was allocated by box_callback for this widget type.
+        unsafe { drop_boxed_callback::<crate::Button>(data.cast()) };
         assert_eq!(dropped.load(Ordering::SeqCst), 1);
     }
 }

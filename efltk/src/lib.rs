@@ -130,6 +130,13 @@ impl SelectorExt for Menu {
     fn add(&self, label: &str) -> WidgetItem {
         self.append(label, label, |wgt| wgt.call_signal(Signal::Selected))
     }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("Menu::try_add"));
+        }
+        label.to_cstring()?;
+        Ok(self.append(label, label, |wgt| wgt.call_signal(Signal::Selected)))
+    }
     fn length(&self) -> u32 {
         if !self.is_set() {
             return 0;
@@ -326,6 +333,13 @@ impl InputExt<i32> for List {
 impl SelectorExt for List {
     fn add(&self, label: &str) -> WidgetItem {
         self.add_item(label, label, |_| {})
+    }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("List::try_add"));
+        }
+        label.to_cstring()?;
+        Ok(self.add_item(label, label, |_| {}))
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -546,6 +560,14 @@ impl RangerExt for Slider {
     }
     fn set_step(&self, value: f64) {
         unsafe { elm_slider_step_set(self.as_raw(), value) };
+    }
+    fn try_with_format(self, format: &str) -> EflResult<Self> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("Slider::try_with_format"));
+        }
+        let cformat = format.to_cstring()?;
+        unsafe { elm_slider_unit_format_set(self.as_raw(), cformat.as_ptr()) };
+        Ok(self)
     }
 }
 

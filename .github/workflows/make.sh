@@ -31,8 +31,9 @@ if ((${#})); then
         build)
             cargo check --workspace --no-default-features
             cargo check --workspace --all-features
-            cargo clippy --quiet --workspace --lib --examples
+            cargo clippy --quiet --workspace --lib --examples -- -D warnings
             cargo test --workspace --lib
+            cargo test --workspace --doc
             cargo doc --workspace --all-features --no-deps
             cargo build --release --workspace --examples
             cargo fmt --check --all

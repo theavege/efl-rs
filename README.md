@@ -22,6 +22,29 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for Linux, macOS, and Windows (MSYS2) set
 
 CI build script: [.github/workflows/make.sh](.github/workflows/make.sh), [workflow](.github/workflows/main.yml).
 
+## Guides
+
+- [Getting started](docs/getting_started.md)
+- [Threading model](docs/threading.md)
+- [Memory and lifetimes](docs/memory.md)
+- [Migrating from GTK](docs/migrating_from_gtk.md)
+- [Migrating from 0.0.x to 0.1.0](docs/migrating_0_0_x.md)
+
+## Support
+
+The minimum supported Rust version (MSRV) is **1.85**, using edition 2024.
+The native library requirement is EFL **1.25 or newer**. The build script
+reports the detected version and warns when it is below 1.25.
+
+| Platform | CI coverage | Native EFL setup |
+| --- | --- | --- |
+| Ubuntu Linux | Build, tests, docs, examples, and Xvfb smoke tests | `libefl-all-dev` |
+| macOS | Build, tests, docs, and examples | Homebrew `efl` |
+| Windows | Build and tests through MSYS2 `clang64` | MSYS2 `efl` package |
+
+The table describes automated coverage, not a guarantee that every EFL backend
+or optional widget feature is available on every distribution.
+
 ```toml
 [dependencies]
 efltk = "0.0.8"

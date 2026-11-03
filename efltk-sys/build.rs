@@ -32,12 +32,14 @@ fn get_include_paths() -> Result<Vec<String>, Box<dyn Error>> {
             let version = probe.version;
             println!("cargo:warning=Detected EFL version: {}", version);
             // EFL 1.25+ is required for full widget support
-            if version
-                < semver::Version::parse("1.25.0").unwrap_or_else(|_| semver::Version::new(0, 0, 0))
-            {
-                println!(
-                    "cargo:warning=EFL version >= 1.25.0 is recommended for full widget support"
-                );
+            if let Ok(version) = semver::Version::parse(&version) {
+                if version < semver::Version::new(1, 25, 0) {
+                    println!(
+                        "cargo:warning=EFL version >= 1.25.0 is recommended for full widget support"
+                    );
+                }
+            } else {
+                println!("cargo:warning=Could not parse detected EFL version");
             }
         }
         Err(_) => {
