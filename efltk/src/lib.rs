@@ -175,9 +175,9 @@ pub struct Tm {
     pub wday: i32,
     pub yday: i32,
     pub isdst: i32,
-    #[cfg(target_os = "linux")]
+    #[cfg(target_family = "unix")]
     pub gmtoff: i64,
-    #[cfg(target_os = "linux")]
+    #[cfg(target_family = "unix")]
     pub zone: String,
 }
 
@@ -193,14 +193,14 @@ impl Tm {
             tm_wday: self.wday,
             tm_yday: self.yday,
             tm_isdst: self.isdst,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             tm_gmtoff: self.gmtoff,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             tm_zone: std::ptr::null_mut(),
         }
     }
     pub fn from_tm(value: tm) -> Self {
-        #[cfg(target_os = "linux")]
+        #[cfg(target_family = "unix")]
         let zone = unsafe {
             if !value.tm_zone.is_null() {
                 std::ffi::CStr::from_ptr(value.tm_zone)
@@ -220,9 +220,9 @@ impl Tm {
             wday: value.tm_wday,
             yday: value.tm_yday,
             isdst: value.tm_isdst,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             gmtoff: value.tm_gmtoff,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             zone,
         }
     }

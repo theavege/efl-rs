@@ -434,6 +434,7 @@ pub fn exit() {
 ///
 /// ```no_run
 /// use efltk::prelude::*;
+/// use efltk::Window;
 /// use std::thread;
 ///
 /// fn main() {

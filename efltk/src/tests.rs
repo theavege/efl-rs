@@ -713,9 +713,9 @@ mod tm_struct_tests {
             wday: 2,
             yday: 180,
             isdst: 1,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             gmtoff: 3600,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             zone: String::from("UTC"),
         };
 
@@ -743,9 +743,9 @@ mod tm_struct_tests {
             tm_wday: 5,
             tm_yday: 280,
             tm_isdst: 0,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             tm_gmtoff: 7200,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             tm_zone: std::ptr::null(),
         };
 
