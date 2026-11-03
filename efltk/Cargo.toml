@@ -24,7 +24,7 @@ video = []
 photocam = []
 
 [dev-dependencies]
-reqwest = { version = "0.13", features = ["json", "native-tls", "blocking"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "native-tls", "blocking"] }
 xlsxwriter = { version = "0" }
 chrono = { version = "0.4" }
 serde = { version="1", features = ["derive"] }
