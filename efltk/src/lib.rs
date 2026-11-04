@@ -130,6 +130,13 @@ impl SelectorExt for Menu {
     fn add(&self, label: &str) -> WidgetItem {
         self.append(label, label, |wgt| wgt.call_signal(Signal::Selected))
     }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("Menu::try_add"));
+        }
+        label.to_cstring()?;
+        Ok(self.append(label, label, |wgt| wgt.call_signal(Signal::Selected)))
+    }
     fn length(&self) -> u32 {
         if !self.is_set() {
             return 0;
@@ -168,9 +175,9 @@ pub struct Tm {
     pub wday: i32,
     pub yday: i32,
     pub isdst: i32,
-    #[cfg(target_os = "linux")]
+    #[cfg(target_family = "unix")]
     pub gmtoff: i64,
-    #[cfg(target_os = "linux")]
+    #[cfg(target_family = "unix")]
     pub zone: String,
 }
 
@@ -186,14 +193,14 @@ impl Tm {
             tm_wday: self.wday,
             tm_yday: self.yday,
             tm_isdst: self.isdst,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             tm_gmtoff: self.gmtoff,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             tm_zone: std::ptr::null_mut(),
         }
     }
     pub fn from_tm(value: tm) -> Self {
-        #[cfg(target_os = "linux")]
+        #[cfg(target_family = "unix")]
         let zone = unsafe {
             if !value.tm_zone.is_null() {
                 std::ffi::CStr::from_ptr(value.tm_zone)
@@ -213,9 +220,9 @@ impl Tm {
             wday: value.tm_wday,
             yday: value.tm_yday,
             isdst: value.tm_isdst,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             gmtoff: value.tm_gmtoff,
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             zone,
         }
     }
@@ -326,6 +333,13 @@ impl InputExt<i32> for List {
 impl SelectorExt for List {
     fn add(&self, label: &str) -> WidgetItem {
         self.add_item(label, label, |_| {})
+    }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("List::try_add"));
+        }
+        label.to_cstring()?;
+        Ok(self.add_item(label, label, |_| {}))
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -487,14 +501,20 @@ impl InputExt<i32> for SegmentControl {
 }
 impl SelectorExt for SegmentControl {
     fn add(&self, label: &str) -> WidgetItem {
-        let c_label = label.expect_cstring("SegmentControl::add");
-        widget_item_from_efl(unsafe {
+        self.try_add(label).unwrap_or_else(|err| panic!("{err}"))
+    }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("SegmentControl::try_add"));
+        }
+        let c_label = label.to_cstring()?;
+        Ok(widget_item_from_efl(unsafe {
             elm_segment_control_item_add(
                 self.as_raw(),
                 Icon::new(self).with_standard(label).as_raw(),
                 c_label.as_ptr(),
             )
-        })
+        }))
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -541,10 +561,13 @@ impl RangerExt for Slider {
     fn set_step(&self, value: f64) {
         unsafe { elm_slider_step_set(self.as_raw(), value) };
     }
-    fn with_format(self, value: &str) -> Self {
-        let ctext = value.expect_cstring("Slider::with_format");
-        unsafe { elm_slider_unit_format_set(self.as_raw(), ctext.as_ptr()) };
-        self
+    fn try_with_format(self, format: &str) -> EflResult<Self> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("Slider::try_with_format"));
+        }
+        let cformat = format.to_cstring()?;
+        unsafe { elm_slider_unit_format_set(self.as_raw(), cformat.as_ptr()) };
+        Ok(self)
     }
 }
 
@@ -559,16 +582,19 @@ impl InputExt<f64> for Spinner {
     }
 }
 impl RangerExt for Spinner {
-    fn with_format(self, format: &str) -> Self {
-        let cformat = format.expect_cstring("Spinner::with_format");
-        unsafe { elm_spinner_label_format_set(self.as_raw(), cformat.as_ptr()) };
-        self
-    }
     fn set_range(&self, min: f64, max: f64) {
         unsafe { elm_spinner_min_max_set(self.as_raw(), min, max) };
     }
     fn set_step(&self, step: f64) {
         unsafe { elm_spinner_step_set(self.as_raw(), step) };
+    }
+    fn try_with_format(self, format: &str) -> EflResult<Self> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("Spinner::try_with_format"));
+        }
+        let cformat = format.to_cstring()?;
+        unsafe { elm_spinner_label_format_set(self.as_raw(), cformat.as_ptr()) };
+        Ok(self)
     }
 }
 
@@ -754,11 +780,14 @@ impl InputExt<i32> for Diskselector {
 }
 impl SelectorExt for Diskselector {
     fn add(&self, label: &str) -> WidgetItem {
+        self.try_add(label).unwrap_or_default()
+    }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
         if !self.is_set() {
-            return WidgetItem::default();
+            return Err(EflError::empty_widget("Diskselector::try_add"));
         }
-        let c_label = label.expect_cstring("Diskselector::add");
-        widget_item_from_efl(unsafe {
+        let c_label = label.to_cstring()?;
+        Ok(widget_item_from_efl(unsafe {
             elm_diskselector_item_append(
                 self.as_raw(),
                 c_label.as_ptr(),
@@ -766,7 +795,7 @@ impl SelectorExt for Diskselector {
                 None,
                 std::ptr::null(),
             )
-        })
+        }))
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -843,11 +872,14 @@ impl InputExt<i32> for Toolbar {
 }
 impl SelectorExt for Toolbar {
     fn add(&self, label: &str) -> WidgetItem {
+        self.try_add(label).unwrap_or_default()
+    }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
         if !self.is_set() {
-            return WidgetItem::default();
+            return Err(EflError::empty_widget("Toolbar::try_add"));
         }
-        let c_label = label.expect_cstring("Toolbar::add");
-        widget_item_from_efl(unsafe {
+        let c_label = label.to_cstring()?;
+        Ok(widget_item_from_efl(unsafe {
             elm_toolbar_item_append(
                 self.as_raw(),
                 std::ptr::null(),
@@ -855,7 +887,7 @@ impl SelectorExt for Toolbar {
                 None,
                 std::ptr::null(),
             )
-        })
+        }))
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -903,14 +935,19 @@ impl InputExt<i32> for Genlist {
 }
 impl SelectorExt for Genlist {
     fn add(&self, label: &str) -> WidgetItem {
+        self.try_add(label).unwrap_or_default()
+    }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
         if !self.is_set() {
-            return WidgetItem::default();
+            return Err(EflError::empty_widget("Genlist::try_add"));
         }
         let itc = genlist_label_class();
         if itc.is_null() {
-            return WidgetItem::default();
+            return Err(EflError::Other(
+                "genlist_label_class returned null".to_string(),
+            ));
         }
-        let data = label.expect_cstring("Genlist::add").into_raw();
+        let data = label.to_cstring()?.into_raw();
         let item = unsafe {
             elm_genlist_item_append(
                 self.as_raw(),
@@ -923,7 +960,7 @@ impl SelectorExt for Genlist {
             )
         };
         unsafe { elm_genlist_item_class_unref(itc) };
-        widget_item_from_efl(item)
+        Ok(widget_item_from_efl(item))
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -981,7 +1018,9 @@ impl TextExt for Bubble {}
 impl ContainerExt for Bubble {}
 impl BubbleExt for Bubble {}
 
+#[cfg(feature = "photocam")]
 impl_widget!(Photocam);
+#[cfg(feature = "photocam")]
 impl PhotocamExt for Photocam {}
 
 impl_widget!(Gengrid);
@@ -1009,14 +1048,19 @@ impl InputExt<i32> for Gengrid {
 }
 impl SelectorExt for Gengrid {
     fn add(&self, label: &str) -> WidgetItem {
+        self.try_add(label).unwrap_or_default()
+    }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
         if !self.is_set() {
-            return WidgetItem::default();
+            return Err(EflError::empty_widget("Gengrid::try_add"));
         }
         let itc = gengrid_label_class();
         if itc.is_null() {
-            return WidgetItem::default();
+            return Err(EflError::Other(
+                "gengrid_label_class returned null".to_string(),
+            ));
         }
-        let data = label.expect_cstring("Gengrid::add").into_raw();
+        let data = label.to_cstring()?.into_raw();
         let item = unsafe {
             elm_gengrid_item_append(
                 self.as_raw(),
@@ -1027,7 +1071,7 @@ impl SelectorExt for Gengrid {
             )
         };
         unsafe { elm_gengrid_item_class_unref(itc) };
-        widget_item_from_efl(item)
+        Ok(widget_item_from_efl(item))
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -1046,13 +1090,19 @@ impl GengridExt for Gengrid {}
 impl_widget!(Slideshow);
 impl SlideshowExt for Slideshow {}
 
+#[cfg(feature = "map")]
 impl_widget!(Map);
+#[cfg(feature = "map")]
 impl MapExt for Map {}
 
+#[cfg(feature = "video")]
 impl_widget!(Video);
+#[cfg(feature = "video")]
 impl VideoExt for Video {}
 
+#[cfg(feature = "web")]
 impl_widget!(Web);
+#[cfg(feature = "web")]
 impl WebExt for Web {}
 
 impl_widget!(Glview);
@@ -1104,18 +1154,21 @@ impl InputExt<i32> for Multibuttonentry {
 }
 impl SelectorExt for Multibuttonentry {
     fn add(&self, label: &str) -> WidgetItem {
+        self.try_add(label).unwrap_or_default()
+    }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
         if !self.is_set() {
-            return WidgetItem::default();
+            return Err(EflError::empty_widget("Multibuttonentry::try_add"));
         }
-        let c_label = label.expect_cstring("Multibuttonentry::add");
-        widget_item_from_efl(unsafe {
+        let c_label = label.to_cstring()?;
+        Ok(widget_item_from_efl(unsafe {
             elm_multibuttonentry_item_append(
                 self.as_raw(),
                 c_label.as_ptr(),
                 None,
                 std::ptr::null_mut(),
             )
-        })
+        }))
     }
     fn length(&self) -> u32 {
         if !self.is_set() {
@@ -1157,14 +1210,19 @@ impl InputExt<i32> for Combobox {
 }
 impl SelectorExt for Combobox {
     fn add(&self, label: &str) -> WidgetItem {
+        self.try_add(label).unwrap_or_default()
+    }
+    fn try_add(&self, label: &str) -> EflResult<WidgetItem> {
         if !self.is_set() {
-            return WidgetItem::default();
+            return Err(EflError::empty_widget("Combobox::try_add"));
         }
         let itc = genlist_label_class();
         if itc.is_null() {
-            return WidgetItem::default();
+            return Err(EflError::Other(
+                "genlist_label_class returned null".to_string(),
+            ));
         }
-        let data = label.expect_cstring("Combobox::add").into_raw();
+        let data = label.to_cstring()?.into_raw();
         let item = unsafe {
             elm_genlist_item_append(
                 self.as_raw(),
@@ -1177,7 +1235,7 @@ impl SelectorExt for Combobox {
             )
         };
         unsafe { elm_genlist_item_class_unref(itc) };
-        widget_item_from_efl(item)
+        Ok(widget_item_from_efl(item))
     }
     fn length(&self) -> u32 {
         if !self.is_set() {

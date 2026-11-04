@@ -1,10 +1,13 @@
 #![forbid(unsafe_code)]
 
+mod common;
+
 use efltk::prelude::*;
 use efltk::{Box as EflBox, Button, Label, Window};
 
 fn main() {
-    run(|| {
+    run_with_guard(|| {
+        let smoke_timer = common::smoke_timer();
         let window = Window::new("first-window", "My first efltk app").with_min_size(320, 160);
 
         EflBox::new(&window).with_padding(12).inside(|column| {
@@ -14,6 +17,7 @@ fn main() {
                 .with_callback(move |_| message.set_text("The callback updated this label."));
         });
 
-        window
-    });
+        (window, smoke_timer)
+    })
+    .expect("EFL initialization failed");
 }

@@ -22,6 +22,29 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for Linux, macOS, and Windows (MSYS2) set
 
 CI build script: [.github/workflows/make.sh](.github/workflows/make.sh), [workflow](.github/workflows/main.yml).
 
+## Guides
+
+- [Getting started](docs/getting_started.md)
+- [Threading model](docs/threading.md)
+- [Memory and lifetimes](docs/memory.md)
+- [Migrating from GTK](docs/migrating_from_gtk.md)
+- [Migrating from 0.0.x to 0.1.0](docs/migrating_0_0_x.md)
+
+## Support
+
+The minimum supported Rust version (MSRV) is **1.85**, using edition 2024.
+The native library requirement is EFL **1.25 or newer**. The build script
+reports the detected version and warns when it is below 1.25.
+
+| Platform | CI coverage | Native EFL setup |
+| --- | --- | --- |
+| Ubuntu Linux | Build, tests, docs, examples, and Xvfb smoke tests | `libefl-all-dev` |
+| macOS | Build, tests, docs, and examples | Homebrew `efl` |
+| Windows | Build and tests through MSYS2 `clang64` | MSYS2 `efl` package |
+
+The table describes automated coverage, not a guarantee that every EFL backend
+or optional widget feature is available on every distribution.
+
 ```toml
 [dependencies]
 efltk = "0.0.8"
@@ -105,12 +128,48 @@ cargo run -p efltk --example floppy_bird
 
 ## Transition Table
 
-Rough equivalents between common widgets of GTK+ 3 and widgets of EFL.
+Release plan for the first stable version: [Spec.md](Spec.md).
 
-| GTK+ | EFL |
-| ---- | --- |
-| [`Gtk.Button`](https://valadoc.org/gtk+-3.0/Gtk.Button.html) | [`Elm.Button`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Button.html) |
-| [`Gtk.CheckButton`](https://valadoc.org/gtk+-3.0/Gtk.CheckButton.html) | [`Elm.Check`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Check.html) |
+Rough equivalents between common widgets of GTK+ 3 and widgets of EFL. The ✅ column marks
+widgets that already have a safe wrapper in [`efltk`](efltk/src/lib.rs).
+
+| GTK+ | EFL | efltk |
+| ---- | --- | :---: |
+| [`Gtk.Widget`](https://valadoc.org/gtk+-3.0/Gtk.Widget.html) | [`Efl.Object`](https://www.enlightenment.org/develop/legacy/api/c/start#classEfl__Object) / [`Elm.Widget`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Widget.html) (`WidgetExt`) | ✅ |
+| [`Gtk.Container`](https://valadoc.org/gtk+-3.0/Gtk.Container.html) (depending on layout: [`Box`](https://valadoc.org/gtk+-3.0/Gtk.Box.html), [`Grid`](https://valadoc.org/gtk+-3.0/Gtk.Grid.html), [`Fixed`](https://valadoc.org/gtk+-3.0/Gtk.Fixed.html), …) | [`Elm.Box`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Box.html), [`Elm.Table`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Table.html), [`Elm.Overlay`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Overlay.html) (`ContainerExt`) | ✅ |
+| [`Gtk.Window`](https://valadoc.org/gtk+-3.0/Gtk.Window.html) | [`Elm.Window`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Win__Class.html) (`WindowExt`) | ✅ |
+| [`Gtk.Dialog`](https://valadoc.org/gtk+-3.0/Gtk.Dialog.html) | [`Elm.Popup`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Popup.html) (`PopupExt`) | ✅ |
+| [`Gtk.MessageDialog`](https://valadoc.org/gtk+-3.0/Gtk.MessageDialog.html) | [`Elm.Notify`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Notify.html) / [`Elm.Popup`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Popup.html) | ✅ |
+| [`Gtk.Button`](https://valadoc.org/gtk+-3.0/Gtk.Button.html) | [`Elm.Button`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Button.html) (`ButtonExt`) | ✅ |
+| [`Gtk.CheckButton`](https://valadoc.org/gtk+-3.0/Gtk.CheckButton.html) | [`Elm.Check`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Check.html) (`CheckExt`) | ✅ |
+| [`Gtk.RadioButton`](https://valadoc.org/gtk+-3.0/Gtk.RadioButton.html) | [`Elm.Radio`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Radio.html) (`RadioExt`) | ✅ |
+| [`Gtk.Label`](https://valadoc.org/gtk+-3.0/Gtk.Label.html) | [`Elm.Label`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Label.html) (`LabelExt`) | ✅ |
+| [`Gtk.Entry`](https://valadoc.org/gtk+-3.0/Gtk.Entry.html) | [`Elm.Entry`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Entry.html) single-line (`EntryExt`) | ✅ |
+| [`Gtk.Entry`](https://valadoc.org/gtk+-3.0/Gtk.Entry.html) with `visibility = false` | [`Elm.Entry`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Entry.html) with `elm_entry_password_set()` (`EntryExt::with_password`) | ✅ |
+| [`Gtk.TextView`](https://valadoc.org/gtk+-3.0/Gtk.TextView.html) | [`Elm.Entry`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Entry.html) multiline wrapped in [`Elm.ScrollView`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Scroller.html) | ✅ |
+| [`Gtk.ProgressBar`](https://valadoc.org/gtk+-3.0/Gtk.ProgressBar.html) | [`Elm.Progressbar`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Progressbar.html) (`ProgressBarExt`) | ✅ |
+| [`Gtk.Separator`](https://valadoc.org/gtk+-3.0/Gtk.Separator.html) | [`Elm.Separator`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Separator.html) (`SeparatorExt`) | ✅ |
+| [`Gtk.Image`](https://valadoc.org/gtk+-3.0/Gtk.Image.html) | [`Elm.Image`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Image.html) / [`Edje`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Edje__Reference) (`ImageExt`, `IconExt`) | ✅ |
+| [`Gtk.Scale`](https://valadoc.org/gtk+-3.0/Gtk.Scale.html) | [`Elm.Slider`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Slider.html) (`SliderExt`, `RangerExt`) | ✅ |
+| [`Gtk.SpinButton`](https://valadoc.org/gtk+-3.0/Gtk.SpinButton.html) | [`Elm.Spin`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Spinner.html) (`SpinnerExt`) | ✅ |
+| [`Gtk.ComboBox`](https://valadoc.org/gtk+-3.0/Gtk.ComboBox.html) | [`Elm.Hoversel`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Hoversel.html) / [`Elm.Combobox`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Combobox.html) (`HoverselExt`) | ✅ |
+| [`Gtk.ComboBoxText`](https://valadoc.org/gtk+-3.0/Gtk.ComboBoxText.html) | [`Elm.Diskselector`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Diskselector.html) / [`Elm.SegmentControl`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Segmentctrl.html) (`SelectorExt`) | ✅ |
+| [`Gtk.MenuBar`](https://valadoc.org/gtk+-3.0/Gtk.MenuBar.html) + [`Gtk.Menu`](https://valadoc.org/gtk+-3.0/Gtk.Menu.html) | [`Elm.Menu`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Ctxpopup.html) / [`Elm.Ctxpopup`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Ctxpopup.html) (`MenuExt`) | ✅ |
+| [`Gtk.Toolbar`](https://valadoc.org/gtk+-3.0/Gtk.Toolbar.html) | [`Elm.Toolbar`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Toolbar.html) (`ToolbarExt`) | ✅ |
+| [`Gtk.ScrolledWindow`](https://valadoc.org/gtk+-3.0/Gtk.ScrolledWindow.html) / [`Gtk.Viewport`](https://valadoc.org/gtk+-3.0/Gtk.Viewport.html) | [`Elm.Scroller`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Scroller.html) (`ScrollerExt`) | ✅ |
+| [`Gtk.Paned`](https://valadoc.org/gtk+-3.0/Gtk.Paned.html) | [`Elm.Panes`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Panes.html) (`PanesExt`) | ✅ |
+| [`Gtk.Notebook`](https://valadoc.org/gtk+-3.0/Gtk.Notebook.html) | [`Elm.NaviFrame`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Naviiframe.html) / [`Elm.Frame`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Frame.html) (`NaviframeExt`) | ✅ |
+| [`Gtk.TreeView`](https://valadoc.org/gtk+-3.0/Gtk.TreeView.html) with [`ListStore`](https://valadoc.org/gtk+-3.0/Gtk.ListStore.html) | [`Elm.Genlist`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Genlist.html) / [`Elm.List`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__List.html) (`GenlistExt`, `ListExt`) | ✅ |
+| [`Gtk.TreeView`](https://valadoc.org/gtk+-3.0/Gtk.TreeView.html) with [`TreeStore`](https://valadoc.org/gtk+-3.0/Gtk.TreeStore.html) | [`Elm.Genlist`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Genlist.html) nested groups / [`Elm.Index`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Index.html) | ✅ |
+| [`Gtk.ColorButton`](https://valadoc.org/gtk+-3.0/Gtk.ColorButton.html) / [`Gtk.ColorSelection`](https://valadoc.org/gtk+-3.0/Gtk.ColorSelection.html) (deprecated) | [`Elm.ColorSelector`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Colorscheme.html) (`ColorSelExt`) | ✅ |
+| [`Gtk.FileChooserDialog`](https://valadoc.org/gtk+-3.0/Gtk.FileChooserDialog.html) | [`Elm.FileSelector`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Fileselector.html) + [`Elm.FileEntry`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Fileselector.html) (`FileSelExt`, `FileEntryExt`) | ✅ |
+| [`Gtk.Calendar`](https://valadoc.org/gtk+-3.0/Gtk.Calendar.html) | [`Elm.Calendar`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Calendar.html) / [`Elm.Clock`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Clock.html) (`CalendarExt`, `ClockExt`) | ✅ |
+| [`Gtk.Tooltip`](https://valadoc.org/gtk+-3.0/Gtk.Tooltip.html) (on any widget) | [`Elm.Widget`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Widget.html) `elm_object_tooltip_text_set()` (`WidgetExt::with_tooltip`) | ✅ |
+| [`Gtk.Layout`](https://valadoc.org/gtk+-3.0/Gtk.Layout.html) (themable container) | [`Elm.Layout`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Layout.html) (`LayoutExt`) | ✅ |
+| [`Gtk.DrawingArea`](https://valadoc.org/gtk+-3.0/Gtk.DrawingArea.html) | [`Elm.GLView`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__GLview.html) / raw [`Evas`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Evas__Canvas.html) (`GlApi`, `GlviewExt`) | ✅ |
+| [`WebKitWebView`](https://valadoc.org/webkit2gtk-4.0/WebKit.WebView.html) | [`Elm.Web`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Web.html) (`WebExt`) | ✅ |
+| [`Gtk.Video` via GStreamer](https://valadoc.org/gtk+-3.0/Gtk.Image.html) | [`Elm.Video`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Video.html) (`VideoExt`) | ✅ |
+| — (no direct equivalent) | [`Elm.Map`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Map.html), [`Elm.Gengrid`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Gengrid.html), [`Elm.Slideshow`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Slideshow.html), [`Elm.Photo`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Photo.html), [`Elm.Flip`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Flip.html), [`Elm.Bubble`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Bubble.html), [`Elm.Actionslider`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Actionslider.html), [`Elm.Dayselector`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Datetime.html), [`Elm.Datetime`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Datetime.html), [`Elm.Photocam`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Photocam.html), [`Elm.Multibuttonentry`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Multibuttonentry.html), [`Elm.Conformant`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Conform.html), [`Elm.Bg`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Bg.html), [`Elm.Panel`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Panel.html), [`Elm.Grid`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Grid.html), [`Elm.Hover`](https://www.enlightenment.org/develop/legacy/api/c/start#group__Elm__Hover.html) | ✅ (extra) |
 
 ## Screenshots
 

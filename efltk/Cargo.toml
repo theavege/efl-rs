@@ -1,6 +1,6 @@
 [package]
 name = "efltk"
-version = "0.0.8"
+version = "0.0.9"
 authors = ["Artem V. Ageev <artem.v.ageev@gmail.com>"]
 license = "LGPL-2.1-only"
 repository = "https://github.com/theavege/efl-rs"
@@ -11,13 +11,19 @@ categories = ["api-bindings", "gui"]
 edition = "2024"
 rust-version = "1.85"
 readme = "../README.md"
-exclude = ["examples"]
 
 [dependencies]
-efltk-sys = { path = "../efltk-sys", version = "=0.0.8" }
+efltk-sys = { path = "../efltk-sys", version = "=0.0.9" }
+
+[features]
+default = ["web", "map", "video", "photocam"]
+web = []
+map = []
+video = []
+photocam = []
 
 [dev-dependencies]
-reqwest = { version = "0.13", features = ["json", "native-tls", "blocking"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "native-tls", "blocking"] }
 xlsxwriter = { version = "0" }
 chrono = { version = "0.4" }
 serde = { version="1", features = ["derive"] }

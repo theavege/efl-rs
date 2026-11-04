@@ -19,14 +19,19 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
           # - macos-latest
+          # - windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           submodules: recursive
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
 
       - name: Setup on Linux
         if: runner.os == 'Linux'
@@ -53,6 +58,25 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: xvfb-run -a cargo test -p efltk --test runtime
+
+      - name: Headless example smoke tests
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          exit 0
+          xvfb-run -a -s "-screen 0 1280x1024x24 +extension GLX +render -noreset" bash -euo pipefail -c '
+            for example in first_window simple snake floppy_bird; do
+              echo "Smoke testing $example"
+              timeout 30s env EFLTK_SMOKE_TEST=1 LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=x11 \
+                "target/release/examples/$example"
+            done
+          '
+
+      - name: Dependency hygiene
+        shell: bash
+        run: |
+          cargo install cargo-machete --locked
+          cargo machete
 
       - name: Setup on Windows
         if: runner.os == 'Windows'

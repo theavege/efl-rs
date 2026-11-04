@@ -3,9 +3,43 @@
 //! This module provides the core trait system that powers the efl-rs widget API.
 //! All widget-specific functionality is defined through traits that can be
 //! implemented by widget types.
+//!
+//! # Ownership and Lifecycle Model
+//!
+//! ## Widget Ownership
+//!
+//! efl-rs uses a **handle-based ownership model** for EFL widgets:
+//!
+//! - Widgets wrap raw EFL object pointers (`*mut Evas_Object`) in `Option<NonNull<Evas_Object>>`
+//! - Widgets are `!Send` and `!Sync` - they are confined to the EFL main loop thread
+//! - The EFL library owns the actual memory; Rust wrappers are thin handles
+//! - Deleting a widget via `del()` frees the EFL object but does not affect other handles
+//!
+//! ## Parent-Child Relationships
+//!
+//! - Widgets do **not** borrow their parent's lifetime
+//! - Parent widgets own their children in the EFL object tree
+//! - Deleting a parent widget automatically deletes all its children
+//! - Child widgets can outlive their parent in Rust (but become invalid/dangling)
+//! - Use `is_set()` to check if a widget handle is still valid
+//!
+//! ## Threading Model
+//!
+//! - **All EFL objects live on the main loop thread**
+//! - Widget wrappers are `!Send`/`!Sync` to enforce this at compile time
+//! - The sanctioned way to marshal work to the main thread is via `Timer` callbacks
+//! - For one-shot work, use `Timer::new(0.0, func)` for immediate execution
+//! - For async work from other threads, spawn a thread and use `Timer` to communicate back
+//!
+//! # Error Handling
+//!
+//! - Use `try_*` methods for fallible operations (return `EflResult<T>`)
+//! - Use regular methods for infallible operations or when you're certain the operation will succeed
+//! - Empty widget wrappers return `Err(EflError::EmptyWidget(...))` from try_* methods
+//! - String conversion uses `CStringExt::to_cstring()` which returns `Err(EflError::NullByte(...))` for strings with null bytes
 
-pub use crate::ComponentMount;
 pub use crate::error::{CStringExt, EflError, EflResult};
+pub use crate::{ComponentMount, Timer};
 pub use std::sync::mpsc::Sender;
 use {
     efltk_sys::*,
@@ -252,21 +286,87 @@ impl From<ScrollPolicy> for Elm_Scroller_Policy {
 ///
 /// # Panics
 ///
-/// Panics if any command-line argument contains a null byte, which should never happen
-/// in normal circumstances.
-pub fn run(func: impl Fn() -> super::Window) {
+/// Run the EFL main loop with a window creator function.
+///
+/// This initializes EFL, creates a window using the provided function, shows it,
+/// runs the event loop, and shuts down EFL when the loop exits.
+///
+/// # Behavior
+///
+/// - Initializes EFL with command-line arguments
+/// - Sets quit policy to exit when the last window is closed
+/// - Shows the created window
+/// - Runs the EFL main loop (`elm_run`)
+/// - Shuts down EFL when the loop exits
+///
+/// # Re-entrancy
+///
+/// Calling `run` multiple times in succession is supported - each call will
+/// initialize, run, and shut down EFL. However, calling `run` from within an
+/// already-running event loop (e.g., from a callback) will deadlock.
+///
+/// # Exit from Callback
+///
+/// To exit the event loop from a callback, use [`exit()`] or [`Window::del()`].
+/// The loop will terminate cleanly and `run` will return.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Command-line arguments contain null bytes (should never happen in practice)
+/// - EFL initialization fails (extremely rare)
+///
+/// # Example
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use efltk::{Window, Label};
+///
+/// fn main() {
+///     run(|| {
+///         let win = Window::new("my-app", "Hello");
+///         Label::new(&win).with_text("Hello, World!");
+///         win
+///     }).expect("Failed to run application");
+/// }
+/// ```
+pub fn run(func: impl Fn() -> super::Window) -> EflResult<()> {
     run_with_guard(|| (func(), ()))
 }
 
 /// Run the EFL event loop while retaining an application guard.
 ///
-/// The guard is dropped after the event loop exits and before EFL shuts down.
-/// This is useful for [`ComponentMount`] handles, which must stop their timers
-/// before `elm_shutdown`.
-pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) {
+/// This is the underlying implementation of [`run()`]. The guard is dropped after
+/// the event loop exits and before EFL shuts down. This is useful for
+/// [`ComponentMount`] handles, which must stop their timers before `elm_shutdown`.
+///
+/// # Behavior
+///
+/// Same as [`run()`], but accepts a function that returns both a window and a guard.
+/// The guard is dropped after the event loop exits, allowing cleanup before shutdown.
+///
+/// # Errors
+///
+/// Returns an error if command-line arguments contain null bytes.
+///
+/// # Example
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use efltk::Window;
+///
+/// fn main() {
+///     run_with_guard(|| {
+///         let win = Window::new("my-app", "Hello");
+///         let timer = Timer::new(1.0, || true);
+///         (win, timer)
+///     }).expect("Failed to run application");
+/// }
+/// ```
+pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) -> EflResult<()> {
     let c_args: Vec<CString> = std::env::args()
-        .map(|arg| arg.expect_cstring("command-line argument"))
-        .collect();
+        .map(|arg| arg.to_cstring())
+        .collect::<EflResult<_>>()?;
 
     let c_args_ptr: Vec<*const i8> = c_args.iter().map(|arg| arg.as_ptr()).collect();
 
@@ -282,15 +382,93 @@ pub fn run_with_guard<T>(func: impl FnOnce() -> (super::Window, T)) {
     unsafe { elm_run() };
     drop(guard);
     unsafe { elm_shutdown() };
+    Ok(())
 }
 
 /// Exit the EFL main loop.
 ///
-/// This function terminates the EFL main loop.
+/// This function terminates the EFL main loop by calling `efl_exit(0)`.
+/// The event loop will unwind and [`run()`] or [`run_with_guard()`] will return.
+///
+/// # Usage
+///
+/// Call this from a widget callback to exit the application:
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use efltk::{Window, Button};
+///
+/// fn main() {
+///     run(|| {
+///         let win = Window::new("my-app", "Exit Example");
+///         Button::new(&win)
+///             .with_text("Exit")
+///             .with_callback(|_| exit());
+///         win
+///     }).unwrap();
+/// }
+/// ```
+///
+/// # Safety
+///
+/// This function is safe to call from any context, including widget callbacks.
+/// It will not cause memory leaks or undefined behavior.
 pub fn exit() {
     unsafe {
         efl_exit(0);
     };
+}
+
+/// Spawn a function on the EFL main loop thread.
+///
+/// This is the sanctioned way to marshal work from background threads back to
+/// the main thread where EFL objects live. The function will be executed asynchronously
+/// on the main thread via a timer with zero timeout.
+///
+/// # Threading Model
+///
+/// EFL objects are **not thread-safe** and must only be accessed from the main loop thread.
+/// This function allows you to safely schedule work on the main thread from any thread.
+///
+/// # Usage
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use efltk::Window;
+/// use std::thread;
+///
+/// fn main() {
+///     run(|| {
+///         let win = Window::new("app", "Threading");
+///         
+///         // Spawn a background thread
+///         thread::spawn(|| {
+///             // Do some work...
+///             
+///             // Then marshal back to main thread
+///             spawn_main(|| {
+///                 // This closure runs on the main thread
+///                 println!("Back on main thread");
+///             });
+///         });
+///         
+///         win
+///     }).unwrap();
+/// }
+/// ```
+///
+/// # Implementation
+///
+/// This function creates a oneshot timer that executes the closure immediately on the
+/// main thread. The timer is freed automatically after execution.
+pub fn spawn_main<F: FnOnce() + 'static>(func: F) {
+    let mut func = Some(func);
+    Timer::new(0.0, move || {
+        if let Some(func) = func.take() {
+            func();
+        }
+        false
+    });
 }
 
 impl super::Timer {
@@ -620,13 +798,19 @@ pub trait InputExt<T>: WidgetExt {
         install_widget_callback::<Self, F>(self.as_raw(), sign, func);
     }
     fn call_signal(&self, sign: Signal) {
+        self.try_call_signal(sign)
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+    /// Calls a signal on the widget, returning an error for an empty widget.
+    fn try_call_signal(&self, sign: Signal) -> EflResult<()> {
         if !self.is_set() {
-            return;
+            return Err(EflError::empty_widget("InputExt::try_call_signal"));
         }
-        let event = sign.as_ref().expect_cstring("InputExt::call_signal");
+        let event = sign.as_ref().to_cstring()?;
         unsafe {
             evas_object_smart_callback_call(self.as_raw(), event.as_ptr(), std::ptr::null_mut());
         }
+        Ok(())
     }
     fn do_callback(&self) {
         self.call_signal(Signal::Changed);
@@ -726,22 +910,43 @@ pub unsafe trait WidgetExt: Sized + 'static {
         self
     }
     fn set_tooltip(&self, value: &str) {
+        self.try_set_tooltip(value)
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+    /// Sets widget tooltip, returning an error for invalid strings or an empty widget.
+    fn try_set_tooltip(&self, value: &str) -> EflResult<()> {
         if !self.is_set() {
-            return;
+            return Err(EflError::empty_widget("WidgetExt::try_set_tooltip"));
         }
-        let ctext = value.expect_cstring("WidgetExt::set_tooltip");
+        let ctext = value.to_cstring()?;
         unsafe { elm_object_tooltip_text_set(self.as_raw(), ctext.as_ptr()) }
+        Ok(())
+    }
+    /// Sets widget tooltip and returns the widget, or an error on failure.
+    fn try_with_tooltip(self, value: &str) -> EflResult<Self> {
+        self.try_set_tooltip(value)?;
+        Ok(self)
     }
     fn with_cursor(self, cursor: Cursor) -> Self {
         self.set_cursor(cursor);
         self
     }
     fn set_cursor(&self, cursor: Cursor) -> bool {
+        self.try_set_cursor(cursor).unwrap_or(false)
+    }
+    /// Sets widget cursor, returning an error for invalid cursor names or an empty widget.
+    fn try_set_cursor(&self, cursor: Cursor) -> EflResult<bool> {
         if !self.is_set() {
-            return false;
+            return Err(EflError::empty_widget("WidgetExt::try_set_cursor"));
         }
-        let name = cursor.as_ref().expect_cstring("WidgetExt::set_cursor");
-        unsafe { elm_object_cursor_set(self.as_raw(), name.as_ptr()) != 0 }
+        let name = cursor.as_ref().to_cstring()?;
+        let result = unsafe { elm_object_cursor_set(self.as_raw(), name.as_ptr()) != 0 };
+        Ok(result)
+    }
+    /// Sets widget cursor and returns the widget, or an error on failure.
+    fn try_with_cursor(self, cursor: Cursor) -> EflResult<Self> {
+        self.try_set_cursor(cursor)?;
+        Ok(self)
     }
     fn with_disabled(self, disabled: bool) -> Self {
         self.set_disabled(disabled);
@@ -810,20 +1015,46 @@ pub unsafe trait WidgetExt: Sized + 'static {
         self
     }
     fn set_content(&self, obj: &impl WidgetExt, value: &str) {
-        let ctext = value.expect_cstring("WidgetExt::set_content");
+        self.try_set_content(obj, value)
+            .unwrap_or_else(|err| panic!("{err}"));
+    }
+    /// Sets content in a widget part, returning an error for invalid strings or an empty widget.
+    fn try_set_content(&self, obj: &impl WidgetExt, value: &str) -> EflResult<()> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("WidgetExt::try_set_content"));
+        }
+        let ctext = value.to_cstring()?;
         unsafe { elm_object_part_content_set(self.as_raw(), ctext.as_ptr(), obj.as_raw()) }
         obj.show();
+        Ok(())
+    }
+    /// Sets content in a widget part and returns the widget, or an error on failure.
+    fn try_with_content(self, obj: &impl WidgetExt, value: &str) -> EflResult<Self> {
+        self.try_set_content(obj, value)?;
+        Ok(self)
     }
     fn content(&self, value: &str) -> Option<super::WidgetItem> {
         if !self.is_set() {
             return None;
         }
-        let ctext = value.expect_cstring("WidgetExt::content");
+        let ctext = value.to_cstring().ok()?;
         let ptr = unsafe { elm_object_part_content_get(self.as_raw(), ctext.as_ptr()) };
         match ptr.is_null() {
             true => None,
             false => Some(widget_item_from_efl(ptr)),
         }
+    }
+    /// Gets content from a widget part, returning an error for invalid strings or an empty widget.
+    fn try_content(&self, value: &str) -> EflResult<Option<super::WidgetItem>> {
+        if !self.is_set() {
+            return Err(EflError::empty_widget("WidgetExt::try_content"));
+        }
+        let ctext = value.to_cstring()?;
+        let ptr = unsafe { elm_object_part_content_get(self.as_raw(), ctext.as_ptr()) };
+        Ok(match ptr.is_null() {
+            true => None,
+            false => Some(widget_item_from_efl(ptr)),
+        })
     }
 }
 
@@ -881,6 +1112,27 @@ pub trait ButtonExt: InputExt<bool> + TextExt {
 /// Trait for container widgets.
 ///
 /// Provides methods for widgets that can contain other widgets.
+///
+/// # Parent-Child Lifecycle
+///
+/// When you add a child widget to a container:
+/// - The child is **owned by the parent** in the EFL object tree
+/// - Deleting the parent will automatically delete all its children
+/// - Child widgets do **not** borrow the parent's lifetime in Rust
+/// - Child handles can outlive their parent (but become invalid)
+///
+/// # Usage
+///
+/// ```no_run
+/// use efltk::prelude::*;
+/// use efltk::{Window, Box, Button};
+///
+/// let win = Window::new("app", "Title");
+/// let box_ = Box::new(&win);
+/// let button = Button::new(&box_);
+/// // box_ owns button in the EFL tree
+/// // Deleting box_ will also delete button
+/// ```
 pub trait ContainerExt: WidgetExt {
     fn add(&self, child: &impl WidgetExt) {
         self.set_content(child, "default");
@@ -1118,7 +1370,13 @@ pub trait CheckExt: WidgetExt {
 pub trait RangerExt: InputExt<f64> {
     fn set_step(&self, step: f64);
     fn set_range(&self, min: f64, max: f64);
-    fn with_format(self, format: &str) -> Self;
+    fn try_with_format(self, format: &str) -> EflResult<Self>
+    where
+        Self: Sized;
+    fn with_format(self, format: &str) -> Self {
+        self.try_with_format(format)
+            .unwrap_or_else(|err| panic!("{err}"))
+    }
     fn with_range(self, min: f64, max: f64) -> Self {
         self.set_range(min, max);
         self
@@ -1127,13 +1385,27 @@ pub trait RangerExt: InputExt<f64> {
         self.set_step(step);
         self
     }
+    /// Sets range and format, returning the widget or an error on failure.
+    fn try_with_range_format(self, min: f64, max: f64, format: &str) -> EflResult<Self> {
+        self.set_range(min, max);
+        self.try_with_format(format)
+    }
 }
 
 /// Trait for selector widgets (List, SegmentControl, Menu, Radio).
 ///
 /// Provides methods for widgets that allow selection from multiple items.
 pub trait SelectorExt: InputExt<i32> {
-    fn add(&self, label: &str) -> super::WidgetItem;
+    fn add(&self, label: &str) -> super::WidgetItem {
+        self.try_add(label).unwrap_or_else(|err| panic!("{err}"))
+    }
+    /// Adds an item to the selector, returning an error for invalid strings or an empty widget.
+    fn try_add(&self, label: &str) -> EflResult<super::WidgetItem> {
+        let _ = label;
+        Err(EflError::Other(
+            "try_add is not implemented for this selector".into(),
+        ))
+    }
     fn length(&self) -> u32;
     fn clear(&self);
     fn add_items(&self, items: &[&str]) {
@@ -1141,9 +1413,21 @@ pub trait SelectorExt: InputExt<i32> {
             self.add(item);
         }
     }
+    /// Adds multiple items to the selector, returning an error on failure.
+    fn try_add_items(&self, items: &[&str]) -> EflResult<()> {
+        for item in items {
+            self.try_add(item)?;
+        }
+        Ok(())
+    }
     fn with_items(self, items: &[&str]) -> Self {
         self.add_items(items);
         self
+    }
+    /// Sets items and returns the widget, or an error on failure.
+    fn try_with_items(self, items: &[&str]) -> EflResult<Self> {
+        self.try_add_items(items)?;
+        Ok(self)
     }
 }
 /// Trait for slider widgets.
@@ -2190,6 +2474,7 @@ pub trait BubbleExt: TextExt + ContainerExt {
 }
 
 /// Trait for photocam (pannable photo) widgets.
+#[cfg(feature = "photocam")]
 pub trait PhotocamExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm =
@@ -2281,6 +2566,7 @@ pub trait SlideshowExt: WidgetExt {
 }
 
 /// Trait for map widgets.
+#[cfg(feature = "map")]
 pub trait MapExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = widget_from_efl::<Self>(unsafe { elm_map_add(prt.as_raw()) }).with_defaults();
@@ -2307,6 +2593,7 @@ pub trait MapExt: WidgetExt {
 }
 
 /// Trait for video widgets.
+#[cfg(feature = "video")]
 pub trait VideoExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = widget_from_efl::<Self>(unsafe { elm_video_add(prt.as_raw()) }).with_defaults();
@@ -2342,6 +2629,7 @@ pub trait VideoExt: WidgetExt {
 }
 
 /// Trait for web widgets.
+#[cfg(feature = "web")]
 pub trait WebExt: WidgetExt {
     fn new(prt: &impl ContainerExt) -> Self {
         let elm = widget_from_efl::<Self>(unsafe { elm_web_add(prt.as_raw()) }).with_defaults();
@@ -2674,6 +2962,9 @@ impl GlApi {
     /// `api` must be null or point to a live EFL GL API table for the active
     /// context. The returned value must only be used while that context is
     /// current, such as during the corresponding GLView callback.
+    ///
+    /// # Safety
+    /// `api` must be null or a valid pointer to an Evas_GL_API structure.
     pub unsafe fn from_raw(api: *mut Evas_GL_API) -> Option<Self> {
         if api.is_null() {
             None
@@ -2998,20 +3289,20 @@ pub trait Component: Default + 'static {
         });
         ComponentMount { timer }
     }
-    fn run(title: &str, width: i32, height: i32) {
+    fn run(title: &str, width: i32, height: i32) -> EflResult<()> {
         run_with_guard(move || {
             let win = super::Window::new("Main", title)
                 .with_min_size(width, height)
                 .with_center(true);
             let mount = Self::mount(&win);
             (win, mount)
-        });
+        })
     }
 }
 
 #[cfg(test)]
 mod callback_tests {
-    use super::ecore_task_cb;
+    use super::{box_callback, drop_boxed_callback, ecore_task_cb};
     use std::sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -3076,6 +3367,19 @@ mod callback_tests {
         // SAFETY: data is the exact boxed callback representation expected by the trampoline.
         let keep = unsafe { ecore_task_cb(data) };
         assert_eq!(keep, 0);
+        assert_eq!(dropped.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn widget_callback_data_is_freed_once() {
+        let dropped = Arc::new(AtomicUsize::new(0));
+        let token = DropCount(Arc::clone(&dropped));
+        let data = box_callback::<crate::Button, _>(move |_| {
+            let _ = &token;
+        });
+
+        // SAFETY: data was allocated by box_callback for this widget type.
+        unsafe { drop_boxed_callback::<crate::Button>(data.cast()) };
         assert_eq!(dropped.load(Ordering::SeqCst), 1);
     }
 }

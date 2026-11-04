@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod common;
 mod components;
 
 use efltk::prelude::*;
@@ -85,5 +86,13 @@ impl Component for View {
 }
 
 fn main() {
-    View::run("Simple", 400, 640);
+    run_with_guard(|| {
+        let window = efltk::Window::new("Main", "Simple")
+            .with_min_size(400, 640)
+            .with_center(true);
+        let mount = View::mount(&window);
+        let smoke_timer = common::smoke_timer();
+        (window, (mount, smoke_timer))
+    })
+    .expect("EFL initialization failed");
 }
