@@ -11,13 +11,12 @@ categories = ["api-bindings", "gui"]
 edition = "2024"
 rust-version = "1.85"
 readme = "../README.md"
-exclude = ["examples"]
 
 [dependencies]
 efltk-sys = { path = "../efltk-sys", version = "=0.0.8" }
 
 [features]
-default = []
+default = ["web", "map", "video", "photocam"]
 web = []
 map = []
 video = []
