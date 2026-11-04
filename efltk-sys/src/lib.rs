@@ -11,5 +11,7 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::approx_constant)]
 #![allow(clippy::manual_div_ceil)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::unnecessary_cast)]
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
