@@ -11,7 +11,7 @@ function _setup
                 fedora | alma) sudo dnf install -y "${DEPS[@]}" {efl,clang}-devel ;;
                 debian | ubuntu)
                     sudo apt-get update
-                    sudo apt-get install -y "${DEPS[@]}" lib{efl-all,clang}-dev clang xvfb
+                    sudo apt-get install -y "${DEPS[@]}" lib{efl-all,clang}-dev clang xvfb libgl1-mesa-dri libglx-mesa0
                     ;;
             esac 1>/dev/null
             shellcheck --external-sources "${0}"

@@ -58,7 +58,8 @@ fn fallible_text_and_window_apis_work_with_live_widgets() {
             false
         });
         (window, timer)
-    });
+    })
+    .expect("EFL initialization failed");
     assert_eq!(timer_called.get(), 1);
     assert!(timer_closure_dropped.get());
 }
